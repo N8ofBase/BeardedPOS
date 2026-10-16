@@ -1,0 +1,248 @@
+@import "./tokens.css";
+
+[hidden] {
+  display: none !important;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.45 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+h1 {
+  font-size: 1.35rem;
+}
+h2 {
+  font-size: 1.15rem;
+}
+h3 {
+  font-size: 1rem;
+}
+p {
+  margin: 0;
+}
+.muted {
+  color: var(--muted);
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  min-height: 40px;
+}
+button:hover {
+  border-color: var(--muted);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+button.danger {
+  color: var(--bad);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Full-screen states: loading, role picker, errors */
+.center {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+  width: min(100%, 560px);
+}
+
+/* Role picker */
+.roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.role {
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  padding: 0.9rem;
+  border-radius: var(--radius);
+  min-height: 92px;
+  align-content: start;
+}
+.role b {
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+.role span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* Admin shell: sidebar beside the page; bottom-scrolling tab row on phones */
+.shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+}
+.demo-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.demo-banner button {
+  min-height: 32px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+}
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar .store {
+  padding: 4px 10px 12px;
+  display: grid;
+  gap: 2px;
+}
+.sidebar .store small {
+  color: var(--muted);
+}
+.sidebar a {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 700;
+}
+.sidebar a:hover {
+  background: var(--sunk);
+  color: var(--fg);
+}
+.sidebar a[aria-current="page"] {
+  background: var(--sunk);
+  color: var(--fg);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.sidebar .who {
+  margin-top: auto;
+  padding: 10px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+.main {
+  padding: 16px max(16px, env(safe-area-inset-right)) 40px 20px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  max-width: 75ch;
+}
+.slideover {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(100%, 460px);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: -8px 0 24px rgb(0 0 0 / 0.12);
+  padding: 16px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+@media (max-width: 760px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+  }
+  .sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 6px 10px;
+    gap: 2px;
+  }
+  .sidebar .store,
+  .sidebar .who {
+    display: none;
+  }
+  .sidebar a {
+    white-space: nowrap;
+  }
+  .sidebar a[aria-current="page"] {
+    box-shadow: inset 0 -3px 0 var(--accent);
+  }
+  .main {
+    padding: 14px 16px 40px;
+  }
+}

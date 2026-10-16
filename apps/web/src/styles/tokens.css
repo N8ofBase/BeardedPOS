@@ -1,0 +1,61 @@
+/* Colors and type from docs/prototype.html. Light by default, dark when the device asks. */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --sunk: #e8ecea;
+  --fg: #18211e;
+  --muted: #5d6a65;
+  --line: #d3dbd7;
+  --accent: #0f6e5a;
+  --accent-fg: #ffffff;
+  --astro: #6b3fd1;
+  --astro-soft: #efe9fd;
+  --good: #1d7a3a;
+  --warn: #a85c00;
+  --warn-soft: #fdf0dc;
+  --bad: #b3261e;
+  --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --radius: 10px;
+  --sidebar: 220px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715;
+    --surface: #19211e;
+    --sunk: #222c28;
+    --fg: #e7eeeb;
+    --muted: #9aa9a3;
+    --line: #2f3b37;
+    --accent: #3fbf9c;
+    --accent-fg: #06221b;
+    --astro: #a98bff;
+    --astro-soft: #2a2342;
+    --good: #5fd07e;
+    --warn: #f0a845;
+    --warn-soft: #3a2c14;
+    --bad: #ff8a80;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #111715;
+  --surface: #19211e;
+  --sunk: #222c28;
+  --fg: #e7eeeb;
+  --muted: #9aa9a3;
+  --line: #2f3b37;
+  --accent: #3fbf9c;
+  --accent-fg: #06221b;
+  --astro: #a98bff;
+  --astro-soft: #2a2342;
+  --good: #5fd07e;
+  --warn: #f0a845;
+  --warn-soft: #3a2c14;
+  --bad: #ff8a80;
+  color-scheme: dark;
+}

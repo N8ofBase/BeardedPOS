@@ -3,7 +3,7 @@
   "context": {
     "domainName": "prismcortex.net",
     "demoSubdomain": "petpos-demo",
-    "siteDir": ".site",
+    "siteDir": "../apps/web/dist",
     "budgetMonthlyUsd": 5
   }
 }

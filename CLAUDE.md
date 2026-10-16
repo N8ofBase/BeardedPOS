@@ -42,8 +42,19 @@ Point of sale, inventory, customers and pets, grooming calendar and online booki
 
 ## Commands
 
-(fill in once the repo is scaffolded in session 1a)
-- `npm run dev` — web app in demo mode
-- `npm test` — unit and database tests
-- `npx cdk deploy DemoSite` — deploy the demo site
-- `npm run deploy:prototype` — works now: uploads `docs/prototype.html` to https://petpos-demo.prismcortex.net (until 1a replaces it)
+- `npm run dev` — web app in demo mode at http://localhost:5173
+- `npm test` — all unit and database tests (Vitest; database tests use in-memory PGlite)
+- `npm run lint` / `npm run typecheck` / `npm run format`
+- `npm run build:demo` — static demo build in `apps/web/dist`
+- `npm run deploy:demo` — build and deploy to https://petpos-demo.prismcortex.net (DemoSite stack)
+
+AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC_Dev). The AWS CLI takes `--profile prismcortex`. The CDK CLI can't read the `[sso-session]` config, so before `cdk` commands load short-lived credentials into the shell: `aws configure export-credentials --profile prismcortex --format powershell | Invoke-Expression` (never print or save them).
+
+## Layout
+
+- `packages/core` — money, phone, roles and permissions, `Ctx`, `AppError`. No database code.
+- `packages/db` — `migrations/*.sql`, `migrate`, Kysely schema types, the PGlite dialect, `withBusiness`, demo seed.
+- `services/api` — handlers `(trx, ctx, input)` and the `invoke` registry. Add new handlers to `src/registry.ts`.
+- `apps/web` — React app. `src/demo/` runs PGlite in a worker; `src/api/client.ts` is the only way screens reach handlers.
+- `infra` — CDK app (`DemoSite` now).
+- New tables: a numbered migration with `business_id`, `is_demo`, row-level security enabled and forced, a policy on `current_business_id()`, and an `updated_at` trigger. Add the Kysely type in `schema.ts`.

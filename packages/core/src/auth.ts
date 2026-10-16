@@ -1,0 +1,45 @@
+import { AppError } from "./errors.ts";
+
+export const ROLES = ["owner", "manager", "cashier", "groomer"] as const;
+export type Role = (typeof ROLES)[number];
+
+export const ROLE_LABEL: Record<Role, string> = {
+  owner: "Owner",
+  manager: "Manager",
+  cashier: "Cashier",
+  groomer: "Groomer",
+};
+
+// Who can do what (docs/SPEC.md → Roles). Owner can do everything.
+const PERMISSIONS = {
+  "register.use": ["owner", "manager", "cashier"],
+  "products.view": ["owner", "manager", "cashier"],
+  "products.edit": ["owner", "manager"],
+  "inventory.adjust": ["owner", "manager"],
+  "customers.view": ["owner", "manager", "cashier", "groomer"],
+  "customers.edit": ["owner", "manager", "cashier"],
+  "customers.delete": ["owner", "manager"],
+  "grooming.view": ["owner", "manager", "cashier", "groomer"],
+  "sales.view": ["owner", "manager"],
+  "astro.view": ["owner", "manager", "cashier"],
+  "settings.view": ["owner", "manager"],
+  "settings.edit": ["owner"],
+  "staff.view": ["owner", "manager", "cashier", "groomer"],
+  "staff.manage": ["owner"],
+  "import.run": ["owner", "manager"],
+  "demo.remove": ["owner"],
+} as const satisfies Record<string, readonly Role[]>;
+
+export type Action = keyof typeof PERMISSIONS;
+
+export function can(role: Role, action: Action): boolean {
+  return (PERMISSIONS[action] as readonly Role[]).includes(role);
+}
+
+export function assertCan(role: Role, action: Action): void {
+  if (!can(role, action)) throw new AppError("forbidden", "You don't have permission to do that.");
+}
+
+export function isRole(value: unknown): value is Role {
+  return typeof value === "string" && (ROLES as readonly string[]).includes(value);
+}
