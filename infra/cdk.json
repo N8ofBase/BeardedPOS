@@ -1,0 +1,9 @@
+{
+  "app": "npx tsx bin/app.ts",
+  "context": {
+    "domainName": "prismcortex.net",
+    "demoSubdomain": "petpos-demo",
+    "siteDir": ".site",
+    "budgetMonthlyUsd": 5
+  }
+}
