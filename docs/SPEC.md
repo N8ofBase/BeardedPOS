@@ -26,7 +26,7 @@ One web app runs the store's register, inventory, customer and pet records, groo
 **Scope by phase**
 
 1. Foundation: products, inventory, customers, pets, staff login
-2. POS: checkout with Stripe Terminal, receipts, refunds, Astro queue
+2. POS: checkout with Square Terminal, receipts, refunds, Astro queue
 3. Grooming: services, groomer schedules, calendar, check-in to POS
 4. Online booking: public booking page, deposits, email and text reminders
 5. Growth: purchase orders, reports, live Astro API once credentials arrive
@@ -39,13 +39,13 @@ A serverless web app on AWS: the browser loads a static app, every action goes t
 
 &#91;embedded content: system architecture · 4 zones\]
 
-The card reader talks to Stripe directly; the POS only creates the payment and records the result, so card numbers never touch your servers.
+The Square Terminal talks to Square directly; the POS only creates the payment and records the result, so card numbers never touch your servers.
 
 - **Front end:** React + TypeScript, one app with staff and public booking routes; installable as a PWA on the counter tablet
 - **API:** API Gateway HTTP API + Lambda (Node.js, TypeScript); one Lambda per area (sales, inventory, booking) sharing a data layer
 - **Database:** RDS Postgres in private subnets; migrations in the repo, run on deploy
 - **Auth:** Cognito user pool with groups per role; customers sign in with a one-time code
-- **Payments:** Stripe Terminal (server-driven) for the counter, Stripe Checkout for deposits, webhooks into Lambda
+- **Payments:** Square Terminal API (server-driven) with a Square Terminal at the counter, Square Payment Links (Checkout API) for deposits, Square webhooks into Lambda. The Square Reader only works with native iOS/Android apps, not a web app, so the counter uses a Square Terminal
 - **Background work:** EventBridge Scheduler for reminders, SQS for Astro sends and webhooks
 - **Infrastructure:** AWS CDK, separate dev and prod stacks; GitHub Actions deploys on merge
 
@@ -70,7 +70,7 @@ Postgres, one schema. Money is stored as integer cents. Every table has `id` (UU
 | grooming\_notes | appointment\_id, staff\_id, note, photo\_keys | Shows on the pet's history |
 | sales | customer\_id, staff\_id, status, subtotal, discount, tax, total, payment\_method | Open ticket until paid |
 | sale\_lines | sale\_id, product\_id or appointment\_id, qty, unit\_price\_cents, discount\_cents | Services and retail on one ticket |
-| payments | sale\_id, provider (stripe, cash), provider\_ref, amount\_cents, status, refunded\_cents | Never stores card numbers |
+| payments | sale\_id, provider (square, cash), provider\_ref, amount\_cents, status, refunded\_cents | Never stores card numbers |
 | astro\_programs | name, brand, buy\_count, reward\_text, astro\_program\_ref | Mirrors programs the store joined in Astro |
 | astro\_punches | customer\_id, program\_id, sale\_id, qty, kind (earn, redeem) | Running balance per customer per program |
 | astro\_queue | sale\_id, payload (JSON), status (pending, entered, sent, failed), attempts, error | The bridge to Astro, see Astro section |
@@ -88,7 +88,7 @@ Staff screens use a Shopify-like admin layout: left sidebar, page title with one
 - Product grid with category tabs and search; customer lookup by phone number
 - Ticket shows retail items and grooming services together; checking out an appointment pulls its service onto the ticket
 - Astro panel on the ticket: punches earned this sale, rewards ready to redeem, offers that apply to items in the cart
-- Pay by Stripe Terminal card reader, cash (with change due), or split; deposits already paid are applied automatically
+- Pay by Square Terminal, cash (with change due), or split; deposits already paid are applied automatically
 - Receipt by email or text; optional thermal printer later
 - Refund and void, manager approval above a set amount, every one written to the audit log
 - End of day: drawer count, card total, cash total, over/short
@@ -123,7 +123,7 @@ Staff screens use a Shopify-like admin layout: left sidebar, page title with one
 
 - Customer picks pet, service, groomer (or any), and an open slot
 - New customers create an account by phone or email with a one-time code
-- Deposit collected with Stripe Checkout for new customers or chosen services
+- Deposit collected with a Square payment link for new customers or chosen services
 - Confirmation, day-before reminder, and a rebook nudge after a set number of weeks
 - Cancel or reschedule from a link, up to a cutoff the store sets
 
@@ -201,7 +201,7 @@ Running cost is about **$40 a month** for one store, plus card processing. A com
 | --- | --- | --- |
 | RDS Postgres db.t4g.micro | $12 | [source](https://www.bytebase.com/dbcost/rds/instance/db.t4g.micro/); move to t4g.small (\~$24) if it feels slow |
 | RDS storage + backups, 20 GB | \~$3 | Backups up to the database size are included |
-| NAT instance (t4g.nano) + public IPv4 | \~$7 | Lets Lambdas in the private network reach Stripe and Astro. A managed NAT Gateway costs \~$33+, so avoid it |
+| NAT instance (t4g.nano) + public IPv4 | \~$7 | Lets Lambdas in the private network reach Square and Astro. A managed NAT Gateway costs \~$33+, so avoid it |
 | Lambda, API Gateway, SQS, EventBridge Scheduler | \~$1–3 | A single store stays near the free-tier range |
 | Amplify Hosting or S3 + CloudFront | \~$1–2 |  |
 | Cognito | $0 | Staff and customer logins well under the free allowance |
@@ -212,12 +212,12 @@ Running cost is about **$40 a month** for one store, plus card processing. A com
 | CloudWatch logs and alarms | \~$3 |  |
 | Domain + Route 53 | \~$2 |  |
 | **Total infrastructure** | **\~$40** |  |
-| Stripe in-person cards | 2.7% + 5¢ per sale | [source](https://www.nerdwallet.com/business/software/learn/stripe-fees); $30,000 in card sales ≈ $860. Commercial POS systems charge similar rates |
+| Square in-person cards | 2.6% + 15¢ per sale (Free plan) | [source](https://www.posusa.com/square-fees-pricing/); $30,000 in card sales at a $30 average ticket ≈ $930. Online deposits are 3.3% + 30¢. Confirm at squareup.com/pricing |
 | Astro Loyalty | Store's existing plan | Same cost whichever POS they use |
 
 **One-time costs**
 
-- Card reader: Stripe Reader M2 $59, or WisePOS E $249 with its own screen ([source](https://www.nerdwallet.com/business/software/learn/stripe-fees))
+- Card reader: Square Terminal $299, or about $27/month over 12 months ([source](https://www.posusa.com/square-fees-pricing/)). The $59 Square Reader won't work with this web app
 - USB barcode scanner \~$30–60, cash drawer \~$80–120, receipt printer optional
 - 10DLC SMS registration: about $60–70 in one-time fees, plus a few weeks for carrier approval, so start it in Phase 1
 
@@ -232,13 +232,13 @@ Build one phase at a time, each ending with something the store can use. The wor
 - Keep this spec as `SPEC.md` in the repo root and a `CLAUDE.md` with stack choices, folder layout, money-in-cents rule, and test commands
 - One feature per session: give the section of the spec, ask for a plan first, then the code and tests
 - Infrastructure as code with AWS CDK in TypeScript, so dev and prod are identical and rebuildable
-- Two environments: `dev` on your account with Stripe test mode, `prod` for the store
+- Two environments: `dev` on your account with the Square Sandbox, `prod` for the store
 
 **Phase checklist**
 
-- [ ] Week 1: contact Astro about partner API access; start 10DLC registration; order a Stripe reader
+- [ ] Week 1: contact Astro about partner API access; start 10DLC registration; order a Square Terminal
 - [ ] Phase 1: repo, CDK stack, Cognito roles, products, inventory, customers, pets, CSV import
-- [ ] Phase 2: POS checkout, Stripe Terminal, cash drawer, receipts, refunds, Astro queue, end-of-day report
+- [ ] Phase 2: POS checkout, Square Terminal, cash drawer, receipts, refunds, Astro queue, end-of-day report
 - [ ] Phase 3: services, groomer schedules, calendar, check-in to POS, back-bar consumption
 - [ ] Phase 4: public booking page, deposits, email and text reminders, rebook nudges
 - [ ] Phase 5: purchase orders, reports, live Astro API
@@ -246,7 +246,7 @@ Build one phase at a time, each ending with something the store can use. The wor
 **Before go-live**
 
 - [ ] Seed staging with records marked (DEMO) for training, with a one-step "remove demo data" that deletes only those; then import real products and customers and spot-check 20 barcodes at the counter
-- [ ] Ring 50 test sales in Stripe test mode, including refunds, splits and Astro rewards
+- [ ] Ring 50 test sales in the Square Sandbox, including refunds, splits and Astro rewards
 - [ ] Offline plan: if the internet drops, the reader takes no cards. Keep a paper sale log and cash-only fallback; consider a cellular hotspot
 - [ ] Daily automated database backups, plus a monthly restore test into dev
 - [ ] CloudWatch alarms emailed to you: API errors, database CPU and storage, failed Astro sends
@@ -256,5 +256,5 @@ Build one phase at a time, each ending with something the store can use. The wor
 
 - Agree with the owner in writing: response time for outages, what's included, and your monthly fee
 - Patch dependencies monthly; keep the RDS engine on a supported version
-- Owner gets admin access to the AWS account and Stripe, so the store isn't locked out if you're unavailable
+- Owner gets admin access to the AWS account and Square, so the store isn't locked out if you're unavailable
 - Keep a short runbook: how to restart, restore a backup, re-pair a card reader, and rotate keys

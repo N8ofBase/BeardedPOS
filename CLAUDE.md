@@ -11,14 +11,14 @@ Point of sale, inventory, customers and pets, grooming calendar and online booki
 - API: API Gateway HTTP API + Lambda (Node.js 20, TypeScript). One Lambda per area (sales, inventory, customers, grooming, booking, import) sharing a data layer in `packages/core`.
 - Database: RDS Postgres in private subnets. Migrations live in `packages/db/migrations` and run on deploy.
 - Auth: Cognito user pool with groups `owner`, `manager`, `cashier`, `groomer`. Customers sign in with a one-time code.
-- Payments: Stripe Terminal (server-driven) at the counter, Stripe Checkout for booking deposits, webhooks into Lambda.
+- Payments: Square Terminal API (server-driven, Square Terminal device) at the counter, Square Payment Links (Checkout API) for booking deposits, Square webhooks into Lambda (verify the signature). Square Reader does not work from a web app; don't use it. Test in the Square Sandbox.
 - Background work: EventBridge Scheduler (reminders), SQS (Astro sends, webhooks).
 - Infrastructure: AWS CDK in TypeScript, stacks `dev` and `prod`. Never deploy to `prod` unless asked.
 
 ## Rules
 
 - Money is always integer cents. Never use floats for money.
-- Never store card numbers or card data. Stripe holds them; we store Stripe ids and amounts.
+- Never store card numbers or card data. Square holds them; we store Square ids and amounts.
 - Phone numbers are stored normalized to 10 digits; format only for display. Customers match on phone, then email.
 - Appointments use a Postgres exclusion constraint on `(staff_id, tstzrange(starts_at, ends_at + buffer))` so a groomer can't be double-booked.
 - Every refund, void, price change and customer delete writes to `audit_log`.
