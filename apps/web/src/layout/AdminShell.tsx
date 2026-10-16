@@ -1,11 +1,12 @@
-import { Navigate, NavLink, Route, Routes } from "react-router";
+import { Navigate, NavLink, Route, Routes, useLocation } from "react-router";
+import { ErrorBoundary } from "../ui/ErrorBoundary.tsx";
 import { ROLE_LABEL } from "@pet-pos/core";
 import type { Me } from "@pet-pos/api";
 import { AstroPage } from "../pages/AstroPage.tsx";
 import { ComingSoon } from "../pages/ComingSoon.tsx";
 import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
-import { Settings } from "../pages/Settings.tsx";
+import { SettingsRoutes } from "../pages/Settings.tsx";
 import { DemoBanner } from "./DemoBanner.tsx";
 import { navFor } from "./nav.ts";
 
@@ -34,10 +35,11 @@ const PAGES: Record<string, () => React.ReactNode> = {
     </ComingSoon>
   ),
   "/astro": () => <AstroPage />,
-  "/settings": () => <Settings />,
+  "/settings": () => <SettingsRoutes />,
 };
 
 export function AdminShell({ me, onSwitchRole, onResetDemo }: Props) {
+  const location = useLocation();
   const nav = navFor(me.staff.role);
   const home = nav[0]?.path ?? "/settings";
 
@@ -64,12 +66,14 @@ export function AdminShell({ me, onSwitchRole, onResetDemo }: Props) {
         </div>
       </nav>
       <main className="main">
-        <Routes>
-          {nav.map((n) => (
-            <Route key={n.path} path={`${n.path}/*`} element={PAGES[n.path]?.()} />
-          ))}
-          <Route path="*" element={<Navigate to={home} replace />} />
-        </Routes>
+        <ErrorBoundary resetKey={location.pathname}>
+          <Routes>
+            {nav.map((n) => (
+              <Route key={n.path} path={`${n.path}/*`} element={PAGES[n.path]?.()} />
+            ))}
+            <Route path="*" element={<Navigate to={home} replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
     </div>
   );

@@ -73,6 +73,7 @@ export interface ProductsTable {
   astro_offer_label: string | null;
   astro_offer_cents: number | null;
   active: Generated<boolean>;
+  import_batch_id: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -131,6 +132,7 @@ export interface CustomersTable {
   sms_opt_in: Generated<boolean>;
   notes: string | null;
   astro_customer_id: string | null;
+  import_batch_id: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -153,6 +155,7 @@ export interface PetsTable {
   temperament: string | null;
   allergies: string | null;
   vet_name: string | null;
+  import_batch_id: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -180,6 +183,7 @@ export interface AstroPunchesTable {
   sale_id: string | null;
   qty: number;
   kind: PunchKind;
+  import_batch_id: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
 }
@@ -189,6 +193,41 @@ export interface AstroBalancesView {
   customer_id: string;
   program_id: string;
   balance: number;
+}
+
+export type ImportType = "customers" | "pets" | "products" | "programs" | "punches";
+export type ImportEntity = "customer" | "pet" | "vaccination" | "product" | "program" | "punch" | "stock";
+export type ImportOp = "created" | "updated" | "deleted" | "moved";
+
+export interface ImportBatchesTable {
+  id: Generated<string>;
+  business_id: string;
+  type: ImportType;
+  file_name: string;
+  staff_id: string | null;
+  status: Generated<"running" | "done" | "undone">;
+  total_rows: Generated<number>;
+  created: Generated<number>;
+  updated: Generated<number>;
+  skipped: Generated<number>;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+  finished_at: Date | null;
+  undone_at: Date | null;
+}
+
+export interface ImportChangesTable {
+  id: Generated<string>;
+  business_id: string;
+  batch_id: string;
+  seq: Generated<string>;
+  entity: ImportEntity;
+  entity_id: string;
+  op: ImportOp;
+  before: Json<Record<string, unknown>> | null;
+  after: Json<Record<string, unknown>> | null;
+  created_at: CreatedAt;
 }
 
 export interface DemoSeedPartsTable {
@@ -215,6 +254,8 @@ export interface DB {
   astro_punches: AstroPunchesTable;
   astro_balances: AstroBalancesView;
   demo_seed_parts: DemoSeedPartsTable;
+  import_batches: ImportBatchesTable;
+  import_changes: ImportChangesTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

@@ -22,6 +22,15 @@ import {
   saveVaccinations,
   searchCustomers,
 } from "./handlers/customers.ts";
+import {
+  finishImport,
+  importChunk,
+  listImports,
+  previewImport,
+  startImport,
+  undoImport,
+  undoPreview,
+} from "./handlers/import.ts";
 import { listStaff, me } from "./handlers/staff.ts";
 
 /** Every handler by name. The demo transport and (in 1f) the Lambda adapters both dispatch through here. */
@@ -45,6 +54,13 @@ export const handlers = {
   saveVaccinations,
   deletePreview,
   deleteCustomer,
+  previewImport,
+  startImport,
+  importChunk,
+  finishImport,
+  listImports,
+  undoPreview,
+  undoImport,
 };
 
 export type Handlers = typeof handlers;

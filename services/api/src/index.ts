@@ -10,6 +10,9 @@ export type {
   SaveProductInput,
 } from "./handlers/inventory.ts";
 export type { ProgramRow, SaveProgramInput } from "./handlers/astro.ts";
+export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";
+export type { ImportResult, RowOutcome } from "./import/engine.ts";
+export type { UndoResult } from "./import/undo.ts";
 export type {
   CustomerCard,
   CustomerProfile,

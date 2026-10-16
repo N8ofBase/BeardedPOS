@@ -59,4 +59,5 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - `infra` — CDK app (`DemoSite` now).
 - New tables: a numbered migration with `business_id`, `is_demo`, row-level security enabled and forced, a policy on `current_business_id()`, and an `updated_at` trigger. Add the Kysely type in `schema.ts`. Use `(business_id, id)` foreign keys so rows can't point across businesses. Append-only tables: `REVOKE UPDATE, DELETE … FROM pos_app`.
 - Migrations are loaded with `import.meta.glob`, which Vite caches: after adding a migration file, restart `npm run dev`, and delete `node_modules/.vitest-cache` if tests don't see the new table.
+- Editing files from Windows PowerShell 5.1: `Get-Content` reads UTF-8 as Windows-1252 and corrupts "·", "—", "…". Use the editor tools, or `[IO.File]::ReadAllText(path, [Text.UTF8Encoding]::new($false))`. `services/api/test/encoding.test.ts` catches it.
 - New demo data: add a part to `ensureDemo` in `packages/db/seed/demo.ts` through `once(...)`, so existing demo browsers get it once.

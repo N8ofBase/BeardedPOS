@@ -1,6 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { ROLE_LABEL } from "@pet-pos/core";
+import { Link, Route, Routes } from "react-router";
+import { can, ROLE_LABEL } from "@pet-pos/core";
 import { useSession } from "../session.tsx";
+import { ImportPage } from "./settings/ImportPage.tsx";
+
+export function SettingsRoutes() {
+  return (
+    <Routes>
+      <Route index element={<Settings />} />
+      <Route path="import" element={<ImportPage />} />
+    </Routes>
+  );
+}
 
 /** Tax rate in basis points → "7%", "8.25%". */
 export function formatTaxRate(bp: number): string {
@@ -38,6 +49,19 @@ export function Settings() {
           Editing the store name, logo, colors and tax rate comes with the rest of Settings.
         </p>
       </section>
+
+      {can(me.staff.role, "import.run") && (
+        <section className="panel">
+          <h2>Bulk import</h2>
+          <p className="muted">
+            Load customers and pets, products, Astro programs and punch balances from a CSV or Excel file. You
+            see a preview before anything is saved, and any import can be undone.
+          </p>
+          <div>
+            <Link to="import">Import a file</Link>
+          </div>
+        </section>
+      )}
 
       <section className="panel">
         <h2>Staff</h2>

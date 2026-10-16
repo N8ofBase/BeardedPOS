@@ -442,6 +442,27 @@ th.r {
   font-weight: 700;
 }
 
+/* Counts (from the prototype) */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.kpi {
+  background: var(--sunk);
+  border-radius: 10px;
+  padding: 0.7rem;
+}
+.kpi b {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.4rem;
+}
+details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
 /* Customers (from the prototype) */
 .cards {
   display: grid;
