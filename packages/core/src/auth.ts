@@ -22,6 +22,7 @@ const PERMISSIONS = {
   "grooming.view": ["owner", "manager", "cashier", "groomer"],
   "sales.view": ["owner", "manager"],
   "astro.view": ["owner", "manager", "cashier"],
+  "astro.edit": ["owner", "manager"],
   "settings.view": ["owner", "manager"],
   "settings.edit": ["owner"],
   "staff.view": ["owner", "manager", "cashier", "groomer"],

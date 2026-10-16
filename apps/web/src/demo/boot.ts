@@ -1,5 +1,5 @@
 import type { Kysely } from "kysely";
-import { createDb, hasDemoData, migrate, seedDemo, type DB } from "@pet-pos/db";
+import { createDb, ensureDemo, migrate, type DB } from "@pet-pos/db";
 import { WorkerDbClient } from "./db-client.ts";
 import { DEMO_DATA_DIR } from "./protocol.ts";
 
@@ -34,7 +34,7 @@ async function start(): Promise<DemoRuntime> {
   await client.open(DEMO_DATA_DIR);
   await migrate(client);
   const db = createDb(client);
-  if (!(await hasDemoData(db))) await seedDemo(db);
+  await ensureDemo(db);
 
   return {
     db,

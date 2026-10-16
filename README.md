@@ -6,7 +6,7 @@ Register, inventory, customers and pets, grooming calendar and booking, and Astr
 - `docs/prototype.html` — working prototype; open it in a browser to see the screens and flows
 - `CLAUDE.md` — instructions Claude Code reads at the start of every session
 
-Status: Phase 1 in progress. Session 1a (scaffold and demo mode) is done; the demo is live at https://petpos-demo.prismcortex.net.
+Status: Phase 1 in progress. Sessions 1a (scaffold and demo mode), 1b (products and inventory) and 1c (customers and pets) are done; the demo is live at https://petpos-demo.prismcortex.net. Next: 1d (bulk import) and 1e (demo data and settings).
 
 ## Run it
 

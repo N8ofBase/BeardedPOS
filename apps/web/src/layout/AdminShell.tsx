@@ -1,7 +1,10 @@
 import { Navigate, NavLink, Route, Routes } from "react-router";
 import { ROLE_LABEL } from "@pet-pos/core";
 import type { Me } from "@pet-pos/api";
+import { AstroPage } from "../pages/AstroPage.tsx";
 import { ComingSoon } from "../pages/ComingSoon.tsx";
+import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
+import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
 import { Settings } from "../pages/Settings.tsx";
 import { DemoBanner } from "./DemoBanner.tsx";
 import { navFor } from "./nav.ts";
@@ -23,26 +26,14 @@ const PAGES: Record<string, () => React.ReactNode> = {
       Day and week calendar per groomer, check-in, and sending a finished groom to the register.
     </ComingSoon>
   ),
-  "/inventory": () => (
-    <ComingSoon title="Inventory" phase={1}>
-      Products with on-hand counts, reorder points and margins; receive stock and count with a phone.
-    </ComingSoon>
-  ),
-  "/customers": () => (
-    <ComingSoon title="Customers & pets" phase={1}>
-      Look up customers by phone, keep each pet's breed, birthday and vaccinations, and see punch cards.
-    </ComingSoon>
-  ),
+  "/inventory": () => <InventoryRoutes />,
+  "/customers": () => <CustomersRoutes />,
   "/sales": () => (
     <ComingSoon title="Sales" phase={2}>
       Today's sales by payment type, refunds and the end-of-day drawer count.
     </ComingSoon>
   ),
-  "/astro": () => (
-    <ComingSoon title="Astro Loyalty" phase={1}>
-      Frequent buyer programs and the queue of sales to enter in the Astro retailer portal.
-    </ComingSoon>
-  ),
+  "/astro": () => <AstroPage />,
   "/settings": () => <Settings />,
 };
 
@@ -75,7 +66,7 @@ export function AdminShell({ me, onSwitchRole, onResetDemo }: Props) {
       <main className="main">
         <Routes>
           {nav.map((n) => (
-            <Route key={n.path} path={n.path} element={PAGES[n.path]?.()} />
+            <Route key={n.path} path={`${n.path}/*`} element={PAGES[n.path]?.()} />
           ))}
           <Route path="*" element={<Navigate to={home} replace />} />
         </Routes>

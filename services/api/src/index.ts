@@ -1,3 +1,23 @@
 export { handlers, invoke, type HandlerName, type InputOf, type OutputOf } from "./registry.ts";
 export { defineHandler, type Handler } from "./handler.ts";
 export type { Me, StaffListItem } from "./handlers/staff.ts";
+export type {
+  CountLine,
+  CountResult,
+  ListProductsInput,
+  MoveRow,
+  ProductRow,
+  SaveProductInput,
+} from "./handlers/inventory.ts";
+export type { ProgramRow, SaveProgramInput } from "./handlers/astro.ts";
+export type {
+  CustomerCard,
+  CustomerProfile,
+  DeletePreview,
+  PetDetail,
+  PetDetailsInput,
+  PetRowInput,
+  PetSummary,
+  PunchCard,
+  Vaccination,
+} from "./handlers/customers.ts";

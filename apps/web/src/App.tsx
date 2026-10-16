@@ -16,14 +16,16 @@ export function App() {
   useEffect(() => {
     bootDemo().then(
       (rt) => setBoot({ state: "ready", rt }),
-      (err: unknown) =>
+      (err: unknown) => {
+        console.error("Demo startup failed", err);
         setBoot({
           state: "error",
           message:
             err instanceof OtherTabError
               ? err.message
               : "The demo couldn't start in this browser. Try reloading, or use a current version of Chrome, Edge or Safari.",
-        }),
+        });
+      },
     );
   }, []);
 

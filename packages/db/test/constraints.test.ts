@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { hasDemoData, listDemoStaff, seedDemo } from "../seed/demo.ts";
+import { PGlite } from "@electric-sql/pglite";
+import { ensureDemo, hasDemoData, listDemoStaff, seedDemo } from "../seed/demo.ts";
+import { createDb } from "../src/index.ts";
+import { migrate, MIGRATIONS } from "../src/migrate.ts";
+import { PGLITE_PARSERS } from "../src/parsers.ts";
 import { createTestDb, insertBusiness } from "../src/test-db.ts";
 
 let db: Awaited<ReturnType<typeof createTestDb>>["db"];
@@ -49,6 +53,36 @@ describe("staff constraints", () => {
 
   it("refuses a bad business slug", async () => {
     await expect(insertBusiness(db, "Not A Slug")).rejects.toThrow(/check constraint/);
+  });
+});
+
+describe("upgrading a demo browser from session 1a", () => {
+  it("adds the new tables and sample data on top of the old database", async () => {
+    const pg = new PGlite({ parsers: PGLITE_PARSERS });
+    await migrate(pg, MIGRATIONS.slice(0, 2));
+    const old = createDb(pg);
+    // What 1a's seed created: the business, a location and staff only.
+    const biz = await old
+      .insertInto("businesses")
+      .values({ name: "Sample Pet Store (DEMO)", slug: "sample-pet-store-demo", is_demo: true })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await old
+      .insertInto("locations")
+      .values({ business_id: biz.id, name: "Main store (DEMO)", is_demo: true })
+      .execute();
+    await old
+      .insertInto("staff")
+      .values({ business_id: biz.id, name: "Sample Owner (DEMO)", role: "owner", is_demo: true })
+      .execute();
+
+    expect(await migrate(pg)).toEqual(MIGRATIONS.slice(2).map((m) => m.name));
+    expect(await ensureDemo(old)).toBe(biz.id);
+    const count = async (t: "products" | "customers" | "pets") =>
+      (await old.selectFrom(t).select("id").where("business_id", "=", biz.id).execute()).length;
+    expect(await count("products")).toBe(4);
+    expect(await count("customers")).toBe(3);
+    expect(await count("pets")).toBe(5);
   });
 });
 

@@ -57,4 +57,6 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - `services/api` — handlers `(trx, ctx, input)` and the `invoke` registry. Add new handlers to `src/registry.ts`.
 - `apps/web` — React app. `src/demo/` runs PGlite in a worker; `src/api/client.ts` is the only way screens reach handlers.
 - `infra` — CDK app (`DemoSite` now).
-- New tables: a numbered migration with `business_id`, `is_demo`, row-level security enabled and forced, a policy on `current_business_id()`, and an `updated_at` trigger. Add the Kysely type in `schema.ts`.
+- New tables: a numbered migration with `business_id`, `is_demo`, row-level security enabled and forced, a policy on `current_business_id()`, and an `updated_at` trigger. Add the Kysely type in `schema.ts`. Use `(business_id, id)` foreign keys so rows can't point across businesses. Append-only tables: `REVOKE UPDATE, DELETE … FROM pos_app`.
+- Migrations are loaded with `import.meta.glob`, which Vite caches: after adding a migration file, restart `npm run dev`, and delete `node_modules/.vitest-cache` if tests don't see the new table.
+- New demo data: add a part to `ensureDemo` in `packages/db/seed/demo.ts` through `once(...)`, so existing demo browsers get it once.

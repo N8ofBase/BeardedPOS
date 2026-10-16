@@ -219,6 +219,358 @@ button:disabled {
   z-index: 10;
 }
 
+/* Forms */
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+}
+label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+label.check input {
+  width: auto;
+  min-height: 0;
+}
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+.field-error {
+  color: var(--bad);
+  font-size: 0.82rem;
+}
+[aria-invalid="true"] {
+  border-color: var(--bad);
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.toolbar input,
+.toolbar select {
+  width: auto;
+  flex: 1 1 160px;
+  max-width: 260px;
+}
+.error-box {
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.92rem;
+}
+
+/* Tables */
+.tablewrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.92rem;
+}
+/* Wide tables scroll sideways on phones instead of squeezing names into one-word lines. */
+table.wide {
+  min-width: 720px;
+}
+th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+tr:last-child td {
+  border-bottom: 0;
+}
+td.r,
+th.r {
+  text-align: right;
+}
+.num,
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+.mono {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+.sub {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Tags (from the prototype) */
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 99px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.tag.astro {
+  background: var(--astro-soft);
+  color: var(--astro);
+}
+.tag.low {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.tag.out {
+  background: var(--bad);
+  color: var(--surface);
+}
+.tag.ok {
+  background: var(--sunk);
+  color: var(--good);
+}
+.tag.muted {
+  background: var(--sunk);
+  color: var(--muted);
+}
+.note {
+  background: var(--astro-soft);
+  border-radius: 10px;
+  padding: 0.8rem;
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+  max-width: 75ch;
+}
+
+/* Slide-over panel */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.25);
+  z-index: 9;
+}
+.slideover {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.slideover .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--fg);
+  color: var(--bg);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  z-index: 20;
+  max-width: calc(100vw - 32px);
+}
+
+/* Count mode */
+.count-scan {
+  display: flex;
+  gap: 8px;
+}
+.count-lines {
+  display: grid;
+  gap: 8px;
+}
+.count-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px auto;
+  gap: 8px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.diff.up {
+  color: var(--good);
+  font-weight: 700;
+}
+.diff.down {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+/* Customers (from the prototype) */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 10px;
+}
+.ccard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.ccard .top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.small {
+  font-size: 0.88rem;
+}
+.petchip {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  font-size: 0.85rem;
+  background: var(--sunk);
+  border-radius: 99px;
+  padding: 0.15rem 0.6rem;
+  margin: 0 4px 4px 0;
+}
+.petchip .k {
+  color: var(--muted);
+}
+.punch {
+  display: inline-flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  vertical-align: middle;
+}
+.punch i {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid var(--astro);
+}
+.punch i.on {
+  background: var(--astro);
+}
+.astro-name {
+  color: var(--astro);
+  font-weight: 700;
+}
+.petrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: end;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+.petrow > label {
+  flex: 1 1 150px;
+}
+.ptype {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.ptype legend {
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0;
+  margin-bottom: 4px;
+}
+.ptype label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--fg);
+  cursor: pointer;
+  min-height: 40px;
+}
+.ptype label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--sunk);
+  font-weight: 700;
+}
+.ptype input {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.panel.danger {
+  border: 2px solid var(--bad);
+}
+button.dangerbtn {
+  background: var(--bad);
+  color: var(--surface);
+  border-color: var(--bad);
+  font-weight: 700;
+}
+.warn-line {
+  color: var(--bad);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.vacc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+.vacc-row label {
+  flex: 1 1 150px;
+}
+
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
