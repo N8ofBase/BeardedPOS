@@ -1,0 +1,19 @@
+# dependencies and builds
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+# AWS CDK
+cdk.out/
+cdk.context.json
+# secrets and local env (never commit these)
+.env
+.env.*
+!.env.example
+*.pem
+# editors and OS
+.DS_Store
+.vscode/
+.idea/
+*.log
