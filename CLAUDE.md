@@ -46,3 +46,4 @@ Point of sale, inventory, customers and pets, grooming calendar and online booki
 - `npm run dev` — web app in demo mode
 - `npm test` — unit and database tests
 - `npx cdk deploy DemoSite` — deploy the demo site
+- `npm run deploy:prototype` — works now: uploads `docs/prototype.html` to https://petpos-demo.prismcortex.net (until 1a replaces it)

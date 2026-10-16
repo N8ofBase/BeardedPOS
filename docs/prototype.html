@@ -3,6 +3,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
+/* The hidden attribute must win over display rules like .panel{display:grid} */
+[hidden]{display:none !important}
 /* Layout: register-first tool — tab bar, product grid beside a sticky ticket; stacks on phones */
 :root{
   --bg:#f3f5f4; --surface:#ffffff; --sunk:#e8ecea; --fg:#18211e; --muted:#5d6a65; --line:#d3dbd7;
