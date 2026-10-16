@@ -31,12 +31,20 @@ import {
   undoImport,
   undoPreview,
 } from "./handlers/import.ts";
-import { listStaff, me } from "./handlers/staff.ts";
+import { demoDataPreview, removeDemoData } from "./handlers/demo.ts";
+import { getSettings, updateSettings } from "./handlers/settings.ts";
+import { addStaff, listStaff, me, updateStaff } from "./handlers/staff.ts";
 
 /** Every handler by name. The demo transport and (in 1f) the Lambda adapters both dispatch through here. */
 export const handlers = {
   me,
   listStaff,
+  addStaff,
+  updateStaff,
+  getSettings,
+  updateSettings,
+  demoDataPreview,
+  removeDemoData,
   listProducts,
   findByCode,
   getProduct,

@@ -4,17 +4,11 @@ import { MemoryRouter } from "react-router";
 import type { Role } from "@pet-pos/core";
 import type { Me } from "@pet-pos/api";
 import { AdminShell } from "../src/layout/AdminShell.tsx";
-import { formatTaxRate } from "../src/pages/Settings.tsx";
+import { meFor } from "./render.tsx";
 
 afterEach(cleanup);
 
-function me(role: Role): Me {
-  return {
-    staff: { id: "s1", name: `Sample ${role} (DEMO)`, role },
-    business: { id: "b1", name: "Sample Pet Store (DEMO)", brandColor: null, modules: {} },
-    location: { id: "l1", name: "Main store (DEMO)", taxRateBp: 700 },
-  };
-}
+const me = (role: Role): Me => meFor(role);
 
 function navLabels(role: Role, path = "/") {
   render(
@@ -59,11 +53,19 @@ describe("AdminShell", () => {
   });
 });
 
-describe("formatTaxRate", () => {
-  it("formats basis points", () => {
-    expect(formatTaxRate(0)).toBe("0%");
-    expect(formatTaxRate(700)).toBe("7%");
-    expect(formatTaxRate(825)).toBe("8.25%");
-    expect(formatTaxRate(650)).toBe("6.5%");
+describe("sidebar branding", () => {
+  it("shows the logo and uses readable text on the brand color", () => {
+    const m = meFor("owner");
+    m.business.brandColor = "#ffeb3b";
+    m.business.logo = "data:image/png;base64,AAAA";
+    render(
+      <MemoryRouter>
+        <AdminShell me={m} onSwitchRole={vi.fn()} onResetDemo={vi.fn(async () => {})} />
+      </MemoryRouter>,
+    );
+    const header = screen.getByTestId("store-header");
+    expect(header.style.background).toMatch(/#ffeb3b|rgb\(255, 235, 59\)/);
+    expect(header.style.color).toMatch(/#18211e|rgb\(24, 33, 30\)/);
+    expect(screen.getByRole("img", { name: "Sample Pet Store (DEMO) logo" })).toBeTruthy();
   });
 });

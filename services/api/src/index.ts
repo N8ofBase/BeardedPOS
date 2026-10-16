@@ -1,6 +1,8 @@
 export { handlers, invoke, type HandlerName, type InputOf, type OutputOf } from "./registry.ts";
 export { defineHandler, type Handler } from "./handler.ts";
-export type { Me, StaffListItem } from "./handlers/staff.ts";
+export type { Me, StaffInput, StaffListItem } from "./handlers/staff.ts";
+export { MAX_LOGO_CHARS, type SettingsInput, type StoreSettings } from "./handlers/settings.ts";
+export type { DemoCounts } from "./handlers/demo.ts";
 export type {
   CountLine,
   CountResult,

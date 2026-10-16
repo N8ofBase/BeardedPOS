@@ -13,6 +13,8 @@ export interface BusinessesTable {
   slug: string;
   brand_color: string | null;
   logo_key: string | null;
+  /** data:image/… URL, demo mode only (hosted uses logo_key in S3). */
+  logo_data: string | null;
   modules: Json<Record<string, boolean>>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
@@ -24,7 +26,8 @@ export interface LocationsTable {
   business_id: string;
   name: string;
   timezone: Generated<string>;
-  tax_rate_bp: Generated<number>;
+  /** Thousandths of a percent: 8.875% = 8875. */
+  tax_rate_mpct: Generated<number>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;

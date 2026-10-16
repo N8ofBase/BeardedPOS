@@ -1,6 +1,12 @@
 # Phase 1 plan: foundation
 
-Status: **approved 2026-10-15.** Build sessions 1a–1e run in order (1b and 1c can run in parallel).
+Status: **1a–1e done 2026-10-16** (see each session's plan for what changed). 1f (hosted mode) is on hold until the owner, or a first paying client, says yes.
+
+Things 1f must handle, found while building 1a–1e:
+- Import preview sends the whole file in one request. Lambda's 6 MB request limit means preview has to go in chunks too.
+- Logos are stored in `businesses.logo_data` (demo). Move them to S3 (`logo_key`).
+- Remove-demo-data keeps the (DEMO) sign-ins because they're the demo's only way in. Hosted stores have real Cognito staff instead.
+- The role picker (`listDemoStaff`) is demo-only. Replace it with Cognito sign-in.
 
 Spec scope (`docs/SPEC.md` → Phase checklist): repo, products, inventory, customers, pets, CSV import, staff roles.
 

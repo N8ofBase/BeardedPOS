@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router";
 import { ErrorBoundary } from "../ui/ErrorBoundary.tsx";
-import { ROLE_LABEL } from "@pet-pos/core";
+import { StoreMark } from "../ui/StoreMark.tsx";
+import { isHexColor, readableOn, ROLE_LABEL } from "@pet-pos/core";
 import type { Me } from "@pet-pos/api";
 import { AstroPage } from "../pages/AstroPage.tsx";
 import { ComingSoon } from "../pages/ComingSoon.tsx";
@@ -41,15 +42,24 @@ const PAGES: Record<string, () => React.ReactNode> = {
 export function AdminShell({ me, onSwitchRole, onResetDemo }: Props) {
   const location = useLocation();
   const nav = navFor(me.staff.role);
+  const brand = isHexColor(me.business.brandColor) ? me.business.brandColor! : "#0f6e5a";
+  const brandText = readableOn(brand);
   const home = nav[0]?.path ?? "/settings";
 
   return (
     <div className="shell">
       <DemoBanner onReset={onResetDemo} />
       <nav className="sidebar" aria-label="Main">
-        <div className="store">
-          <b>{me.business.name}</b>
-          {me.location && <small>{me.location.name}</small>}
+        <div
+          className="store-header store"
+          data-testid="store-header"
+          style={{ background: brand, color: brandText }}
+        >
+          <StoreMark name={me.business.name} logo={me.business.logo} color={brandText} />
+          <span>
+            <b>{me.business.name}</b>
+            {me.location && <small>{me.location.name}</small>}
+          </span>
         </div>
         {nav.map((n) => (
           <NavLink key={n.path} to={n.path}>

@@ -86,6 +86,23 @@ describe("upgrading a demo browser from session 1a", () => {
   });
 });
 
+describe("migration 010", () => {
+  it("converts tax rates from basis points to thousandths of a percent", async () => {
+    const pg = new PGlite({ parsers: PGLITE_PARSERS });
+    const before = MIGRATIONS.findIndex((m) => m.name.startsWith("010_"));
+    await migrate(pg, MIGRATIONS.slice(0, before));
+    const biz = await pg.query<{ id: string }>(
+      "INSERT INTO businesses (name, slug) VALUES ('T', 't') RETURNING id",
+    );
+    await pg.query("INSERT INTO locations (business_id, name, tax_rate_bp) VALUES ($1, 'L', 825)", [
+      biz.rows[0]!.id,
+    ]);
+    await migrate(pg);
+    const { rows } = await pg.query<{ tax_rate_mpct: number }>("SELECT tax_rate_mpct FROM locations");
+    expect(rows).toEqual([{ tax_rate_mpct: 8250 }]);
+  });
+});
+
 describe("demo seed", () => {
   it("creates one business with a staff member per role, all marked demo", async () => {
     expect(await hasDemoData(db)).toBe(false);

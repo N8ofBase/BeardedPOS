@@ -23,7 +23,7 @@ describe("me", () => {
     expect(res.staff).toMatchObject({ name: "Sample Owner (DEMO)", role: "owner" });
     expect(res.business.name).toBe("Sample Pet Store (DEMO)");
     expect(res.business.modules).toEqual({ astro: true, grooming: true });
-    expect(res.location).toMatchObject({ name: "Main store (DEMO)", taxRateBp: 700 });
+    expect(res.location).toMatchObject({ name: "Main store (DEMO)", taxRateMpct: 7000 });
   });
 
   it("refuses a role that doesn't match the staff record", async () => {

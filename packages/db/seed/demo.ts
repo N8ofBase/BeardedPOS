@@ -80,7 +80,7 @@ async function seedBusiness(trx: Transaction<DB>): Promise<string> {
 
   await trx
     .insertInto("locations")
-    .values({ business_id: business.id, name: "Main store (DEMO)", tax_rate_bp: 700, is_demo: true })
+    .values({ business_id: business.id, name: "Main store (DEMO)", tax_rate_mpct: 7000, is_demo: true })
     .execute();
 
   await trx
@@ -355,16 +355,25 @@ export interface DemoStaff {
   role: Role;
 }
 
-/** Demo staff for the role picker. Owner access: only the demo build may call this. */
+/**
+ * Everyone active at the demo store, for the role picker: the four (DEMO) logins first,
+ * then staff added in Settings. Owner access: only the demo build may call this.
+ */
 export async function listDemoStaff(db: Kysely<DB>): Promise<DemoStaff[]> {
   const rows = await db
-    .selectFrom("staff")
-    .select(["id", "business_id", "name", "role"])
-    .where("is_demo", "=", true)
-    .where("active", "=", true)
+    .selectFrom("staff as s")
+    .innerJoin("businesses as b", "b.id", "s.business_id")
+    .select(["s.id", "s.business_id", "s.name", "s.role", "s.is_demo"])
+    .where("b.is_demo", "=", true)
+    .where("s.active", "=", true)
     .execute();
   const order: Role[] = ["owner", "manager", "cashier", "groomer"];
   return rows
-    .map((r) => ({ id: r.id, businessId: r.business_id, name: r.name, role: r.role }))
-    .sort((a, b) => order.indexOf(a.role) - order.indexOf(b.role));
+    .sort(
+      (a, b) =>
+        Number(b.is_demo) - Number(a.is_demo) ||
+        order.indexOf(a.role) - order.indexOf(b.role) ||
+        a.name.localeCompare(b.name),
+    )
+    .map((r) => ({ id: r.id, businessId: r.business_id, name: r.name, role: r.role }));
 }

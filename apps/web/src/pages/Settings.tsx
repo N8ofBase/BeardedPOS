@@ -1,8 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
 import { Link, Route, Routes } from "react-router";
-import { can, ROLE_LABEL } from "@pet-pos/core";
+import {
+  can,
+  formatTaxPercent,
+  parseTaxPercent,
+  readableOn,
+  ROLE_LABEL,
+  ROLES,
+  taxPercentInput,
+  type Role,
+} from "@pet-pos/core";
+import type { DemoCounts, StaffListItem, StoreSettings } from "@pet-pos/api";
 import { useSession } from "../session.tsx";
+import { ConfirmTyped } from "../ui/ConfirmTyped.tsx";
+import { errorMessage, fieldErrors } from "../ui/errors.ts";
+import { SlideOver } from "../ui/SlideOver.tsx";
+import { StoreMark } from "../ui/StoreMark.tsx";
+import { useToast } from "../ui/Toast.tsx";
 import { ImportPage } from "./settings/ImportPage.tsx";
+import { resizeLogo } from "./settings/logo.ts";
 
 export function SettingsRoutes() {
   return (
@@ -13,18 +30,10 @@ export function SettingsRoutes() {
   );
 }
 
-/** Tax rate in basis points → "7%", "8.25%". */
-export function formatTaxRate(bp: number): string {
-  const whole = Math.trunc(bp / 100);
-  const frac = String(bp % 100)
-    .padStart(2, "0")
-    .replace(/0+$/, "");
-  return `${whole}${frac ? `.${frac}` : ""}%`;
-}
-
-export function Settings() {
+function Settings() {
   const { api, me, switchRole } = useSession();
-  const staff = useQuery({ queryKey: ["staff", me.business.id], queryFn: () => api.call("listStaff") });
+  const canEdit = can(me.staff.role, "settings.edit");
+  const settings = useQuery({ queryKey: ["settings"], queryFn: () => api.call("getSettings") });
 
   return (
     <>
@@ -35,20 +44,10 @@ export function Settings() {
         </button>
       </div>
 
-      <section className="panel">
-        <h2>Store</h2>
-        <p>
-          <b>{me.business.name}</b>
-        </p>
-        {me.location && (
-          <p className="muted">
-            {me.location.name} · sales tax {formatTaxRate(me.location.taxRateBp)}
-          </p>
-        )}
-        <p className="muted">
-          Editing the store name, logo, colors and tax rate comes with the rest of Settings.
-        </p>
-      </section>
+      {settings.isError && <p className="error-box">{errorMessage(settings.error)}</p>}
+      {settings.data && <StoreForm key={JSON.stringify(settings.data)} s={settings.data} canEdit={canEdit} />}
+
+      <StaffSection />
 
       {can(me.staff.role, "import.run") && (
         <section className="panel">
@@ -63,16 +62,376 @@ export function Settings() {
         </section>
       )}
 
-      <section className="panel">
-        <h2>Staff</h2>
-        {staff.isPending && <p className="muted">Loading staff…</p>}
-        {staff.isError && <p className="muted">Couldn't load staff. Reload the page and try again.</p>}
-        {staff.data?.map((s) => (
-          <p key={s.id}>
-            {s.name} <span className="muted">· {ROLE_LABEL[s.role]}</span>
-          </p>
-        ))}
-      </section>
+      {can(me.staff.role, "demo.remove") && <DemoData />}
     </>
+  );
+}
+
+/** Tax percent field check, shared with the test. */
+export function taxError(input: string): string | null {
+  return parseTaxPercent(input) === null ? "Enter the sales tax as a percent, like 8.875." : null;
+}
+
+function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
+  const { api } = useSession();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [f, setF] = useState({
+    name: s.name,
+    brandColor: s.brandColor ?? "#0f6e5a",
+    logo: s.logo,
+    locationName: s.locationName,
+    taxPercent: taxPercentInput(s.taxRateMpct),
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const save = useMutation({
+    mutationFn: () => api.call("updateSettings", f),
+    onSuccess: () => {
+      toast("Settings saved");
+      setErrors({});
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+      void qc.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: (err) => {
+      setErrors(fieldErrors(err));
+      toast(errorMessage(err));
+    },
+  });
+
+  async function pickLogo(file: File | undefined) {
+    if (!file) return;
+    try {
+      setF({ ...f, logo: await resizeLogo(file) });
+      setErrors({ ...errors, logo: "" });
+    } catch (err) {
+      setErrors({ ...errors, logo: err instanceof Error ? err.message : "Couldn't read that image." });
+    }
+  }
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    const tax = taxError(f.taxPercent);
+    if (tax) return setErrors({ taxPercent: tax });
+    save.mutate();
+  }
+
+  const err = (k: string) => (errors[k] ? <span className="field-error">{errors[k]}</span> : null);
+  const text = readableOn(f.brandColor);
+
+  return (
+    <section className="panel">
+      <h2>Store</h2>
+      <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
+        <fieldset disabled={!canEdit} style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 12 }}>
+          <div className="form">
+            <label>
+              Store name
+              <input
+                value={f.name}
+                onChange={(e) => setF({ ...f, name: e.target.value })}
+                aria-invalid={!!errors.name}
+              />
+              {err("name")}
+            </label>
+            <label>
+              Location name
+              <input
+                value={f.locationName}
+                onChange={(e) => setF({ ...f, locationName: e.target.value })}
+                aria-invalid={!!errors.locationName}
+              />
+              {err("locationName")}
+            </label>
+            <label>
+              Sales tax (%)
+              <input
+                value={f.taxPercent}
+                onChange={(e) => setF({ ...f, taxPercent: e.target.value })}
+                inputMode="decimal"
+                aria-invalid={!!errors.taxPercent}
+              />
+              {err("taxPercent")}
+            </label>
+            <label>
+              Brand color
+              <input
+                type="color"
+                value={f.brandColor}
+                onChange={(e) => setF({ ...f, brandColor: e.target.value })}
+                style={{ padding: 2, height: 40 }}
+              />
+              {err("brandColor")}
+            </label>
+          </div>
+          <div className="form" style={{ alignItems: "end" }}>
+            <label>
+              Logo
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => void pickLogo(e.target.files?.[0])}
+              />
+              {err("logo")}
+            </label>
+            {f.logo && (
+              <div>
+                <button type="button" onClick={() => setF({ ...f, logo: null })}>
+                  Remove logo
+                </button>
+              </div>
+            )}
+          </div>
+        </fieldset>
+
+        <div>
+          <span className="muted small">Sidebar preview</span>
+          <div
+            className="store-header"
+            style={{ background: f.brandColor, color: text, maxWidth: 240, borderRadius: 10 }}
+          >
+            <StoreMark name={f.name || "Store"} logo={f.logo} color={text} />
+            <span>
+              <b>{f.name || "Store name"}</b>
+              <small>
+                {f.locationName} · sales tax{" "}
+                {parseTaxPercent(f.taxPercent) === null
+                  ? "?"
+                  : formatTaxPercent(parseTaxPercent(f.taxPercent)!)}
+              </small>
+            </span>
+          </div>
+        </div>
+
+        {canEdit ? (
+          <div>
+            <button className="primary" disabled={save.isPending}>
+              {save.isPending ? "Saving…" : "Save settings"}
+            </button>
+          </div>
+        ) : (
+          <p className="muted small">Only the owner can change store settings.</p>
+        )}
+      </form>
+    </section>
+  );
+}
+
+function StaffSection() {
+  const { api, me } = useSession();
+  const canManage = can(me.staff.role, "staff.manage");
+  const staff = useQuery({ queryKey: ["staff"], queryFn: () => api.call("listStaff") });
+  const [editing, setEditing] = useState<StaffListItem | "new" | null>(null);
+
+  return (
+    <section className="panel">
+      <div className="page-head">
+        <h2>Staff</h2>
+        {canManage && (
+          <button type="button" onClick={() => setEditing("new")}>
+            Add staff
+          </button>
+        )}
+      </div>
+      {staff.isError && <p className="error-box">{errorMessage(staff.error)}</p>}
+      <div className="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              {canManage && <th />}
+            </tr>
+          </thead>
+          <tbody>
+            {staff.data?.map((s) => (
+              <tr key={s.id}>
+                <td>
+                  <b>{s.name}</b>
+                  {s.email && <span className="sub">{s.email}</span>}
+                </td>
+                <td>{ROLE_LABEL[s.role]}</td>
+                <td>
+                  {s.active ? (
+                    <span className="tag ok">Active</span>
+                  ) : (
+                    <span className="tag muted">Inactive</span>
+                  )}
+                </td>
+                {canManage && (
+                  <td>
+                    <button type="button" onClick={() => setEditing(s)}>
+                      Edit
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="muted small">
+        In this demo, new staff appear on the "Who's using the register?" screen. In the hosted version they
+        get an email invite to sign in.
+      </p>
+      {editing && <StaffForm staff={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
+    </section>
+  );
+}
+
+export function StaffForm({ staff, onClose }: { staff: StaffListItem | null; onClose: () => void }) {
+  const { api, me } = useSession();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [f, setF] = useState({
+    name: staff?.name ?? "",
+    email: staff?.email ?? "",
+    role: (staff?.role ?? "cashier") as Role,
+    active: staff?.active ?? true,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const isSelf = staff?.id === me.staff.id;
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (staff) await api.call("updateStaff", { id: staff.id, ...f });
+      else await api.call("addStaff", { name: f.name, email: f.email, role: f.role });
+    },
+    onSuccess: () => {
+      toast(staff ? "Staff saved" : "Staff added");
+      void qc.invalidateQueries({ queryKey: ["staff"] });
+      void qc.invalidateQueries({ queryKey: ["demo-staff"] });
+      onClose();
+    },
+    onError: (err) => {
+      setErrors(fieldErrors(err));
+      toast(errorMessage(err));
+    },
+  });
+
+  return (
+    <SlideOver title={staff ? `Edit ${staff.name}` : "Add staff"} onClose={onClose}>
+      <form
+        style={{ display: "grid", gap: 12 }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          save.mutate();
+        }}
+      >
+        <label>
+          Name
+          <input
+            value={f.name}
+            onChange={(e) => setF({ ...f, name: e.target.value })}
+            required
+            autoFocus={!staff}
+          />
+          {errors.name && <span className="field-error">{errors.name}</span>}
+        </label>
+        <label>
+          Email (optional)
+          <input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+          {errors.email && <span className="field-error">{errors.email}</span>}
+        </label>
+        <label>
+          Role
+          <select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })}>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABEL[r]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {staff && !isSelf && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={f.active}
+              onChange={(e) => setF({ ...f, active: e.target.checked })}
+            />
+            Active (can sign in)
+          </label>
+        )}
+        {isSelf && <p className="muted small">This is you. Another owner can deactivate your account.</p>}
+        <div className="actions">
+          <button className="primary" disabled={save.isPending}>
+            {staff ? "Save" : "Add staff"}
+          </button>
+          <button type="button" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </SlideOver>
+  );
+}
+
+function plural(n: number, one: string, many: string) {
+  return `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
+}
+
+/** "3 customers (5 pets), 4 products, 1 Astro program and 2 punch balances". */
+export function demoSummary(c: DemoCounts): string {
+  const parts = [
+    c.customers
+      ? `${plural(c.customers, "customer", "customers")}${c.pets ? ` (${plural(c.pets, "pet", "pets")})` : ""}`
+      : "",
+    c.products ? plural(c.products, "product", "products") : "",
+    c.programs ? plural(c.programs, "Astro program", "Astro programs") : "",
+    c.punches ? plural(c.punches, "punch balance", "punch balances") : "",
+  ].filter(Boolean);
+  return new Intl.ListFormat("en-US").format(parts);
+}
+
+export function DemoData() {
+  const { api } = useSession();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [confirming, setConfirming] = useState(false);
+  const counts = useQuery({ queryKey: ["demo-counts"], queryFn: () => api.call("demoDataPreview") });
+  const total = counts.data ? counts.data.customers + counts.data.products + counts.data.programs : 0;
+
+  return (
+    <section className="panel">
+      <h2>Demo data</h2>
+      <p className="muted">
+        Sample records are marked (DEMO). Remove them all before the store starts using the register for real.
+        Records you added yourself are kept.
+      </p>
+      <div className="actions">
+        <button type="button" className="danger" disabled={!total} onClick={() => setConfirming(true)}>
+          Remove all demo data
+        </button>
+        <span className="muted">
+          {counts.data ? (total ? `${demoSummary(counts.data)} marked (DEMO)` : "No demo records left") : ""}
+        </span>
+      </div>
+      {confirming && counts.data && (
+        <ConfirmTyped
+          title="Remove all demo data?"
+          button="Remove demo data"
+          onCancel={() => setConfirming(false)}
+          onConfirm={async () => {
+            try {
+              await api.call("removeDemoData");
+              toast("Demo data removed");
+              setConfirming(false);
+              for (const key of ["demo-counts", "customers", "customer", "products", "product", "programs"])
+                void qc.invalidateQueries({ queryKey: [key] });
+            } catch (err) {
+              toast(errorMessage(err));
+            }
+          }}
+        >
+          <p>Deletes every record marked (DEMO): {demoSummary(counts.data)}. Your own records stay.</p>
+          <p className="muted">
+            The (DEMO) sign-ins and the store itself stay, so you can still get in. Sample records won't come
+            back, unless you use Reset demo at the top of the screen.
+          </p>
+        </ConfirmTyped>
+      )}
+    </section>
   );
 }
