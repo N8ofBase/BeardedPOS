@@ -6,6 +6,7 @@ import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";
 import { useToast } from "../../ui/Toast.tsx";
+import { CameraButton } from "../../ui/scanner/CameraScanner.tsx";
 import { TwoTapButton } from "../../ui/TwoTapButton.tsx";
 
 interface Form {
@@ -87,7 +88,15 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
   };
 }
 
-export function ProductPanel({ id, onClose }: { id: string | null; onClose: () => void }) {
+export function ProductPanel({
+  id,
+  initialBarcode = null,
+  onClose,
+}: {
+  id: string | null;
+  initialBarcode?: string | null;
+  onClose: () => void;
+}) {
   const { api } = useSession();
   const existing = useQuery({
     queryKey: ["product", id],
@@ -113,6 +122,7 @@ export function ProductPanel({ id, onClose }: { id: string | null; onClose: () =
       key={id ?? "new"}
       product={existing.data?.product ?? null}
       moves={existing.data?.moves ?? []}
+      initialBarcode={initialBarcode}
       onClose={onClose}
     />
   );
@@ -121,16 +131,18 @@ export function ProductPanel({ id, onClose }: { id: string | null; onClose: () =
 function ProductForm({
   product,
   moves,
+  initialBarcode,
   onClose,
 }: {
   product: ProductRow | null;
   moves: MoveRow[];
+  initialBarcode: string | null;
   onClose: () => void;
 }) {
   const { api } = useSession();
   const qc = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState<Form>(product ? toForm(product) : EMPTY);
+  const [f, setF] = useState<Form>(product ? toForm(product) : { ...EMPTY, barcode: initialBarcode ?? "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const programs = useQuery({ queryKey: ["programs"], queryFn: () => api.call("listPrograms") });
 
@@ -201,7 +213,14 @@ function ProductForm({
           </label>
           <label>
             Barcode (UPC)
-            <input value={f.barcode} onChange={set("barcode")} inputMode="numeric" {...inv("barcode")} />
+            <span className="actions" style={{ flexWrap: "nowrap" }}>
+              <input value={f.barcode} onChange={set("barcode")} inputMode="numeric" {...inv("barcode")} />
+              <CameraButton
+                label="Scan"
+                title="Scan the barcode"
+                onCode={(c) => setF((x) => ({ ...x, barcode: c }))}
+              />
+            </span>
             {err("barcode")}
           </label>
         </div>

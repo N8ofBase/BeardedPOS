@@ -15,15 +15,17 @@ describe("settings form", () => {
 
 describe("demo data", () => {
   it("summarizes what will be removed", () => {
-    expect(demoSummary({ customers: 3, pets: 5, products: 4, programs: 1, punches: 2 })).toBe(
+    expect(demoSummary({ customers: 3, pets: 5, products: 4, programs: 1, punches: 2, discounts: 0 })).toBe(
       "3 customers (5 pets), 4 products, 1 Astro program, and 2 punch balances",
     );
-    expect(demoSummary({ customers: 1, pets: 0, products: 0, programs: 0, punches: 0 })).toBe("1 customer");
+    expect(demoSummary({ customers: 1, pets: 0, products: 0, programs: 0, punches: 0, discounts: 0 })).toBe(
+      "1 customer",
+    );
   });
 
   it("disables Remove when there's nothing left", async () => {
     renderAs("owner", <DemoData />, {
-      demoDataPreview: { customers: 0, pets: 0, products: 0, programs: 0, punches: 0 },
+      demoDataPreview: { customers: 0, pets: 0, products: 0, programs: 0, punches: 0, discounts: 0 },
     });
     expect(await screen.findByText("No demo records left")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Remove all demo data" }) as HTMLButtonElement).disabled).toBe(
@@ -33,7 +35,7 @@ describe("demo data", () => {
 
   it("enables Remove when there are samples", async () => {
     renderAs("owner", <DemoData />, {
-      demoDataPreview: { customers: 3, pets: 5, products: 4, programs: 1, punches: 2 },
+      demoDataPreview: { customers: 3, pets: 5, products: 4, programs: 1, punches: 2, discounts: 0 },
     });
     expect(await screen.findByText(/3 customers \(5 pets\)/)).toBeTruthy();
     expect((screen.getByRole("button", { name: "Remove all demo data" }) as HTMLButtonElement).disabled).toBe(

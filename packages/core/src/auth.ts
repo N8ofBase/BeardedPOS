@@ -28,6 +28,9 @@ const PERMISSIONS = {
   "staff.view": ["owner", "manager", "cashier", "groomer"],
   "staff.manage": ["owner"],
   "import.run": ["owner", "manager"],
+  "discounts.manage": ["owner", "manager"],
+  /** Approving a discount that needs a manager. */
+  "discounts.approve": ["owner", "manager"],
   "demo.remove": ["owner"],
 } as const satisfies Record<string, readonly Role[]>;
 

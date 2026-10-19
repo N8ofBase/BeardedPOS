@@ -16,6 +16,8 @@ export interface BusinessesTable {
   /** data:image/… URL, demo mode only (hosted uses logo_key in S3). */
   logo_data: string | null;
   modules: Json<Record<string, boolean>>;
+  /** Spec open question: Astro offers and rewards come off before tax (true) or after. */
+  astro_discounts_before_tax: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -198,6 +200,129 @@ export interface AstroBalancesView {
   balance: number;
 }
 
+export interface BusinessCountersTable {
+  business_id: string;
+  name: string;
+  value: number;
+}
+
+export interface DiscountsTable {
+  id: Generated<string>;
+  business_id: string;
+  name: string;
+  code: string | null;
+  kind: "percent" | "fixed";
+  percent_mpct: number | null;
+  amount_cents: number | null;
+  scope: Generated<"ticket" | "line">;
+  cash_only: Generated<boolean>;
+  needs_approval: Generated<boolean>;
+  ask_note: Generated<boolean>;
+  combinable: Generated<boolean>;
+  active: Generated<boolean>;
+  archived_at: Date | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type SaleStatus = "open" | "paid" | "canceled";
+
+export interface SalesTable {
+  id: Generated<string>;
+  business_id: string;
+  location_id: string;
+  customer_id: string | null;
+  staff_id: string | null;
+  receipt_number: number;
+  status: Generated<SaleStatus>;
+  source: Generated<"register" | "import">;
+  subtotal_cents: number;
+  discount_cents: Generated<number>;
+  tax_cents: Generated<number>;
+  total_cents: number;
+  tax_rate_mpct: number;
+  discounts_before_tax: boolean;
+  paid_at: Date | null;
+  canceled_at: Date | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface SaleLinesTable {
+  id: Generated<string>;
+  business_id: string;
+  sale_id: string;
+  position: number;
+  product_id: string | null;
+  appointment_id: string | null;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  tax_class: TaxClass;
+  qty: number;
+  unit_price_cents: number;
+  discount_cents: Generated<number>;
+  line_total_cents: number;
+  astro_program_id: string | null;
+  earns_punches: Generated<number>;
+  created_at: CreatedAt;
+}
+
+export type SaleDiscountSource = "store" | "astro_offer" | "astro_reward";
+
+export interface SaleDiscountsTable {
+  id: Generated<string>;
+  business_id: string;
+  sale_id: string;
+  sale_line_id: string | null;
+  source: SaleDiscountSource;
+  discount_id: string | null;
+  name: string;
+  kind: "percent" | "fixed" | null;
+  percent_mpct: number | null;
+  amount_cents: number;
+  note: string | null;
+  applied_by: string | null;
+  approved_by: string | null;
+  created_at: CreatedAt;
+}
+
+export type PaymentStatus = "pending" | "completed" | "declined" | "canceled" | "refunded";
+
+export interface PaymentsTable {
+  id: Generated<string>;
+  business_id: string;
+  sale_id: string;
+  method: "card" | "cash";
+  provider: "square" | "cash";
+  provider_ref: string | null;
+  status: PaymentStatus;
+  amount_cents: number;
+  tendered_cents: number | null;
+  change_cents: Generated<number>;
+  refunded_cents: Generated<number>;
+  staff_id: string | null;
+  completed_at: Date | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface AstroQueueTable {
+  id: Generated<string>;
+  business_id: string;
+  sale_id: string;
+  payload: Json<Record<string, unknown>>;
+  status: Generated<"pending" | "entered" | "sent" | "failed">;
+  attempts: Generated<number>;
+  error: string | null;
+  entered_by: string | null;
+  entered_at: Date | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export type ImportType = "customers" | "pets" | "products" | "programs" | "punches";
 export type ImportEntity = "customer" | "pet" | "vaccination" | "product" | "program" | "punch" | "stock";
 export type ImportOp = "created" | "updated" | "deleted" | "moved";
@@ -259,6 +384,13 @@ export interface DB {
   demo_seed_parts: DemoSeedPartsTable;
   import_batches: ImportBatchesTable;
   import_changes: ImportChangesTable;
+  business_counters: BusinessCountersTable;
+  discounts: DiscountsTable;
+  sales: SalesTable;
+  sale_lines: SaleLinesTable;
+  sale_discounts: SaleDiscountsTable;
+  payments: PaymentsTable;
+  astro_queue: AstroQueueTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

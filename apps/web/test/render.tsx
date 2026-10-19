@@ -13,7 +13,14 @@ import { ToastProvider } from "../src/ui/Toast.tsx";
 export function meFor(role: Role): Me {
   return {
     staff: { id: "s1", name: `Sample ${role} (DEMO)`, role },
-    business: { id: "b1", name: "Sample Pet Store (DEMO)", brandColor: null, logo: null, modules: {} },
+    business: {
+      id: "b1",
+      name: "Sample Pet Store (DEMO)",
+      brandColor: null,
+      logo: null,
+      modules: {},
+      astroDiscountsBeforeTax: true,
+    },
     location: { id: "l1", name: "Main store (DEMO)", taxRateMpct: 7000 },
   };
 }

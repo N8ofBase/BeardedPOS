@@ -1,5 +1,12 @@
 import { sql, type Transaction } from "kysely";
-import { AppError, cleanProduct, isUniqueViolation, validateProduct, type ProductInput } from "@pet-pos/core";
+import {
+  AppError,
+  barcodeVariants,
+  cleanProduct,
+  isUniqueViolation,
+  validateProduct,
+  type ProductInput,
+} from "@pet-pos/core";
 import type { DB, MoveReason, TaxClass } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
@@ -33,7 +40,7 @@ export interface MoveRow {
 }
 
 // Shared select for product rows with stock and program name.
-function productQuery(trx: Transaction<DB>) {
+export function productQuery(trx: Transaction<DB>) {
   return trx
     .selectFrom("products as p")
     .leftJoin("inventory_levels as l", "l.product_id", "p.id")
@@ -102,7 +109,12 @@ export const findByCode = defineHandler<{ code: string }, ProductRow | null>({
     if (!c) return null;
     const row = await productQuery(trx)
       .where("p.active", "=", true)
-      .where((eb) => eb.or([eb(eb.fn("lower", ["p.sku"]), "=", c.toLowerCase()), eb("p.barcode", "=", c)]))
+      .where((eb) =>
+        eb.or([
+          eb(eb.fn("lower", ["p.sku"]), "=", c.toLowerCase()),
+          eb("p.barcode", "in", barcodeVariants(c)),
+        ]),
+      )
       .executeTakeFirst();
     return row ?? null;
   },

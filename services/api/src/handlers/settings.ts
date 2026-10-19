@@ -9,6 +9,8 @@ export interface StoreSettings {
   locationId: string;
   locationName: string;
   taxRateMpct: number;
+  /** Astro offers and rewards come off before tax (true) or after. */
+  astroDiscountsBeforeTax: boolean;
 }
 
 /** Largest logo data URL accepted (the browser resizes to 256 px first). */
@@ -19,7 +21,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
   async run(trx, ctx) {
     const b = await trx
       .selectFrom("businesses")
-      .select(["name", "brand_color", "logo_data"])
+      .select(["name", "brand_color", "logo_data", "astro_discounts_before_tax"])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
     const loc = await trx
@@ -35,6 +37,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
       locationId: loc.id,
       locationName: loc.name,
       taxRateMpct: loc.tax_rate_mpct,
+      astroDiscountsBeforeTax: b.astro_discounts_before_tax,
     };
   },
 });
@@ -47,6 +50,7 @@ export interface SettingsInput {
   locationName: string;
   /** As typed: "8.875" or "8.875%". */
   taxPercent: string;
+  astroDiscountsBeforeTax: boolean;
 }
 
 export const updateSettings = defineHandler<SettingsInput, void>({
@@ -71,7 +75,12 @@ export const updateSettings = defineHandler<SettingsInput, void>({
 
     await trx
       .updateTable("businesses")
-      .set({ name, brand_color: input.brandColor, logo_data: input.logo })
+      .set({
+        name,
+        brand_color: input.brandColor,
+        logo_data: input.logo,
+        astro_discounts_before_tax: input.astroDiscountsBeforeTax,
+      })
       .where("id", "=", ctx.businessId)
       .execute();
 

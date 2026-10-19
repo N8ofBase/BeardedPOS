@@ -18,6 +18,7 @@ import { errorMessage, fieldErrors } from "../ui/errors.ts";
 import { SlideOver } from "../ui/SlideOver.tsx";
 import { StoreMark } from "../ui/StoreMark.tsx";
 import { useToast } from "../ui/Toast.tsx";
+import { DiscountsSection } from "./settings/DiscountsSection.tsx";
 import { ImportPage } from "./settings/ImportPage.tsx";
 import { resizeLogo } from "./settings/logo.ts";
 
@@ -48,6 +49,8 @@ function Settings() {
       {settings.data && <StoreForm key={JSON.stringify(settings.data)} s={settings.data} canEdit={canEdit} />}
 
       <StaffSection />
+
+      {can(me.staff.role, "discounts.manage") && <DiscountsSection />}
 
       {can(me.staff.role, "import.run") && (
         <section className="panel">
@@ -82,6 +85,7 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     logo: s.logo,
     locationName: s.locationName,
     taxPercent: taxPercentInput(s.taxRateMpct),
+    astroDiscountsBeforeTax: s.astroDiscountsBeforeTax,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -182,6 +186,18 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
               </div>
             )}
           </div>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={f.astroDiscountsBeforeTax}
+              onChange={(e) => setF({ ...f, astroDiscountsBeforeTax: e.target.checked })}
+            />
+            Astro offers and rewards come off before tax
+          </label>
+          <p className="muted small" style={{ margin: 0 }}>
+            Check the store's Astro agreement. When this is off, tax is charged on the price before the Astro
+            discount.
+          </p>
         </fieldset>
 
         <div>
@@ -381,6 +397,7 @@ export function demoSummary(c: DemoCounts): string {
     c.products ? plural(c.products, "product", "products") : "",
     c.programs ? plural(c.programs, "Astro program", "Astro programs") : "",
     c.punches ? plural(c.punches, "punch balance", "punch balances") : "",
+    c.discounts ? plural(c.discounts, "discount", "discounts") : "",
   ].filter(Boolean);
   return new Intl.ListFormat("en-US").format(parts);
 }
@@ -391,7 +408,9 @@ export function DemoData() {
   const toast = useToast();
   const [confirming, setConfirming] = useState(false);
   const counts = useQuery({ queryKey: ["demo-counts"], queryFn: () => api.call("demoDataPreview") });
-  const total = counts.data ? counts.data.customers + counts.data.products + counts.data.programs : 0;
+  const total = counts.data
+    ? counts.data.customers + counts.data.products + counts.data.programs + counts.data.discounts
+    : 0;
 
   return (
     <section className="panel">

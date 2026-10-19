@@ -659,3 +659,282 @@ button.dangerbtn {
     padding: 14px 16px 40px;
   }
 }
+
+/* Camera scanner */
+.scanner {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--surface);
+  padding: max(12px, env(safe-area-inset-top)) 16px 16px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+}
+.scanner-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.scanner-view {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+.scanner-view video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.scanner-guide {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 35%;
+  bottom: 35%;
+  border: 3px solid #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.35);
+}
+.scanner-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  text-align: center;
+  color: #fff;
+  font-weight: 700;
+  text-shadow: 0 1px 3px #000;
+}
+
+/* Register (from the prototype) */
+.register {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .register {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.scan {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.scan input {
+  flex: 1 1 200px;
+  font-size: 1.05rem;
+  min-height: 48px;
+}
+.cat-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin-top: 10px;
+}
+.cat-tabs button {
+  white-space: nowrap;
+  min-height: 36px;
+  padding: 0.3rem 0.8rem;
+}
+.cat-tabs button[aria-pressed="true"] {
+  background: var(--sunk);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.prod {
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  padding: 0.7rem;
+  background: var(--surface);
+  border-radius: 10px;
+  min-height: 118px;
+  align-content: start;
+}
+.prod .nm {
+  font-weight: 700;
+  line-height: 1.25;
+}
+.prod .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+.ticket {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 8px;
+}
+.cust {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--sunk);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+}
+button.link {
+  border: 0;
+  background: none;
+  padding: 0.2rem 0.3rem;
+  color: var(--accent);
+  text-decoration: underline;
+  min-height: 0;
+}
+.lines {
+  display: grid;
+  gap: 8px;
+  max-height: 44vh;
+  overflow: auto;
+}
+.line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--line);
+}
+.line .qty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.line .qty button {
+  padding: 0.1rem 0.6rem;
+  min-height: 34px;
+}
+.disc {
+  color: var(--astro);
+  font-size: 0.88rem;
+}
+.store-disc {
+  color: var(--accent);
+  font-size: 0.88rem;
+}
+.totals {
+  display: grid;
+  gap: 3px;
+}
+.totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.totals .grand {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding-top: 6px;
+  border-top: 2px solid var(--fg);
+}
+.pay {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.pay button,
+button.big {
+  min-height: 52px;
+  font-size: 1.05rem;
+}
+.astro-box {
+  border: 1px solid var(--astro);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+.astro-box h3 {
+  color: var(--astro);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.change-due {
+  font-size: 1.2rem;
+}
+.change-due b {
+  font-family: var(--display);
+  font-size: 1.6rem;
+}
+.terminal {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  border: 2px dashed var(--accent);
+  border-radius: 12px;
+  padding: 14px;
+}
+.terminal-amount {
+  font-family: var(--display);
+  font-size: 2rem;
+  font-weight: 700;
+}
+.receipt {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  background: var(--sunk);
+  padding: 0.8rem;
+  border-radius: 8px;
+}
+.discount-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.discount-btn {
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  padding: 0.7rem;
+  min-height: 84px;
+  align-content: start;
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: none;
+    color: #000;
+  }
+}
+.cash-offer {
+  position: fixed;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  width: min(92vw, 420px);
+  z-index: 11;
+}

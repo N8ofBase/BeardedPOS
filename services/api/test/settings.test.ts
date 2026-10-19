@@ -35,6 +35,7 @@ const settings = {
   logo: "data:image/png;base64,iVBORw0KGgo=",
   locationName: "Main St",
   taxPercent: "8.875",
+  astroDiscountsBeforeTax: true,
 };
 
 describe("store settings", () => {
@@ -209,6 +210,7 @@ describe("remove demo data", () => {
       products: 4,
       programs: 1,
       punches: 2,
+      discounts: 4,
     });
     await invoke(db, owner, "removeDemoData", undefined);
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
@@ -217,6 +219,7 @@ describe("remove demo data", () => {
       products: 0,
       programs: 0,
       punches: 0,
+      discounts: 0,
     });
 
     expect(
@@ -238,7 +241,7 @@ describe("remove demo data", () => {
       {
         action: "demo.remove",
         before: null,
-        after: { customers: 3, pets: 5, products: 4, programs: 1, punches: 2 },
+        after: { customers: 3, pets: 5, products: 4, programs: 1, punches: 2, discounts: 4 },
       },
     ]);
   });

@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Link, Route, Routes } from "react-router";
+import { Link, Route, Routes, useLocation, useNavigate } from "react-router";
 import { can, CATEGORIES, formatMoney, marginPercent, stockLabel, stockStatus } from "@pet-pos/core";
 import type { ProductRow } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
+import { CameraButton } from "../../ui/scanner/CameraScanner.tsx";
 import { useToast } from "../../ui/Toast.tsx";
 import { CountPage } from "./CountPage.tsx";
 import { ProductPanel } from "./ProductPanel.tsx";
@@ -26,7 +27,27 @@ function InventoryPage() {
   const [category, setCategory] = useState("");
   const [lowOnly, setLowOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [editing, setEditing] = useState<string | "new" | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Count mode or the register can send an unknown barcode here to start a new product.
+  const fromScan = (location.state as { newBarcode?: string } | null)?.newBarcode ?? null;
+  const [editing, setEditing] = useState<string | "new" | null>(fromScan && canEdit ? "new" : null);
+  const [newBarcode, setNewBarcode] = useState<string | null>(fromScan);
+  const [receivingId, setReceivingId] = useState<string | null>(null);
+  const [scanMessage, setScanMessage] = useState<{ text: string; code: string | null } | null>(null);
+  const toast = useToast();
+
+  async function scanned(code: string) {
+    const p = await api.call("findByCode", { code }).catch(() => null);
+    if (p) {
+      setScanMessage(null);
+      setQ(p.sku);
+      if (canAdjust) setReceivingId(p.id);
+      else toast(`${p.name}: ${p.onHand} on hand`);
+      return;
+    }
+    setScanMessage({ text: `No product with barcode ${code}.`, code: canEdit ? code : null });
+  }
 
   const filters = { q, category: category || undefined, lowOnly, includeArchived: showArchived };
   const products = useQuery({
@@ -45,6 +66,11 @@ function InventoryPage() {
         <h1>Inventory</h1>
         <div className="actions">
           {canAdjust && <Link to="count">Count stock</Link>}
+          <CameraButton
+            label={canAdjust ? "Scan to receive" : "Scan"}
+            title="Scan an item"
+            onCode={(c) => void scanned(c)}
+          />
           {canEdit && (
             <button type="button" className="primary" onClick={() => setEditing("new")}>
               New product
@@ -84,6 +110,25 @@ function InventoryPage() {
       </div>
 
       {products.isError && <p className="error-box">{errorMessage(products.error)}</p>}
+      {scanMessage && (
+        <div className="error-box" style={{ display: "grid", gap: 6 }}>
+          <span>{scanMessage.text}</span>
+          {scanMessage.code && (
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewBarcode(scanMessage.code);
+                  setEditing("new");
+                  setScanMessage(null);
+                }}
+              >
+                New product with barcode {scanMessage.code}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="tablewrap">
         <table className="wide">
@@ -106,6 +151,8 @@ function InventoryPage() {
                 canEdit={canEdit}
                 canAdjust={canAdjust}
                 onEdit={() => setEditing(p.id)}
+                receiving={receivingId === p.id}
+                onReceiving={(on) => setReceivingId(on ? p.id : null)}
               />
             ))}
             {products.data?.length === 0 && (
@@ -130,7 +177,17 @@ function InventoryPage() {
         </table>
       </div>
 
-      {editing && <ProductPanel id={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
+      {editing && (
+        <ProductPanel
+          id={editing === "new" ? null : editing}
+          initialBarcode={editing === "new" ? newBarcode : null}
+          onClose={() => {
+            setEditing(null);
+            setNewBarcode(null);
+            if (fromScan) navigate(".", { replace: true, state: null });
+          }}
+        />
+      )}
     </>
   );
 }
@@ -140,13 +197,17 @@ function ProductTableRow({
   canEdit,
   canAdjust,
   onEdit,
+  receiving,
+  onReceiving,
 }: {
   p: ProductRow;
   canEdit: boolean;
   canAdjust: boolean;
   onEdit: () => void;
+  receiving: boolean;
+  onReceiving: (on: boolean) => void;
 }) {
-  const [receiving, setReceiving] = useState(false);
+  const setReceiving = onReceiving;
   const margin = p.costCents ? marginPercent(p.priceCents, p.costCents) : null;
   const status = stockStatus(p.onHand, p.reorderAt);
 

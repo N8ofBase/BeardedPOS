@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { can } from "@pet-pos/core";
 import type { ProductRow } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
+import { CameraButton } from "../../ui/scanner/CameraScanner.tsx";
 import { useToast } from "../../ui/Toast.tsx";
 
 interface Line {
@@ -27,6 +28,8 @@ export function CountPage() {
   const [code, setCode] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [unknown, setUnknown] = useState<string | null>(null);
+  const navigate = useNavigate();
   const scanRef = useRef<HTMLInputElement>(null);
   const countRefs = useRef(new Map<string, HTMLInputElement>());
   // After a scan, the count box for that item gets focus once its row has rendered.
@@ -61,13 +64,19 @@ export function CountPage() {
   async function scan(e: FormEvent) {
     e.preventDefault();
     const c = code.trim();
-    if (!c) return;
     setCode("");
-    const product = await api.call("findByCode", { code: c });
+    await lookup(c);
+  }
+
+  async function lookup(c: string) {
+    if (!c) return;
+    const product = await api.call("findByCode", { code: c }).catch(() => null);
     if (!product) {
-      setMessage(`No product with code "${c}". Check the label, or add it in Inventory.`);
+      setUnknown(c);
+      setMessage(`No product with code "${c}". Check the label, or add it as a new product.`);
       return;
     }
+    setUnknown(null);
     setMessage(null);
     focusNext.current = product.id;
     // Scanning an item already in the list moves it to the top again, so its box is easy to find.
@@ -104,8 +113,23 @@ export function CountPage() {
           enterKeyHint="go"
         />
         <button className="primary">Find</button>
+        <CameraButton continuous title="Count with camera" onCode={(c) => void lookup(c)} />
       </form>
-      {message && <p className="error-box">{message}</p>}
+      {message && (
+        <div className="error-box" style={{ display: "grid", gap: 6 }}>
+          <span>{message}</span>
+          {unknown && can(me.staff.role, "products.edit") && (
+            <div>
+              <button
+                type="button"
+                onClick={() => navigate("..", { relative: "path", state: { newBarcode: unknown } })}
+              >
+                New product with barcode {unknown}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="count-lines">
         {lines.map((l) => {

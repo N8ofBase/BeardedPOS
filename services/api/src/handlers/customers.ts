@@ -69,7 +69,7 @@ export interface CustomerProfile extends Omit<CustomerCard, "pets"> {
   pets: PetDetail[];
 }
 
-const CUSTOMER_COLUMNS = [
+export const CUSTOMER_COLUMNS = [
   "id",
   "name",
   "phone",
@@ -82,7 +82,7 @@ const CUSTOMER_COLUMNS = [
 ] as const;
 
 /** Adds pets and punch cards to customer rows (two queries, however many customers). */
-async function toCards(
+export async function toCards(
   trx: Transaction<DB>,
   rows: Omit<CustomerCard, "pets" | "punchCards">[],
 ): Promise<CustomerCard[]> {

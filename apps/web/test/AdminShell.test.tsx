@@ -44,7 +44,8 @@ describe("AdminShell", () => {
 
   it("sends a cashier away from Settings to their first section", () => {
     navLabels("cashier", "/settings");
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Register");
+    const nav = within(screen.getByRole("navigation", { name: "Main" }));
+    expect(nav.getByRole("link", { name: "Register" }).getAttribute("aria-current")).toBe("page");
   });
 
   it("always shows the demo banner", () => {

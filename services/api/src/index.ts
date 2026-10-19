@@ -26,3 +26,13 @@ export type {
   PunchCard,
   Vaccination,
 } from "./handlers/customers.ts";
+export type { DiscountInput, DiscountRow } from "./handlers/discounts.ts";
+export type {
+  CheckoutResult,
+  PaymentResult,
+  Receipt,
+  RegisterCustomer,
+  SaleListRow,
+  SalesDay,
+  TicketInput,
+} from "./handlers/register.ts";

@@ -30,6 +30,7 @@ export async function ensureDemo(db: Kysely<DB>): Promise<string> {
     const businessId = existing?.id ?? (await seedBusiness(trx));
     await once(trx, businessId, "inventory", "products", seedInventory);
     await once(trx, businessId, "customers", "customers", seedCustomers);
+    await once(trx, businessId, "discounts", "discounts", seedDiscounts);
     return businessId;
   });
 }
@@ -42,7 +43,7 @@ async function once(
   trx: Transaction<DB>,
   businessId: string,
   part: string,
-  table: "products" | "customers",
+  table: "products" | "customers" | "discounts",
   seed: (trx: Transaction<DB>, businessId: string) => Promise<void>,
 ): Promise<void> {
   const done = await trx
@@ -346,6 +347,51 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
         })
         .execute();
   }
+}
+
+// Example store discounts until the owner's real list is in.
+async function seedDiscounts(trx: Transaction<DB>, businessId: string): Promise<void> {
+  const base = { business_id: businessId, is_demo: true };
+  await trx
+    .insertInto("discounts")
+    .values([
+      {
+        ...base,
+        name: "Cash discount (DEMO)",
+        code: "CASH",
+        kind: "percent",
+        percent_mpct: 3000,
+        scope: "ticket",
+        cash_only: true,
+      },
+      {
+        ...base,
+        name: "Employee discount (DEMO)",
+        code: "EMP",
+        kind: "percent",
+        percent_mpct: 20000,
+        scope: "ticket",
+        ask_note: true,
+      },
+      {
+        ...base,
+        name: "Senior Tuesday (DEMO)",
+        code: "SR10",
+        kind: "percent",
+        percent_mpct: 10000,
+        scope: "ticket",
+      },
+      {
+        ...base,
+        name: "Damaged bag (DEMO)",
+        code: "DMG",
+        kind: "fixed",
+        amount_cents: 500,
+        scope: "line",
+        needs_approval: true,
+      },
+    ])
+    .execute();
 }
 
 export interface DemoStaff {

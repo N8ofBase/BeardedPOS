@@ -7,6 +7,8 @@ import { AstroPage } from "../pages/AstroPage.tsx";
 import { ComingSoon } from "../pages/ComingSoon.tsx";
 import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
+import { RegisterPage } from "../pages/register/RegisterPage.tsx";
+import { SalesPage } from "../pages/SalesPage.tsx";
 import { SettingsRoutes } from "../pages/Settings.tsx";
 import { DemoBanner } from "./DemoBanner.tsx";
 import { navFor } from "./nav.ts";
@@ -18,11 +20,7 @@ interface Props {
 }
 
 const PAGES: Record<string, () => React.ReactNode> = {
-  "/register": () => (
-    <ComingSoon title="Register" phase={2}>
-      Scan items, attach a customer by phone, and take card or cash payments on the Square Terminal.
-    </ComingSoon>
-  ),
+  "/register": () => <RegisterPage />,
   "/grooming": () => (
     <ComingSoon title="Grooming" phase={3}>
       Day and week calendar per groomer, check-in, and sending a finished groom to the register.
@@ -30,11 +28,7 @@ const PAGES: Record<string, () => React.ReactNode> = {
   ),
   "/inventory": () => <InventoryRoutes />,
   "/customers": () => <CustomersRoutes />,
-  "/sales": () => (
-    <ComingSoon title="Sales" phase={2}>
-      Today's sales by payment type, refunds and the end-of-day drawer count.
-    </ComingSoon>
-  ),
+  "/sales": () => <SalesPage />,
   "/astro": () => <AstroPage />,
   "/settings": () => <SettingsRoutes />,
 };

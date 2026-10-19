@@ -32,6 +32,17 @@ import {
   undoPreview,
 } from "./handlers/import.ts";
 import { demoDataPreview, removeDemoData } from "./handlers/demo.ts";
+import { deleteDiscount, listDiscounts, saveDiscount } from "./handlers/discounts.ts";
+import {
+  cancelSale,
+  getSale,
+  listSales,
+  payCash,
+  registerCustomer,
+  simulateTerminalResult,
+  startCardPayment,
+  startCheckout,
+} from "./handlers/register.ts";
 import { getSettings, updateSettings } from "./handlers/settings.ts";
 import { addStaff, listStaff, me, updateStaff } from "./handlers/staff.ts";
 
@@ -69,6 +80,17 @@ export const handlers = {
   listImports,
   undoPreview,
   undoImport,
+  listDiscounts,
+  saveDiscount,
+  deleteDiscount,
+  registerCustomer,
+  startCheckout,
+  payCash,
+  startCardPayment,
+  simulateTerminalResult,
+  cancelSale,
+  getSale,
+  listSales,
 };
 
 export type Handlers = typeof handlers;

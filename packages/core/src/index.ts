@@ -11,3 +11,5 @@ export * from "./customer.ts";
 export * from "./import/index.ts";
 export * from "./tax.ts";
 export * from "./color.ts";
+export * from "./sale.ts";
+export * from "./astro/AstroClient.ts";
