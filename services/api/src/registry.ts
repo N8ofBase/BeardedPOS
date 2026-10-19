@@ -2,7 +2,7 @@ import type { Kysely } from "kysely";
 import { assertCan, AppError, type Ctx } from "@pet-pos/core";
 import { withBusiness, type DB } from "@pet-pos/db";
 import type { Handler } from "./handler.ts";
-import { listPrograms, saveProgram } from "./handlers/astro.ts";
+import { listAstroQueue, listPrograms, markAstroEntered, saveProgram } from "./handlers/astro.ts";
 import {
   archiveProduct,
   findByCode,
@@ -43,6 +43,8 @@ import {
   startCardPayment,
   startCheckout,
 } from "./handlers/register.ts";
+import { sendReceipt } from "./handlers/receipts.ts";
+import { refundPreview, refundSale } from "./handlers/refunds.ts";
 import { getSettings, updateSettings } from "./handlers/settings.ts";
 import { addStaff, listStaff, me, updateStaff } from "./handlers/staff.ts";
 
@@ -91,6 +93,11 @@ export const handlers = {
   cancelSale,
   getSale,
   listSales,
+  refundPreview,
+  refundSale,
+  sendReceipt,
+  listAstroQueue,
+  markAstroEntered,
 };
 
 export type Handlers = typeof handlers;

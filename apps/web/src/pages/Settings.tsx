@@ -3,7 +3,9 @@ import { useState, type FormEvent } from "react";
 import { Link, Route, Routes } from "react-router";
 import {
   can,
+  centsToInput,
   formatTaxPercent,
+  parseMoney,
   parseTaxPercent,
   readableOn,
   ROLE_LABEL,
@@ -86,11 +88,15 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     locationName: s.locationName,
     taxPercent: taxPercentInput(s.taxRateMpct),
     astroDiscountsBeforeTax: s.astroDiscountsBeforeTax,
+    refundLimit: centsToInput(s.refundApprovalCents),
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const save = useMutation({
-    mutationFn: () => api.call("updateSettings", f),
+    mutationFn: () => {
+      const { refundLimit, ...rest } = f;
+      return api.call("updateSettings", { ...rest, refundApprovalCents: parseMoney(refundLimit)! });
+    },
     onSuccess: () => {
       toast("Settings saved");
       setErrors({});
@@ -117,6 +123,8 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     e.preventDefault();
     const tax = taxError(f.taxPercent);
     if (tax) return setErrors({ taxPercent: tax });
+    if (parseMoney(f.refundLimit) === null)
+      return setErrors({ refundApprovalCents: "Enter the refund limit in dollars, like 50.00." });
     save.mutate();
   }
 
@@ -156,6 +164,17 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
                 aria-invalid={!!errors.taxPercent}
               />
               {err("taxPercent")}
+            </label>
+            <label>
+              Managers can refund up to ($)
+              <input
+                value={f.refundLimit}
+                onChange={(e) => setF({ ...f, refundLimit: e.target.value })}
+                inputMode="decimal"
+                aria-invalid={!!errors.refundApprovalCents}
+              />
+              {err("refundApprovalCents")}
+              <span className="muted small">Above this, the owner approves the refund on the tablet.</span>
             </label>
             <label>
               Brand color

@@ -18,6 +18,8 @@ export interface BusinessesTable {
   modules: Json<Record<string, boolean>>;
   /** Spec open question: Astro offers and rewards come off before tax (true) or after. */
   astro_discounts_before_tax: Generated<boolean>;
+  /** Managers can refund up to this without an owner's OK. */
+  refund_approval_cents: Generated<number>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -178,7 +180,7 @@ export interface VaccinationsTable {
   updated_at: UpdatedAt;
 }
 
-export type PunchKind = "earn" | "redeem" | "opening_balance";
+export type PunchKind = "earn" | "redeem" | "opening_balance" | "refund_reversal" | "reward_return";
 
 export interface AstroPunchesTable {
   id: Generated<string>;
@@ -186,6 +188,7 @@ export interface AstroPunchesTable {
   customer_id: string;
   program_id: string;
   sale_id: string | null;
+  refund_id: string | null;
   qty: number;
   kind: PunchKind;
   import_batch_id: string | null;
@@ -245,6 +248,7 @@ export interface SalesTable {
   discounts_before_tax: boolean;
   paid_at: Date | null;
   canceled_at: Date | null;
+  refunded_cents: Generated<number>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -267,6 +271,8 @@ export interface SaleLinesTable {
   line_total_cents: number;
   astro_program_id: string | null;
   earns_punches: Generated<number>;
+  /** The line's share of the sale's tax; null for sales rung before migration 012. */
+  tax_cents: number | null;
   created_at: CreatedAt;
 }
 
@@ -313,12 +319,65 @@ export interface AstroQueueTable {
   id: Generated<string>;
   business_id: string;
   sale_id: string;
+  kind: Generated<"sale" | "refund">;
+  refund_id: string | null;
   payload: Json<Record<string, unknown>>;
   status: Generated<"pending" | "entered" | "sent" | "failed">;
   attempts: Generated<number>;
   error: string | null;
   entered_by: string | null;
   entered_at: Date | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type RefundReason = "damaged" | "wrong_item" | "changed_mind" | "price_adjustment" | "other";
+
+export interface RefundsTable {
+  id: Generated<string>;
+  business_id: string;
+  sale_id: string;
+  staff_id: string | null;
+  approved_by: string | null;
+  reason: RefundReason;
+  note: string | null;
+  restock: boolean;
+  amount_cents: number;
+  tax_cents: number;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
+export interface RefundLinesTable {
+  id: Generated<string>;
+  business_id: string;
+  refund_id: string;
+  sale_line_id: string;
+  qty: number;
+  amount_cents: number;
+  tax_cents: number;
+}
+
+export interface RefundPaymentsTable {
+  id: Generated<string>;
+  business_id: string;
+  refund_id: string;
+  payment_id: string;
+  method: "card" | "cash";
+  amount_cents: number;
+  provider_ref: string | null;
+}
+
+export interface ReceiptOutboxTable {
+  id: Generated<string>;
+  business_id: string;
+  sale_id: string;
+  channel: "email" | "sms";
+  to_address: string;
+  subject: string | null;
+  body: string;
+  status: Generated<"preview" | "queued" | "sent" | "failed">;
+  created_by: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -391,6 +450,10 @@ export interface DB {
   sale_discounts: SaleDiscountsTable;
   payments: PaymentsTable;
   astro_queue: AstroQueueTable;
+  refunds: RefundsTable;
+  refund_lines: RefundLinesTable;
+  refund_payments: RefundPaymentsTable;
+  receipt_outbox: ReceiptOutboxTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

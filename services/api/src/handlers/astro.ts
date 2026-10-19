@@ -1,5 +1,12 @@
 import { sql } from "kysely";
-import { AppError, isUniqueViolation } from "@pet-pos/core";
+import {
+  AppError,
+  astroEntryLines,
+  can,
+  isUniqueViolation,
+  type AstroRefundPayload,
+  type AstroSalePayload,
+} from "@pet-pos/core";
 import { defineHandler } from "../handler.ts";
 import { requireInt } from "../shared.ts";
 
@@ -76,6 +83,104 @@ export const saveProgram = defineHandler<SaveProgramInput, { id: string }>({
           name: "There's already a program with that name.",
         });
       throw err;
+    }
+  },
+});
+
+export interface AstroQueueRow {
+  id: string;
+  kind: "sale" | "refund";
+  status: "pending" | "entered" | "sent" | "failed";
+  createdAt: Date;
+  saleId: string;
+  receiptNumber: number;
+  customerName: string | null;
+  customerPhone: string | null;
+  /** What to enter in the portal, written out: "+2 Sample dry food club". */
+  entries: string[];
+  attempts: number;
+  error: string | null;
+  enteredByName: string | null;
+  enteredAt: Date | null;
+}
+
+/** "To enter in Astro": pending (and failed sends), or already entered (and sent). */
+export const listAstroQueue = defineHandler<{ status: "pending" | "entered" }, AstroQueueRow[]>({
+  action: "astro.view",
+  async run(trx, _ctx, { status }) {
+    const rows = await trx
+      .selectFrom("astro_queue as q")
+      .innerJoin("sales as s", "s.id", "q.sale_id")
+      .leftJoin("customers as c", "c.id", "s.customer_id")
+      .leftJoin("staff as st", "st.id", "q.entered_by")
+      .select([
+        "q.id",
+        "q.kind",
+        "q.status",
+        "q.created_at",
+        "q.sale_id",
+        "q.payload",
+        "q.attempts",
+        "q.error",
+        "q.entered_at",
+        "s.receipt_number",
+        "c.name as customer_name",
+        "c.phone as customer_phone",
+        "st.name as entered_by_name",
+      ])
+      .where("q.status", "in", status === "pending" ? ["pending", "failed"] : ["entered", "sent"])
+      .orderBy("q.created_at", status === "pending" ? "asc" : "desc")
+      .limit(500)
+      .execute();
+    return rows.map((r) => {
+      const payload = r.payload as unknown as AstroSalePayload | AstroRefundPayload;
+      return {
+        id: r.id,
+        kind: r.kind,
+        status: r.status,
+        createdAt: r.created_at,
+        saleId: r.sale_id,
+        receiptNumber: r.receipt_number,
+        customerName: r.customer_name ?? payload.customer?.name ?? null,
+        customerPhone: r.customer_phone ?? payload.customer?.phone ?? null,
+        entries: astroEntryLines(r.kind, payload),
+        attempts: r.attempts,
+        error: r.error,
+        enteredByName: r.entered_by_name,
+        enteredAt: r.entered_at,
+      };
+    });
+  },
+});
+
+/** Mark entered records who and when. Undo (owner or manager) puts it back to pending. */
+export const markAstroEntered = defineHandler<{ id: string; entered: boolean }, void>({
+  action: "astro.view",
+  async run(trx, ctx, { id, entered }) {
+    if (!entered && !can(ctx.role, "astro.edit"))
+      throw new AppError("forbidden", "Ask a manager or the owner to undo this.");
+    const row = await trx
+      .selectFrom("astro_queue")
+      .select(["status"])
+      .where("id", "=", id)
+      .forUpdate()
+      .executeTakeFirst();
+    if (!row) throw new AppError("not_found", "That queue row doesn't exist.");
+    if (entered) {
+      if (row.status !== "pending" && row.status !== "failed")
+        throw new AppError("conflict", "This one is already entered.");
+      await trx
+        .updateTable("astro_queue")
+        .set({ status: "entered", entered_by: ctx.staffId, entered_at: new Date() })
+        .where("id", "=", id)
+        .execute();
+    } else {
+      if (row.status !== "entered") throw new AppError("conflict", "Only entered rows can be undone.");
+      await trx
+        .updateTable("astro_queue")
+        .set({ status: "pending", entered_by: null, entered_at: null })
+        .where("id", "=", id)
+        .execute();
     }
   },
 });

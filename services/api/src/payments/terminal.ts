@@ -13,7 +13,7 @@ export interface PaymentTerminal {
   readonly name: string;
   /** Asks the reader to collect a card payment. The result arrives later (webhook or simulation). */
   charge(amountCents: number, saleId: string): Promise<TerminalCharge>;
-  /** Refunds a completed card payment in full. */
+  /** Refunds part or all of a completed card payment. */
   refund(providerRef: string, amountCents: number): Promise<{ refundRef: string }>;
 }
 

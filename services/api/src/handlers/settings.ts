@@ -11,6 +11,8 @@ export interface StoreSettings {
   taxRateMpct: number;
   /** Astro offers and rewards come off before tax (true) or after. */
   astroDiscountsBeforeTax: boolean;
+  /** Managers can refund up to this without the owner's OK. */
+  refundApprovalCents: number;
 }
 
 /** Largest logo data URL accepted (the browser resizes to 256 px first). */
@@ -21,7 +23,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
   async run(trx, ctx) {
     const b = await trx
       .selectFrom("businesses")
-      .select(["name", "brand_color", "logo_data", "astro_discounts_before_tax"])
+      .select(["name", "brand_color", "logo_data", "astro_discounts_before_tax", "refund_approval_cents"])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
     const loc = await trx
@@ -38,6 +40,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
       locationName: loc.name,
       taxRateMpct: loc.tax_rate_mpct,
       astroDiscountsBeforeTax: b.astro_discounts_before_tax,
+      refundApprovalCents: b.refund_approval_cents,
     };
   },
 });
@@ -51,6 +54,8 @@ export interface SettingsInput {
   /** As typed: "8.875" or "8.875%". */
   taxPercent: string;
   astroDiscountsBeforeTax: boolean;
+  /** Left out: unchanged. */
+  refundApprovalCents?: number;
 }
 
 export const updateSettings = defineHandler<SettingsInput, void>({
@@ -70,12 +75,21 @@ export const updateSettings = defineHandler<SettingsInput, void>({
       errors.logo = "Use a PNG, JPG or WebP image under 200 KB.";
     const tax = parseTaxPercent(input.taxPercent);
     if (tax === null) errors.taxPercent = "Enter the sales tax as a percent, like 8.875.";
+    const limit = input.refundApprovalCents;
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 0 || limit > 10_000_000))
+      errors.refundApprovalCents = "Enter the refund limit in dollars, like 50.00.";
     const first = Object.values(errors)[0];
     if (first) throw new AppError("invalid", first, errors);
 
+    const before = await trx
+      .selectFrom("businesses")
+      .select("refund_approval_cents")
+      .where("id", "=", ctx.businessId)
+      .executeTakeFirstOrThrow();
     await trx
       .updateTable("businesses")
       .set({
+        ...(limit !== undefined ? { refund_approval_cents: limit } : {}),
         name,
         brand_color: input.brandColor,
         logo_data: input.logo,
@@ -94,6 +108,14 @@ export const updateSettings = defineHandler<SettingsInput, void>({
       .set({ name: locationName, tax_rate_mpct: tax! })
       .where("id", "=", loc.id)
       .execute();
+    if (limit !== undefined && limit !== before.refund_approval_cents)
+      await audit(trx, ctx, {
+        action: "settings.refund_limit",
+        entity: "business",
+        entityId: ctx.businessId,
+        before: { refund_approval_cents: before.refund_approval_cents },
+        after: { refund_approval_cents: limit },
+      });
     // The tax rate changes what customers pay, so it's audited like a price change.
     if (loc.tax_rate_mpct !== tax)
       await audit(trx, ctx, {

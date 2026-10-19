@@ -11,7 +11,17 @@ export type {
   ProductRow,
   SaveProductInput,
 } from "./handlers/inventory.ts";
-export type { ProgramRow, SaveProgramInput } from "./handlers/astro.ts";
+export type { AstroQueueRow, ProgramRow, SaveProgramInput } from "./handlers/astro.ts";
+export type {
+  AstroEffect,
+  RefundInput,
+  RefundPlan,
+  RefundResult,
+  RefundSaleInput,
+  RefundableLineView,
+} from "./handlers/refunds.ts";
+export type { SendReceiptInput, SentReceipt } from "./handlers/receipts.ts";
+export { MAX_ASTRO_ATTEMPTS, processAstroQueue, type SendSummary } from "./astro/sender.ts";
 export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";
 export type { ImportResult, RowOutcome } from "./import/engine.ts";
 export type { UndoResult } from "./import/undo.ts";

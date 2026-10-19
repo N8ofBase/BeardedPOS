@@ -63,5 +63,7 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - Camera scanning: `barcode-detector` and `zxing-wasm` must be the same build (`apps/web/test/scannerVersions.test.ts` checks it). Upgrade both together.
 - Card payments go through `PaymentTerminal` (`services/api/src/payments/terminal.ts`). Demo mode uses `SimulatedTerminal`; never put a Square access token in the browser.
 - Prices and totals come only from `priceSale()` in `packages/core/src/sale.ts`. The server reruns it at checkout; never trust totals from the browser.
+- Refund amounts come only from `refundLine()` in `packages/core/src/refund.ts` (running totals of what was paid per line, paid units first). `refundPreview` and `refundSale` share `planRefund()`, so the screen shows exactly what happens.
+- The receipt text (printed, on screen, emailed, texted) is built once in `packages/core/src/receipt.ts`.
 - Shell edits: template backticks inside `node -e "..."` break in bash and PowerShell. Use the editor tools or a script file in the scratchpad.
 - New demo data: add a part to `ensureDemo` in `packages/db/seed/demo.ts` through `once(...)`, so existing demo browsers get it once.

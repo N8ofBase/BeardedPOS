@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CheckoutResult, ProductRow } from "@pet-pos/api";
 import { PaymentPanel } from "../src/pages/register/PaymentPanel.tsx";
-import { receiptText } from "../src/pages/register/ReceiptView.tsx";
+import { receiptText } from "@pet-pos/core";
 import {
   addProduct,
   EMPTY_TICKET,
@@ -209,9 +209,10 @@ describe("receipt", () => {
       storeName: "Sample Pet Store (DEMO)",
       locationName: "Main store (DEMO)",
       staffName: "Sam",
-      customer: { id: "c1", name: "Pat Lee" },
+      customer: { id: "c1", name: "Pat Lee", email: null, phone: null },
       lines: [
         {
+          id: "l1",
           name: "Adult Dog Food 24 lb",
           sku: "0001",
           qty: 2,
@@ -229,6 +230,8 @@ describe("receipt", () => {
       taxCents: 875,
       taxRateMpct: 7000,
       totalCents: 13373,
+      refundedCents: 0,
+      refunds: [],
       earned: [{ programName: "Dry food club", punches: 2 }],
     });
     for (const line of text.split("\n")) expect(line.length).toBeLessThanOrEqual(32);

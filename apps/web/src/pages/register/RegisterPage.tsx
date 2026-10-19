@@ -18,6 +18,7 @@ import { useToast } from "../../ui/Toast.tsx";
 import { CustomerBox } from "./CustomerBox.tsx";
 import { DiscountPicker } from "./DiscountPicker.tsx";
 import { PaymentPanel, type PayMode } from "./PaymentPanel.tsx";
+import { ReceiptSend } from "../sales/ReceiptSend.tsx";
 import { ReceiptView } from "./ReceiptView.tsx";
 import {
   addProduct,
@@ -622,6 +623,7 @@ function Done({ saleId, changeCents, onNew }: { saleId: string; changeCents: num
           Print receipt
         </button>
       </div>
+      {receipt.data && <ReceiptSend receipt={receipt.data} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { can } from "@pet-pos/core";
 import type { ProgramRow } from "@pet-pos/api";
 import { useSession } from "../session.tsx";
+import { AstroQueue } from "./AstroQueue.tsx";
 import { errorMessage, fieldErrors } from "../ui/errors.ts";
 import { useToast } from "../ui/Toast.tsx";
 
@@ -79,11 +80,7 @@ export function AstroPage() {
         </table>
       </div>
 
-      <h2>To enter in Astro</h2>
-      <p className="muted">
-        Comes with the register in Phase 2: sales with Astro credit or offers will show up here to enter in
-        the portal.
-      </p>
+      <AstroQueue />
     </>
   );
 }

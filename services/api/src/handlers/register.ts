@@ -4,6 +4,7 @@
 // queue) exactly once, in the transaction of the payment that completes it.
 import { sql, type Transaction } from "kysely";
 import {
+  allocate,
   AppError,
   can,
   priceSale,
@@ -12,12 +13,13 @@ import {
   type Ctx,
   type DiscountRule,
   type PricedSale,
+  type ReceiptData,
   type TicketLine,
 } from "@pet-pos/core";
 import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { terminal } from "../payments/terminal.ts";
-import { audit, currentLocationId, requireInt } from "../shared.ts";
+import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
 import { toCards, CUSTOMER_COLUMNS, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
 
@@ -221,6 +223,11 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
       .returning("id")
       .executeTakeFirstOrThrow();
 
+    // Each line's share of the tax, so a refund gives back exactly what was paid.
+    const taxShares = allocate(
+      p.taxCents,
+      p.lines.map((l) => l.taxBaseCents),
+    );
     const lineIds = new Map<string, string>();
     for (const [i, line] of L.lines.entries()) {
       const pl = p.lines[i]!;
@@ -242,6 +249,7 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
           line_total_cents: pl.netCents,
           astro_program_id: prod.astroProgramId,
           earns_punches: pl.earnsPunches,
+          tax_cents: taxShares[i]!,
         })
         .returning("id")
         .executeTakeFirstOrThrow();
@@ -637,39 +645,7 @@ export const cancelSale = defineHandler<{ saleId: string; reason?: string }, { r
   },
 });
 
-export interface Receipt {
-  id: string;
-  receiptNumber: number;
-  status: "open" | "paid" | "canceled";
-  createdAt: Date;
-  paidAt: Date | null;
-  storeName: string;
-  locationName: string;
-  staffName: string | null;
-  customer: { id: string; name: string } | null;
-  lines: {
-    name: string;
-    sku: string | null;
-    qty: number;
-    unitPriceCents: number;
-    discountCents: number;
-    lineTotalCents: number;
-  }[];
-  discounts: { name: string; source: string; amountCents: number; note: string | null }[];
-  payments: {
-    method: "card" | "cash";
-    status: string;
-    amountCents: number;
-    tenderedCents: number | null;
-    changeCents: number;
-  }[];
-  subtotalCents: number;
-  discountCents: number;
-  taxCents: number;
-  taxRateMpct: number;
-  totalCents: number;
-  earned: { programName: string; punches: number }[];
-}
+export type Receipt = ReceiptData;
 
 export const getSale = defineHandler<{ id: string }, Receipt>({
   action: "register.use",
@@ -689,9 +665,12 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
         "s.tax_cents",
         "s.tax_rate_mpct",
         "s.total_cents",
+        "s.refunded_cents",
         "st.name as staff_name",
         "c.id as customer_id",
         "c.name as customer_name",
+        "c.email as customer_email",
+        "c.phone as customer_phone",
       ])
       .where("s.id", "=", id)
       .executeTakeFirst();
@@ -732,6 +711,7 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       .where("p.sale_id", "=", id)
       .where("p.kind", "=", "earn")
       .execute();
+    const refunds = await saleRefunds(trx, id);
     return {
       id: s.id,
       receiptNumber: s.receipt_number,
@@ -741,8 +721,16 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       storeName: biz.name,
       locationName: loc.name,
       staffName: s.staff_name,
-      customer: s.customer_id ? { id: s.customer_id, name: s.customer_name! } : null,
+      customer: s.customer_id
+        ? {
+            id: s.customer_id,
+            name: s.customer_name!,
+            email: s.customer_email,
+            phone: s.customer_phone,
+          }
+        : null,
       lines: lines.map((l) => ({
+        id: l.id,
         name: l.name,
         sku: l.sku,
         qty: l.qty,
@@ -768,10 +756,65 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       taxCents: s.tax_cents,
       taxRateMpct: s.tax_rate_mpct,
       totalCents: s.total_cents,
+      refundedCents: s.refunded_cents,
+      refunds,
       earned: punches.map((p) => ({ programName: p.name, punches: p.qty })),
     };
   },
 });
+
+/** A sale's refunds, oldest first, for the receipt and the slide-over. */
+async function saleRefunds(trx: Trx, saleId: string): Promise<ReceiptData["refunds"]> {
+  const rows = await trx
+    .selectFrom("refunds as r")
+    .leftJoin("staff as st", "st.id", "r.staff_id")
+    .leftJoin("staff as ap", "ap.id", "r.approved_by")
+    .select([
+      "r.id",
+      "r.created_at",
+      "r.reason",
+      "r.note",
+      "r.restock",
+      "r.amount_cents",
+      "r.tax_cents",
+      "st.name as staff_name",
+      "ap.name as approved_by_name",
+    ])
+    .where("r.sale_id", "=", saleId)
+    .orderBy("r.created_at")
+    .execute();
+  if (!rows.length) return [];
+  const ids = rows.map((r) => r.id);
+  const lines = await trx
+    .selectFrom("refund_lines as rl")
+    .innerJoin("sale_lines as l", "l.id", "rl.sale_line_id")
+    .select(["rl.refund_id", "l.name", "rl.qty", "rl.amount_cents", "l.position"])
+    .where("rl.refund_id", "in", ids)
+    .orderBy("l.position")
+    .execute();
+  const pays = await trx
+    .selectFrom("refund_payments")
+    .select(["refund_id", "method", "amount_cents"])
+    .where("refund_id", "in", ids)
+    .execute();
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.created_at,
+    reason: r.reason,
+    note: r.note,
+    restock: r.restock,
+    staffName: r.staff_name,
+    approvedByName: r.approved_by_name,
+    amountCents: r.amount_cents,
+    taxCents: r.tax_cents,
+    lines: lines
+      .filter((l) => l.refund_id === r.id)
+      .map((l) => ({ name: l.name, qty: l.qty, amountCents: l.amount_cents })),
+    payments: pays
+      .filter((p) => p.refund_id === r.id)
+      .map((p) => ({ method: p.method, amountCents: p.amount_cents })),
+  }));
+}
 
 export interface SaleListRow {
   id: string;
@@ -783,6 +826,7 @@ export interface SaleListRow {
   payment: string;
   discountCents: number;
   totalCents: number;
+  refundedCents: number;
 }
 
 export interface SalesDay {
@@ -793,13 +837,21 @@ export interface SalesDay {
   cashCents: number;
   discountCents: number;
   astroDiscountCents: number;
+  /** Refunds made in the range, on any sale. */
+  refundCount: number;
+  refundCents: number;
 }
 
-/** A day's sales and totals, as on the prototype's Sales tab. from/to are ISO times. */
-export const listSales = defineHandler<{ from: string; to: string }, SalesDay>({
+/**
+ * Sales and totals for a range, as on the prototype's Sales tab. from/to are ISO
+ * times. q finds a receipt number or customer name. Totals are net of refunds made
+ * in the range, on any sale.
+ */
+export const listSales = defineHandler<{ from: string; to: string; q?: string }, SalesDay>({
   action: "sales.view",
-  async run(trx, _ctx, { from, to }) {
-    const rows = await trx
+  async run(trx, _ctx, { from, to, q }) {
+    const term = q?.trim().replace(/^#/, "") ?? "";
+    let query = trx
       .selectFrom("sales as s")
       .leftJoin("customers as c", "c.id", "s.customer_id")
       .select([
@@ -810,6 +862,7 @@ export const listSales = defineHandler<{ from: string; to: string }, SalesDay>({
         "c.name as customerName",
         "s.discount_cents as discountCents",
         "s.total_cents as totalCents",
+        "s.refunded_cents as refundedCents",
         sql<string>`(SELECT string_agg(l.qty || '× ' || l.name, ', ' ORDER BY l.position) FROM sale_lines l WHERE l.sale_id = s.id)`.as(
           "items",
         ),
@@ -819,14 +872,18 @@ export const listSales = defineHandler<{ from: string; to: string }, SalesDay>({
       ])
       .where("s.created_at", ">=", new Date(from))
       .where("s.created_at", "<", new Date(to))
-      .where("s.status", "in", ["paid", "canceled"])
-      .orderBy("s.created_at", "desc")
-      .execute();
+      .where("s.status", "in", ["paid", "canceled"]);
+    if (/^\d{1,9}$/.test(term))
+      query = query.where((eb) =>
+        eb.or([eb("s.receipt_number", "=", Number(term)), eb("c.name", "ilike", likePattern(term))]),
+      );
+    else if (term) query = query.where("c.name", "ilike", likePattern(term));
+    const rows = await query.orderBy("s.created_at", "desc").limit(500).execute();
     const paidIds = rows.filter((r) => r.status === "paid").map((r) => r.id);
     const byMethod = paidIds.length
       ? await trx
           .selectFrom("payments")
-          .select(["method", sql<number>`sum(amount_cents - refunded_cents)::int`.as("n")])
+          .select(["method", sql<number>`sum(amount_cents)::int`.as("n")])
           .where("sale_id", "in", paidIds)
           .where("status", "=", "completed")
           .groupBy("method")
@@ -840,15 +897,36 @@ export const listSales = defineHandler<{ from: string; to: string }, SalesDay>({
           .where("source", "in", ["astro_offer", "astro_reward"])
           .executeTakeFirstOrThrow()
       : { n: 0 };
+    // Refunds made in the range, by where the money went.
+    const back = await trx
+      .selectFrom("refund_payments as rp")
+      .innerJoin("refunds as r", "r.id", "rp.refund_id")
+      .select(["rp.method", sql<number>`sum(rp.amount_cents)::int`.as("n")])
+      .where("r.created_at", ">=", new Date(from))
+      .where("r.created_at", "<", new Date(to))
+      .groupBy("rp.method")
+      .execute();
+    const refunded = await trx
+      .selectFrom("refunds")
+      .select([
+        sql<number>`count(*)::int`.as("n"),
+        sql<number>`coalesce(sum(amount_cents + tax_cents), 0)::int`.as("cents"),
+      ])
+      .where("created_at", ">=", new Date(from))
+      .where("created_at", "<", new Date(to))
+      .executeTakeFirstOrThrow();
+    const backBy = (m: "card" | "cash") => back.find((r) => r.method === m)?.n ?? 0;
     const paid = rows.filter((r) => r.status === "paid");
     return {
       sales: rows.map((r) => ({ ...r, items: r.items ?? "" })),
       count: paid.length,
-      totalCents: paid.reduce((s, r) => s + r.totalCents, 0),
-      cardCents: byMethod.find((m) => m.method === "card")?.n ?? 0,
-      cashCents: byMethod.find((m) => m.method === "cash")?.n ?? 0,
+      totalCents: paid.reduce((s, r) => s + r.totalCents, 0) - refunded.cents,
+      cardCents: (byMethod.find((m) => m.method === "card")?.n ?? 0) - backBy("card"),
+      cashCents: (byMethod.find((m) => m.method === "cash")?.n ?? 0) - backBy("cash"),
       discountCents: paid.reduce((s, r) => s + r.discountCents, 0),
       astroDiscountCents: astro.n,
+      refundCount: refunded.n,
+      refundCents: refunded.cents,
     };
   },
 });

@@ -26,9 +26,11 @@ export function meFor(role: Role): Me {
 }
 
 export function renderAs(role: Role, ui: ReactNode, responses: Record<string, unknown> = {}, path = "/") {
-  const call = vi.fn(async (name: string) => {
+  // A response can be a function of the input, for screens that call with different inputs.
+  const call = vi.fn(async (name: string, input?: unknown) => {
     if (!(name in responses)) throw new Error(`No fake response for ${name}`);
-    return responses[name];
+    const r = responses[name];
+    return typeof r === "function" ? (r as (i: unknown) => unknown)(input) : r;
   });
   const api = { call } as unknown as Api;
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
