@@ -41,6 +41,6 @@ describe("me", () => {
 describe("listStaff", () => {
   it("lists the business's staff", async () => {
     const res = await invoke(db, cashier, "listStaff", undefined);
-    expect(res).toHaveLength(4);
+    expect(res).toHaveLength(5);
   });
 });

@@ -237,6 +237,7 @@ describe("deleteCustomer", () => {
       petNames: ["Biscuit"],
       punchCards: 1,
       vaccinations: 2,
+      appointments: 1,
     });
 
     await invoke(db, manager, "deleteCustomer", { id: sample!.id });
@@ -249,7 +250,13 @@ describe("deleteCustomer", () => {
       {
         action: "customer.delete",
         entity_id: sample!.id,
-        before: { name: "Sample Customer (DEMO)", pets: 1, punch_cards: 1, vaccinations: 2 },
+        before: {
+          name: "Sample Customer (DEMO)",
+          pets: 1,
+          punch_cards: 1,
+          vaccinations: 2,
+          appointments_canceled: 1,
+        },
         after: null,
         staff_id: manager.staffId,
       },

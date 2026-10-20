@@ -20,6 +20,10 @@ const PERMISSIONS = {
   "customers.edit": ["owner", "manager", "cashier"],
   "customers.delete": ["owner", "manager"],
   "grooming.view": ["owner", "manager", "cashier", "groomer"],
+  /** Booking, editing and canceling appointments. */
+  "grooming.book": ["owner", "manager", "cashier"],
+  /** The service menu, groomer hours and time off. */
+  "grooming.manage": ["owner", "manager"],
   "sales.view": ["owner", "manager"],
   /** Managers only up to the store's refund limit; above it an owner approves. */
   "sales.refund": ["owner", "manager"],

@@ -28,6 +28,17 @@ export type {
   DrawerSummary,
 } from "./handlers/drawer.ts";
 export type { CustomerHistory, HistoryOrder } from "./handlers/history.ts";
+export type {
+  AppointmentRow,
+  BookingCheck,
+  BookingInput,
+  DayGroomer,
+  GroomerInput,
+  GroomerRow,
+  GroomingDay,
+  ServiceInput,
+  ServiceRow,
+} from "./handlers/grooming.ts";
 export type { MoneyTotals } from "./handlers/totals.ts";
 export { MAX_ASTRO_ATTEMPTS, processAstroQueue, type SendSummary } from "./astro/sender.ts";
 export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";

@@ -47,6 +47,8 @@ export interface StaffTable {
   role: Role;
   cognito_sub: string | null;
   active: Generated<boolean>;
+  /** Shows on the grooming calendar. True for the Groomer role. */
+  grooms: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -392,6 +394,101 @@ export type ImportType = "customers" | "pets" | "products" | "programs" | "punch
 export type ImportEntity =
   "customer" | "pet" | "vaccination" | "product" | "program" | "punch" | "stock" | "sale";
 
+export type AppointmentStatus =
+  "booked" | "checked_in" | "in_progress" | "ready" | "done" | "no_show" | "canceled";
+
+export interface ServicesTable {
+  id: Generated<string>;
+  business_id: string;
+  name: string;
+  kind: "main" | "addon";
+  description: string | null;
+  price_s_cents: number;
+  price_m_cents: number;
+  price_l_cents: number;
+  price_xl_cents: number;
+  minutes_s: number;
+  minutes_m: number;
+  minutes_l: number;
+  minutes_xl: number;
+  buffer_minutes: Generated<number>;
+  deposit_cents: Generated<number>;
+  online: Generated<boolean>;
+  active: Generated<boolean>;
+  archived_at: Date | null;
+  position: Generated<number>;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface GroomerHoursTable {
+  id: Generated<string>;
+  business_id: string;
+  staff_id: string;
+  weekday: number;
+  /** "09:00:00" */
+  start_time: string;
+  end_time: string;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface TimeOffTable {
+  id: Generated<string>;
+  business_id: string;
+  staff_id: string;
+  starts_at: Date;
+  ends_at: Date;
+  note: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface AppointmentsTable {
+  id: Generated<string>;
+  business_id: string;
+  location_id: string;
+  customer_id: string | null;
+  pet_id: string | null;
+  staff_id: string;
+  service_id: string;
+  service_name: string;
+  pet_name: string;
+  size: PetSize;
+  starts_at: Date;
+  ends_at: Date;
+  block_ends_at: Date;
+  status: Generated<AppointmentStatus>;
+  price_cents: number;
+  notes: string | null;
+  created_by: string | null;
+  checked_in_at: Date | null;
+  started_at: Date | null;
+  ready_at: Date | null;
+  done_at: Date | null;
+  canceled_at: Date | null;
+  sale_id: string | null;
+  deposit_payment_id: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface AppointmentAddonsTable {
+  id: Generated<string>;
+  business_id: string;
+  appointment_id: string;
+  service_id: string;
+  name: string;
+  price_cents: number;
+  minutes: number;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
 export interface DrawerCountsTable {
   id: Generated<string>;
   business_id: string;
@@ -481,6 +578,11 @@ export interface DB {
   refund_payments: RefundPaymentsTable;
   receipt_outbox: ReceiptOutboxTable;
   drawer_counts: DrawerCountsTable;
+  services: ServicesTable;
+  groomer_hours: GroomerHoursTable;
+  time_off: TimeOffTable;
+  appointments: AppointmentsTable;
+  appointment_addons: AppointmentAddonsTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

@@ -4,7 +4,7 @@
 // ensureDemo() fills in whatever part is missing, so a browser seeded by an
 // earlier version picks up new sample data after an update without a reset.
 import type { Kysely, Transaction } from "kysely";
-import { addDays, isIsoDate, todayIso, type Role } from "@pet-pos/core";
+import { addDays, atLocal, isIsoDate, todayIso, type Role } from "@pet-pos/core";
 import type { DB } from "../src/schema.ts";
 
 const DEMO_STAFF: { name: string; email: string; role: Role }[] = [
@@ -31,6 +31,7 @@ export async function ensureDemo(db: Kysely<DB>): Promise<string> {
     await once(trx, businessId, "inventory", "products", seedInventory);
     await once(trx, businessId, "customers", "customers", seedCustomers);
     await once(trx, businessId, "discounts", "discounts", seedDiscounts);
+    await once(trx, businessId, "grooming", "services", seedGrooming);
     return businessId;
   });
 }
@@ -43,7 +44,7 @@ async function once(
   trx: Transaction<DB>,
   businessId: string,
   part: string,
-  table: "products" | "customers" | "discounts",
+  table: "products" | "customers" | "discounts" | "services",
   seed: (trx: Transaction<DB>, businessId: string) => Promise<void>,
 ): Promise<void> {
   const done = await trx
@@ -86,7 +87,14 @@ async function seedBusiness(trx: Transaction<DB>): Promise<string> {
 
   await trx
     .insertInto("staff")
-    .values(DEMO_STAFF.map((s) => ({ ...s, business_id: business.id, is_demo: true })))
+    .values(
+      DEMO_STAFF.map((s) => ({
+        ...s,
+        business_id: business.id,
+        is_demo: true,
+        grooms: s.role === "groomer",
+      })),
+    )
     .execute();
 
   return business.id;
@@ -422,4 +430,183 @@ export async function listDemoStaff(db: Kysely<DB>): Promise<DemoStaff[]> {
         a.name.localeCompare(b.name),
     )
     .map((r) => ({ id: r.id, businessId: r.business_id, name: r.name, role: r.role }));
+}
+
+// The prototype's grooming menu, two groomers and a few appointments today, one in
+// each early status, so the calendar isn't empty on first look.
+async function seedGrooming(trx: Transaction<DB>, businessId: string): Promise<void> {
+  const svc = async (v: {
+    name: string;
+    kind: "main" | "addon";
+    description: string | null;
+    prices: [number, number, number, number];
+    minutes: [number, number, number, number];
+    buffer: number;
+    deposit: number;
+    position: number;
+  }) =>
+    await trx
+      .insertInto("services")
+      .values({
+        business_id: businessId,
+        name: v.name,
+        kind: v.kind,
+        description: v.description,
+        price_s_cents: v.prices[0],
+        price_m_cents: v.prices[1],
+        price_l_cents: v.prices[2],
+        price_xl_cents: v.prices[3],
+        minutes_s: v.minutes[0],
+        minutes_m: v.minutes[1],
+        minutes_l: v.minutes[2],
+        minutes_xl: v.minutes[3],
+        buffer_minutes: v.buffer,
+        deposit_cents: v.deposit,
+        position: v.position,
+        is_demo: true,
+      })
+      .returning(["id", "name"])
+      .executeTakeFirstOrThrow();
+  const full = await svc({
+    name: "Sample Full groom (DEMO)",
+    kind: "main",
+    description: "Bath, haircut, nails, ears",
+    prices: [5500, 7000, 8500, 10500],
+    minutes: [90, 120, 150, 180],
+    buffer: 15,
+    deposit: 2000,
+    position: 1,
+  });
+  const bath = await svc({
+    name: "Sample Bath & brush (DEMO)",
+    kind: "main",
+    description: "Bath, blow-dry, brush-out, nails",
+    prices: [3500, 4500, 6000, 7500],
+    minutes: [60, 75, 90, 120],
+    buffer: 15,
+    deposit: 0,
+    position: 2,
+  });
+  const teeth = await svc({
+    name: "Sample Teeth brushing (DEMO)",
+    kind: "addon",
+    description: null,
+    prices: [1000, 1000, 1000, 1000],
+    minutes: [10, 10, 10, 10],
+    buffer: 0,
+    deposit: 0,
+    position: 3,
+  });
+
+  const a = await trx
+    .selectFrom("staff")
+    .select("id")
+    .where("business_id", "=", businessId)
+    .where("role", "=", "groomer")
+    .where("is_demo", "=", true)
+    .orderBy("name")
+    .executeTakeFirst();
+  if (!a) return;
+  await trx.updateTable("staff").set({ grooms: true }).where("id", "=", a.id).execute();
+  const b = await trx
+    .insertInto("staff")
+    .values({
+      business_id: businessId,
+      name: "Sample Groomer B (DEMO)",
+      email: "groomer.b.demo@example.com",
+      role: "groomer",
+      grooms: true,
+      is_demo: true,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  const hours = [
+    ...[1, 2, 3, 4, 5, 6].map((d) => ({
+      staff_id: a.id,
+      weekday: d,
+      start_time: "08:00",
+      end_time: "16:00",
+    })),
+    ...[0, 2, 3, 4, 5, 6].map((d) => ({
+      staff_id: b.id,
+      weekday: d,
+      start_time: "10:00",
+      end_time: "18:00",
+    })),
+  ];
+  await trx
+    .insertInto("groomer_hours")
+    .values(hours.map((h) => ({ ...h, business_id: businessId, is_demo: true })))
+    .execute();
+
+  const pets = await trx
+    .selectFrom("pets")
+    .select(["id", "name", "size", "customer_id"])
+    .where("business_id", "=", businessId)
+    .where("is_demo", "=", true)
+    .execute();
+  const loc = await trx
+    .selectFrom("locations")
+    .select("id")
+    .where("business_id", "=", businessId)
+    .orderBy("created_at")
+    .executeTakeFirstOrThrow();
+  const today = todayIso();
+  const book = async (
+    petName: string,
+    staffId: string,
+    service: { id: string; name: string },
+    start: number,
+    status: "booked" | "checked_in" | "in_progress",
+    sizeFallback: "S" | "M" | "L" | "XL",
+    price: number,
+    minutes: number,
+    buffer: number,
+    notes: string | null,
+    addon?: { id: string; name: string },
+  ) => {
+    const pet = pets.find((p) => p.name === petName);
+    if (!pet) return;
+    const row = await trx
+      .insertInto("appointments")
+      .values({
+        business_id: businessId,
+        location_id: loc.id,
+        customer_id: pet.customer_id,
+        pet_id: pet.id,
+        staff_id: staffId,
+        service_id: service.id,
+        service_name: service.name,
+        pet_name: pet.name,
+        size: pet.size ?? sizeFallback,
+        starts_at: atLocal(today, start),
+        ends_at: atLocal(today, start + minutes),
+        block_ends_at: atLocal(today, start + minutes + buffer),
+        status,
+        price_cents: price,
+        notes,
+        checked_in_at: status === "booked" ? null : new Date(),
+        started_at: status === "in_progress" ? new Date() : null,
+        is_demo: true,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    if (addon)
+      await trx
+        .insertInto("appointment_addons")
+        .values({
+          business_id: businessId,
+          appointment_id: row.id,
+          service_id: addon.id,
+          name: addon.name,
+          price_cents: 1000,
+          minutes: 10,
+          is_demo: true,
+        })
+        .execute();
+  };
+  // Biscuit is size M: full groom $70 + teeth $10, 120 + 10 minutes.
+  await book("Biscuit", a.id, full, 9 * 60, "checked_in", "M", 8000, 130, 15, "Short summer cut", teeth);
+  await book("Rex", b.id, bath, 10 * 60 + 30, "in_progress", "L", 6000, 90, 15, null);
+  await book("Mo", a.id, bath, 13 * 60, "booked", "S", 3500, 60, 15, "Nervous with dryers");
 }

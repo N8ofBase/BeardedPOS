@@ -435,6 +435,8 @@ export function demoSummary(c: DemoCounts): string {
     c.programs ? plural(c.programs, "Astro program", "Astro programs") : "",
     c.punches ? plural(c.punches, "punch balance", "punch balances") : "",
     c.discounts ? plural(c.discounts, "discount", "discounts") : "",
+    c.services ? plural(c.services, "grooming service", "grooming services") : "",
+    c.appointments ? plural(c.appointments, "appointment", "appointments") : "",
   ].filter(Boolean);
   return new Intl.ListFormat("en-US").format(parts);
 }
@@ -446,7 +448,12 @@ export function DemoData() {
   const [confirming, setConfirming] = useState(false);
   const counts = useQuery({ queryKey: ["demo-counts"], queryFn: () => api.call("demoDataPreview") });
   const total = counts.data
-    ? counts.data.customers + counts.data.products + counts.data.programs + counts.data.discounts
+    ? counts.data.customers +
+      counts.data.products +
+      counts.data.programs +
+      counts.data.discounts +
+      counts.data.services +
+      counts.data.appointments
     : 0;
 
   return (

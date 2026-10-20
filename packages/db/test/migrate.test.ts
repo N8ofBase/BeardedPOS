@@ -1,6 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { describe, expect, it } from "vitest";
 import { migrate, MIGRATIONS } from "../src/migrate.ts";
+import { PGLITE_OPTIONS } from "../src/parsers.ts";
 
 describe("migrate", () => {
   it("finds the migration files in order", () => {
@@ -11,7 +12,7 @@ describe("migrate", () => {
   });
 
   it("applies every migration once; a rerun does nothing", async () => {
-    const pg = new PGlite();
+    const pg = new PGlite(PGLITE_OPTIONS);
     expect(await migrate(pg)).toEqual(MIGRATIONS.map((m) => m.name));
     expect(await migrate(pg)).toEqual([]);
     const { rows } = await pg.query<{ n: number }>("SELECT count(*)::int AS n FROM schema_migrations");
@@ -19,7 +20,7 @@ describe("migrate", () => {
   });
 
   it("turns on and forces row-level security on every table with business_id", async () => {
-    const pg = new PGlite();
+    const pg = new PGlite(PGLITE_OPTIONS);
     await migrate(pg);
     const { rows } = await pg.query<{ t: string; rls: boolean; forced: boolean }>(`
       SELECT c.relname AS t, c.relrowsecurity AS rls, c.relforcerowsecurity AS forced
@@ -33,7 +34,7 @@ describe("migrate", () => {
   });
 
   it("rolls back a failing migration and reports it", async () => {
-    const pg = new PGlite();
+    const pg = new PGlite(PGLITE_OPTIONS);
     await expect(
       migrate(pg, [
         { name: "001_ok", sql: "CREATE TABLE ok (id int)" },

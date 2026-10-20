@@ -3,7 +3,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { ensureDemo, hasDemoData, listDemoStaff, seedDemo } from "../seed/demo.ts";
 import { createDb } from "../src/index.ts";
 import { migrate, MIGRATIONS } from "../src/migrate.ts";
-import { PGLITE_PARSERS } from "../src/parsers.ts";
+import { PGLITE_OPTIONS } from "../src/parsers.ts";
 import { createTestDb, insertBusiness } from "../src/test-db.ts";
 
 let db: Awaited<ReturnType<typeof createTestDb>>["db"];
@@ -58,7 +58,7 @@ describe("staff constraints", () => {
 
 describe("upgrading a demo browser from session 1a", () => {
   it("adds the new tables and sample data on top of the old database", async () => {
-    const pg = new PGlite({ parsers: PGLITE_PARSERS });
+    const pg = new PGlite(PGLITE_OPTIONS);
     await migrate(pg, MIGRATIONS.slice(0, 2));
     const old = createDb(pg);
     // What 1a's seed created: the business, a location and staff only.
@@ -88,7 +88,7 @@ describe("upgrading a demo browser from session 1a", () => {
 
 describe("migration 010", () => {
   it("converts tax rates from basis points to thousandths of a percent", async () => {
-    const pg = new PGlite({ parsers: PGLITE_PARSERS });
+    const pg = new PGlite(PGLITE_OPTIONS);
     const before = MIGRATIONS.findIndex((m) => m.name.startsWith("010_"));
     await migrate(pg, MIGRATIONS.slice(0, before));
     const biz = await pg.query<{ id: string }>(
@@ -110,7 +110,7 @@ describe("demo seed", () => {
     expect(await hasDemoData(db)).toBe(true);
 
     const staff = await listDemoStaff(db);
-    expect(staff.map((s) => s.role)).toEqual(["owner", "manager", "cashier", "groomer"]);
+    expect(staff.map((s) => s.role)).toEqual(["owner", "manager", "cashier", "groomer", "groomer"]);
     expect(staff.every((s) => s.businessId === id && s.name.endsWith("(DEMO)"))).toBe(true);
 
     const notDemo = await db.selectFrom("staff").select("id").where("is_demo", "=", false).execute();

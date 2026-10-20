@@ -2,12 +2,12 @@ import { PGlite } from "@electric-sql/pglite";
 import type { Kysely } from "kysely";
 import { createDb } from "./index.ts";
 import { migrate } from "./migrate.ts";
-import { PGLITE_PARSERS } from "./parsers.ts";
+import { PGLITE_OPTIONS } from "./parsers.ts";
 import type { DB } from "./schema.ts";
 
 /** A fresh in-memory Postgres with every migration applied. */
 export async function createTestDb(): Promise<{ pg: PGlite; db: Kysely<DB> }> {
-  const pg = new PGlite({ parsers: PGLITE_PARSERS });
+  const pg = new PGlite(PGLITE_OPTIONS);
   await migrate(pg);
   return { pg, db: createDb(pg) };
 }

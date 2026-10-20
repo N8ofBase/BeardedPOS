@@ -21,6 +21,7 @@ import { BirthdayTag, PetChip, Punches } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
 import { OrderHistory } from "./OrderHistory.tsx";
+import { UpcomingAppointments } from "./UpcomingAppointments.tsx";
 
 export function CustomerProfilePage() {
   const { id = "" } = useParams();
@@ -101,9 +102,9 @@ export function CustomerProfilePage() {
       ))}
       {c.pets.length === 0 && <p className="muted">No pets yet. Edit the customer to add one.</p>}
 
-      <OrderHistory customerId={c.id} />
+      <UpcomingAppointments customerId={c.id} />
 
-      <p className="muted small">Appointments show here once the grooming calendar is built.</p>
+      <OrderHistory customerId={c.id} />
 
       {editing && <CustomerForm id={c.id} onClose={() => setEditing(false)} />}
     </>

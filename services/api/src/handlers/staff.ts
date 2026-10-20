@@ -123,7 +123,7 @@ export const addStaff = defineHandler<StaffInput, { id: string }>({
     try {
       const row = await trx
         .insertInto("staff")
-        .values({ ...values, business_id: ctx.businessId })
+        .values({ ...values, business_id: ctx.businessId, grooms: values.role === "groomer" })
         .returning("id")
         .executeTakeFirstOrThrow();
       return { id: row.id };

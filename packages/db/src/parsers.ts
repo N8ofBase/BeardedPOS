@@ -1,3 +1,5 @@
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
+
 // How PGlite turns Postgres values into JavaScript. Dates stay "YYYY-MM-DD" strings:
 // a JS Date would carry a time zone and could show a birthday a day early.
 // numeric is only used for non-money values (pet weight), so a number is fine.
@@ -8,4 +10,13 @@ const NUMERIC_OID = 1700;
 export const PGLITE_PARSERS = {
   [DATE_OID]: (v: string) => v,
   [NUMERIC_OID]: (v: string) => Number(v),
+};
+
+/**
+ * Options for every PGlite instance: the parsers above, plus btree_gist, which the
+ * appointments exclusion constraint needs (no double-booking a groomer).
+ */
+export const PGLITE_OPTIONS = {
+  parsers: PGLITE_PARSERS,
+  extensions: { btree_gist },
 };

@@ -43,7 +43,7 @@ export default defineConfig({
       },
       workbox: {
         // PGlite's WebAssembly and data files are large; precache them so the counter works offline.
-        globPatterns: ["**/*.{js,css,html,svg,wasm,data}"],
+        globPatterns: ["**/*.{js,css,html,svg,wasm,data,gz}"],
         maximumFileSizeToCacheInBytes: 25 * 1024 * 1024,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/prototype\.html$/],

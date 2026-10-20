@@ -4,8 +4,8 @@ import { StoreMark } from "../ui/StoreMark.tsx";
 import { isHexColor, readableOn, ROLE_LABEL } from "@pet-pos/core";
 import type { Me } from "@pet-pos/api";
 import { AstroPage } from "../pages/AstroPage.tsx";
-import { ComingSoon } from "../pages/ComingSoon.tsx";
 import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
+import { GroomingPage } from "../pages/grooming/GroomingPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
 import { RegisterPage } from "../pages/register/RegisterPage.tsx";
 import { SalesRoutes } from "../pages/SalesPage.tsx";
@@ -21,11 +21,7 @@ interface Props {
 
 const PAGES: Record<string, () => React.ReactNode> = {
   "/register": () => <RegisterPage />,
-  "/grooming": () => (
-    <ComingSoon title="Grooming" phase={3}>
-      Day and week calendar per groomer, check-in, and sending a finished groom to the register.
-    </ComingSoon>
-  ),
+  "/grooming": () => <GroomingPage />,
   "/inventory": () => <InventoryRoutes />,
   "/customers": () => <CustomersRoutes />,
   "/sales": () => <SalesRoutes />,
