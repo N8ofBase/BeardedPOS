@@ -73,7 +73,7 @@ describe("demo seed after deletes", () => {
     await db.deleteFrom("demo_seed_parts").execute();
     await ensureDemo(db);
     expect(await invoke(db, owner, "searchCustomers", { q: "" })).toHaveLength(3);
-    expect(await invoke(db, owner, "listProducts", {})).toHaveLength(4);
+    expect(await invoke(db, owner, "listProducts", {})).toHaveLength(7);
   });
 });
 

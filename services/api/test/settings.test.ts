@@ -208,12 +208,12 @@ describe("remove demo data", () => {
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
       customers: 3,
       pets: 5,
-      products: 4,
+      products: 7,
       programs: 1,
       punches: 2,
       discounts: 4,
       services: 3,
-      appointments: 3,
+      appointments: 4,
     });
     await invoke(db, owner, "removeDemoData", undefined);
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
@@ -249,12 +249,12 @@ describe("remove demo data", () => {
         after: {
           customers: 3,
           pets: 5,
-          products: 4,
+          products: 7,
           programs: 1,
           punches: 2,
           discounts: 4,
           services: 3,
-          appointments: 3,
+          appointments: 4,
         },
       },
     ]);

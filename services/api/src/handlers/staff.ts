@@ -12,6 +12,8 @@ export interface Me {
     logo: string | null;
     modules: Record<string, boolean>;
     astroDiscountsBeforeTax: boolean;
+    /** Charge sales tax on grooming. */
+    groomingTaxable: boolean;
   };
   /** taxRateMpct: thousandths of a percent (8.875% = 8875). */
   location: { id: string; name: string; taxRateMpct: number } | null;
@@ -32,7 +34,15 @@ export const me = defineHandler<void, Me>({
 
     const business = await trx
       .selectFrom("businesses")
-      .select(["id", "name", "brand_color", "logo_data", "modules", "astro_discounts_before_tax"])
+      .select([
+        "id",
+        "name",
+        "brand_color",
+        "logo_data",
+        "modules",
+        "astro_discounts_before_tax",
+        "grooming_taxable",
+      ])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
     const location = await trx
@@ -50,6 +60,7 @@ export const me = defineHandler<void, Me>({
         logo: business.logo_data,
         modules: business.modules,
         astroDiscountsBeforeTax: business.astro_discounts_before_tax,
+        groomingTaxable: business.grooming_taxable,
       },
       location: location
         ? { id: location.id, name: location.name, taxRateMpct: location.tax_rate_mpct }

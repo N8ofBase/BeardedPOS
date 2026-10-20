@@ -24,6 +24,7 @@ import {
 import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { audit, currentLocationId, requireInt } from "../shared.ts";
+import { returnSupplies, useSupplies } from "./supplies.ts";
 
 type Trx = Transaction<DB>;
 type Sized = Record<PetSize, number>;
@@ -355,6 +356,15 @@ export interface AppointmentRow {
   notes: string | null;
   /** Rabies lapsed by the appointment's date. */
   rabiesLapsed: boolean;
+  /** The sale that paid for it. */
+  saleId: string | null;
+  receiptNumber: number | null;
+  /** Money refunded on that sale (for "Refunded" on a paid groom). */
+  saleRefundedCents: number;
+  /** Grooming notes on this appointment. */
+  noteCount: number;
+  /** The pet's most recent note from an earlier groom: "last time: short summer cut". */
+  lastNote: string | null;
 }
 
 async function appointmentRows(
@@ -389,6 +399,19 @@ async function appointmentRows(
       "a.block_ends_at",
       "a.price_cents",
       "a.notes",
+      "a.sale_id",
+      sql<number | null>`(SELECT s.receipt_number FROM sales s WHERE s.id = a.sale_id)`.as("receipt_number"),
+      sql<number>`coalesce((SELECT s.refunded_cents FROM sales s WHERE s.id = a.sale_id), 0)`.as(
+        "sale_refunded_cents",
+      ),
+      sql<number>`(SELECT count(*)::int FROM grooming_notes n WHERE n.appointment_id = a.id)`.as(
+        "note_count",
+      ),
+      sql<
+        string | null
+      >`(SELECT n.note FROM grooming_notes n WHERE n.pet_id = a.pet_id AND (n.appointment_id IS NULL OR n.appointment_id <> a.id) AND n.created_at < a.starts_at ORDER BY n.created_at DESC LIMIT 1)`.as(
+        "last_note",
+      ),
     ]);
   if (where.from) q = q.where("a.starts_at", ">=", where.from);
   if (where.to) q = q.where("a.starts_at", "<", where.to);
@@ -442,6 +465,11 @@ async function appointmentRows(
       blockEnd: minutesOfDay(r.block_ends_at),
       priceCents: r.price_cents,
       notes: r.notes,
+      saleId: r.sale_id,
+      receiptNumber: r.receipt_number,
+      saleRefundedCents: r.sale_refunded_cents,
+      noteCount: r.note_count,
+      lastNote: r.last_note,
       rabiesLapsed: rabiesLapsed(
         vacc
           .filter((v) => v.pet_id === r.pet_id)
@@ -837,6 +865,9 @@ export const setAppointmentStatus = defineHandler<{ id: string; status: ApptStat
         );
       throw err;
     }
+    // Back-bar supplies come off when the groom is finished, and go back if that's undone.
+    if (status === "ready" || status === "done") await useSupplies(trx, ctx, id);
+    else if (a.status === "ready") await returnSupplies(trx, ctx, id);
     return (await appointmentRows(trx, { ids: [id] }))[0]!;
   },
 });

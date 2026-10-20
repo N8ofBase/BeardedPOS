@@ -7,6 +7,7 @@ import { errorMessage } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";
 import { useToast } from "../../ui/Toast.tsx";
 import { TwoTapButton } from "../../ui/TwoTapButton.tsx";
+import { SuppliesEditor } from "./SuppliesEditor.tsx";
 
 const same = (r: Record<PetSize, number>) => SIZES.every((z) => r[z] === r.S);
 
@@ -287,6 +288,7 @@ function ServiceForm({ service, onClose }: { service: ServiceRow | null; onClose
           Booked appointments keep the price they were booked at. Price changes are recorded in the audit log.
         </p>
       </form>
+      {service && <SuppliesEditor serviceId={service.id} />}
     </SlideOver>
   );
 }

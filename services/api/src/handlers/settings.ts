@@ -15,6 +15,8 @@ export interface StoreSettings {
   refundApprovalCents: number;
   /** Starting cash left in the drawer each morning. */
   drawerFloatCents: number;
+  /** Charge sales tax on grooming. */
+  groomingTaxable: boolean;
 }
 
 /** Largest logo data URL accepted (the browser resizes to 256 px first). */
@@ -32,6 +34,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
         "astro_discounts_before_tax",
         "refund_approval_cents",
         "drawer_float_cents",
+        "grooming_taxable",
       ])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
@@ -51,6 +54,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
       astroDiscountsBeforeTax: b.astro_discounts_before_tax,
       refundApprovalCents: b.refund_approval_cents,
       drawerFloatCents: b.drawer_float_cents,
+      groomingTaxable: b.grooming_taxable,
     };
   },
 });
@@ -68,6 +72,8 @@ export interface SettingsInput {
   refundApprovalCents?: number;
   /** Left out: unchanged. */
   drawerFloatCents?: number;
+  /** Left out: unchanged. */
+  groomingTaxable?: boolean;
 }
 
 export const updateSettings = defineHandler<SettingsInput, void>({
@@ -106,6 +112,7 @@ export const updateSettings = defineHandler<SettingsInput, void>({
       .set({
         ...(limit !== undefined ? { refund_approval_cents: limit } : {}),
         ...(float !== undefined ? { drawer_float_cents: float } : {}),
+        ...(input.groomingTaxable !== undefined ? { grooming_taxable: input.groomingTaxable } : {}),
         name,
         brand_color: input.brandColor,
         logo_data: input.logo,

@@ -28,6 +28,10 @@ export interface ProductRow {
   offerLabel: string | null;
   offerCents: number | null;
   active: boolean;
+  /** Used in grooming, not sold: hidden from the register. */
+  backBar: boolean;
+  /** "oz", "each"; null means each. */
+  unit: string | null;
 }
 
 export interface MoveRow {
@@ -62,6 +66,8 @@ export function productQuery(trx: Transaction<DB>) {
       "p.astro_offer_label as offerLabel",
       "p.astro_offer_cents as offerCents",
       "p.active",
+      "p.back_bar as backBar",
+      "p.unit",
     ]);
 }
 
@@ -70,6 +76,8 @@ export interface ListProductsInput {
   lowOnly?: boolean;
   category?: string;
   includeArchived?: boolean;
+  /** The register: leave out back-bar supplies. */
+  forSale?: boolean;
 }
 
 /** Inventory list: low stock first, then by name, as in the prototype. */
@@ -78,6 +86,7 @@ export const listProducts = defineHandler<ListProductsInput, ProductRow[]>({
   async run(trx, _ctx, input = {}) {
     let q = productQuery(trx);
     if (!input.includeArchived) q = q.where("p.active", "=", true);
+    if (input.forSale) q = q.where("p.back_bar", "=", false);
     if (input.category) q = q.where("p.category", "=", input.category);
     const text = input.q?.trim();
     if (text) {
@@ -102,13 +111,14 @@ export const listProducts = defineHandler<ListProductsInput, ProductRow[]>({
 });
 
 /** Scan lookup: SKU in any case, or exact barcode. Active products only. */
-export const findByCode = defineHandler<{ code: string }, ProductRow | null>({
+export const findByCode = defineHandler<{ code: string; forSale?: boolean }, ProductRow | null>({
   action: "products.view",
-  async run(trx, _ctx, { code }) {
+  async run(trx, _ctx, { code, forSale }) {
     const c = code.trim();
     if (!c) return null;
-    const row = await productQuery(trx)
-      .where("p.active", "=", true)
+    let q = productQuery(trx).where("p.active", "=", true);
+    if (forSale) q = q.where("p.back_bar", "=", false);
+    const row = await q
       .where((eb) =>
         eb.or([
           eb(eb.fn("lower", ["p.sku"]), "=", c.toLowerCase()),
@@ -172,6 +182,8 @@ export const saveProduct = defineHandler<SaveProductInput, { id: string }>({
       astro_program_id: p.astroProgramId,
       astro_offer_label: p.offerLabel,
       astro_offer_cents: p.offerCents,
+      ...(input.backBar !== undefined ? { back_bar: input.backBar } : {}),
+      ...(input.unit !== undefined ? { unit: input.unit?.trim() || null } : {}),
     };
 
     try {

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
-import { formatDate, formatPhone, normalizePhone } from "@pet-pos/core";
-import type { CustomerCard, ProductRow, RegisterCustomer } from "@pet-pos/api";
+import { formatDate, formatMoney, formatPhone, normalizePhone } from "@pet-pos/core";
+import type { CustomerCard, GroomToCheckOut, ProductRow, RegisterCustomer } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";
@@ -15,13 +15,25 @@ export function CustomerBox({
   onAttach,
   onDrop,
   onAddProduct,
+  groomsOnTicket = [],
+  onAddGroom,
 }: {
   customer: RegisterCustomer | null;
   onAttach: (c: RegisterCustomer) => void;
   onDrop: () => void;
   onAddProduct: (p: ProductRow) => void;
+  groomsOnTicket?: string[];
+  onAddGroom?: (g: { appointmentId: string; name: string; priceCents: number }) => void;
 }) {
-  if (customer) return <Attached c={customer} onDrop={onDrop} onAddProduct={onAddProduct} />;
+  if (customer)
+    return (
+      <>
+        <Attached c={customer} onDrop={onDrop} onAddProduct={onAddProduct} />
+        {onAddGroom && (
+          <GroomsWaiting customerId={customer.card.id} onTicket={groomsOnTicket} onAdd={onAddGroom} />
+        )}
+      </>
+    );
   return <Lookup onAttach={onAttach} />;
 }
 
@@ -207,5 +219,59 @@ function Lookup({ onAttach }: { onAttach: (c: RegisterCustomer) => void }) {
         <span className="muted small">No match yet.</span>
       )}
     </form>
+  );
+}
+
+const GROOM_STATUS: Record<string, string> = {
+  booked: "booked",
+  checked_in: "checked in",
+  in_progress: "in progress",
+  ready: "ready for pickup",
+};
+
+/** Today's unpaid grooms for the attached customer, one tap to put on the ticket. */
+export function GroomsWaiting({
+  customerId,
+  onTicket,
+  onAdd,
+}: {
+  customerId: string;
+  onTicket: string[];
+  onAdd: (g: { appointmentId: string; name: string; priceCents: number }) => void;
+}) {
+  const { api } = useSession();
+  const q = useQuery({
+    queryKey: ["groomsToCheckOut", customerId],
+    queryFn: () => api.call("groomsToCheckOut", { customerId }),
+  });
+  const waiting = (q.data ?? []).filter((g: GroomToCheckOut) => !onTicket.includes(g.appointmentId));
+  if (!waiting.length) return null;
+  return (
+    <div className="astro-box" aria-label="Grooms waiting">
+      <h3>Grooming today</h3>
+      {waiting.map((g) => (
+        <div
+          key={g.appointmentId}
+          className="actions"
+          style={{ alignItems: "center", justifyContent: "space-between" }}
+        >
+          <span>
+            <b>{g.petName}</b> · {g.label} · {GROOM_STATUS[g.status] ?? g.status}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              onAdd({
+                appointmentId: g.appointmentId,
+                name: `${g.label} · ${g.petName}`,
+                priceCents: g.priceCents,
+              })
+            }
+          >
+            Add {formatMoney(g.priceCents)}
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }

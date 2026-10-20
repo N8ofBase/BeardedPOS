@@ -67,6 +67,7 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - The receipt text (printed, on screen, emailed, texted) is built once in `packages/core/src/receipt.ts`.
 - Day totals (Sales KPIs and end of day) come only from `moneyTotals()` in `services/api/src/handlers/totals.ts`. Imported orders (`sales.source = 'import'`) have no receipt number or payments and never count there; register queries filter `source = 'register'`.
 - Grooming prices and minutes come only from `quoteAppointment()` in `packages/core/src/grooming.ts`; `bookAppointment` reprices on the server. Status steps and who may take them are `nextSteps()` / `canStep()` there.
+- A groom on the register is a ticket line with `appointmentId` (no product). The server prices it from the appointment and marks the appointment done when the sale is paid. Back-bar supplies come off stock through `useSupplies()` / `returnSupplies()` in `services/api/src/handlers/supplies.ts`, once per groom.
 - Every PGlite instance takes `PGLITE_OPTIONS` (parsers plus the `btree_gist` extension the appointments exclusion constraint needs). A new `new PGlite()` without it can't run migration 014.
 - Shell edits: template backticks inside `node -e "..."` break in bash and PowerShell. Use the editor tools or a script file in the scratchpad.
 - New demo data: add a part to `ensureDemo` in `packages/db/seed/demo.ts` through `once(...)`, so existing demo browsers get it once.

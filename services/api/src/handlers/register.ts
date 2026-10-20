@@ -22,13 +22,21 @@ import { terminal } from "../payments/terminal.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
 import { toCards, CUSTOMER_COLUMNS, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
+import { useSupplies } from "./supplies.ts";
 import { moneyTotals } from "./totals.ts";
 
 type Trx = Transaction<DB>;
 
 export interface TicketInput {
   customerId: string | null;
-  lines: { key: string; productId: string; qty: number; applyOffer: boolean }[];
+  /** A product line, or a groom (appointmentId, quantity 1). */
+  lines: {
+    key: string;
+    productId?: string | null;
+    appointmentId?: string | null;
+    qty: number;
+    applyOffer: boolean;
+  }[];
   /** Astro programs whose full card is being redeemed. */
   rewards: string[];
   discounts: { discountId: string; lineKey: string | null; note?: string; approvedBy?: string | null }[];
@@ -38,6 +46,8 @@ interface Loaded {
   priced: PricedSale;
   lines: TicketLine[];
   products: Map<string, ProductRow>;
+  /** Grooms on the ticket, by line key. */
+  grooms: Map<string, { id: string; name: string }>;
   applied: (AppliedStoreDiscount & { note: string | null; approvedBy: string | null })[];
   rules: Map<string, { cashOnly: boolean }>;
   taxRateMpct: number;
@@ -50,11 +60,33 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
   if (!t.lines.length) throw new AppError("invalid", "The ticket is empty.");
   if (t.lines.length > 200) throw new AppError("invalid", "A ticket can have up to 200 lines.");
 
-  const ids = [...new Set(t.lines.map((l) => l.productId))];
-  const rows = await productQuery(trx).where("p.id", "in", ids).where("p.active", "=", true).execute();
+  const ids = [...new Set(t.lines.flatMap((l) => (l.productId ? [l.productId] : [])))];
+  const rows = ids.length
+    ? await productQuery(trx)
+        .where("p.id", "in", ids)
+        .where("p.active", "=", true)
+        .where("p.back_bar", "=", false)
+        .execute()
+    : [];
   const products = new Map(rows.map((p) => [p.id, p]));
+  const grooms = await loadGrooms(trx, ctx, t);
   const lines: TicketLine[] = t.lines.map((l) => {
-    const p = products.get(l.productId);
+    const g = grooms.get(l.key);
+    if (g) {
+      if (l.qty !== 1) throw new AppError("invalid", "A groom is always quantity 1.");
+      return {
+        key: l.key,
+        productId: null,
+        name: g.name,
+        unitPriceCents: g.priceCents,
+        qty: 1,
+        taxClass: g.taxClass,
+        astroProgramId: null,
+        offer: null,
+        applyOffer: false,
+      };
+    }
+    const p = l.productId ? products.get(l.productId) : undefined;
     if (!p)
       throw new AppError(
         "invalid",
@@ -159,12 +191,90 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
     priced,
     lines,
     products,
+    grooms: new Map([...grooms].map(([k, g]) => [k, { id: g.id, name: g.name }])),
     applied,
     rules,
     taxRateMpct: loc.tax_rate_mpct,
     astroBeforeTax: biz.astro_discounts_before_tax,
     locationId: loc.id,
   };
+}
+
+/**
+ * Grooms on the ticket: the appointment's booked price, for the ticket's customer,
+ * not already paid and not on another open sale. Grooming is taxed only when the
+ * store's setting says so.
+ */
+async function loadGrooms(trx: Trx, ctx: Ctx, t: TicketInput) {
+  const out = new Map<
+    string,
+    { id: string; name: string; priceCents: number; taxClass: "standard" | "exempt" }
+  >();
+  const wanted = t.lines.filter((l) => l.appointmentId);
+  if (!wanted.length) return out;
+  const biz = await trx
+    .selectFrom("businesses")
+    .select("grooming_taxable")
+    .where("id", "=", ctx.businessId)
+    .executeTakeFirstOrThrow();
+  const seen = new Set<string>();
+  for (const l of wanted) {
+    const id = l.appointmentId!;
+    if (seen.has(id)) throw new AppError("invalid", "That groom is already on the ticket.");
+    seen.add(id);
+    const a = await trx
+      .selectFrom("appointments as a")
+      .leftJoin("customers as c", "c.id", "a.customer_id")
+      .select([
+        "a.id",
+        "a.status",
+        "a.customer_id",
+        "a.pet_name",
+        "a.service_name",
+        "a.price_cents",
+        "c.name as customer_name",
+      ])
+      .where("a.id", "=", id)
+      .executeTakeFirst();
+    if (!a) throw new AppError("invalid", "A groom on the ticket doesn't exist anymore. Remove it.");
+    if (a.status === "done") throw new AppError("invalid", `${a.pet_name}'s groom is already paid.`);
+    if (a.status === "canceled" || a.status === "no_show")
+      throw new AppError(
+        "invalid",
+        `${a.pet_name}'s appointment was ${a.status === "canceled" ? "canceled" : "a no-show"}. Remove it from the ticket.`,
+      );
+    if (!t.customerId) throw new AppError("invalid", "Attach the customer for this groom.");
+    if (a.customer_id !== t.customerId)
+      throw new AppError(
+        "invalid",
+        `This groom is for ${a.customer_name ?? "another customer"}. Change the customer or remove the groom.`,
+      );
+    const open = await trx
+      .selectFrom("sale_lines as l")
+      .innerJoin("sales as s", "s.id", "l.sale_id")
+      .select("s.receipt_number")
+      .where("l.appointment_id", "=", id)
+      .where("s.status", "=", "open")
+      .executeTakeFirst();
+    if (open)
+      throw new AppError(
+        "conflict",
+        `${a.pet_name}'s groom is already on receipt #${open.receipt_number}, which hasn't been paid. Finish or cancel that one first.`,
+      );
+    const addons = await trx
+      .selectFrom("appointment_addons")
+      .select("name")
+      .where("appointment_id", "=", id)
+      .orderBy("created_at")
+      .execute();
+    out.set(l.key, {
+      id,
+      name: `${[a.service_name, ...addons.map((x) => x.name)].join(" + ")} · ${a.pet_name}`,
+      priceCents: a.price_cents,
+      taxClass: biz.grooming_taxable ? "standard" : "exempt",
+    });
+  }
+  return out;
 }
 
 async function nextReceiptNumber(trx: Trx, businessId: string): Promise<number> {
@@ -232,23 +342,25 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
     const lineIds = new Map<string, string>();
     for (const [i, line] of L.lines.entries()) {
       const pl = p.lines[i]!;
-      const prod = L.products.get(line.productId!)!;
+      const prod = line.productId ? L.products.get(line.productId) : undefined;
+      const groom = L.grooms.get(line.key);
       const row = await trx
         .insertInto("sale_lines")
         .values({
           business_id: ctx.businessId,
           sale_id: sale.id,
           position: i + 1,
-          product_id: prod.id,
-          name: prod.name,
-          sku: prod.sku,
-          barcode: prod.barcode,
-          tax_class: prod.taxClass,
+          product_id: prod?.id ?? null,
+          appointment_id: groom?.id ?? null,
+          name: prod?.name ?? line.name,
+          sku: prod?.sku ?? null,
+          barcode: prod?.barcode ?? null,
+          tax_class: line.taxClass,
           qty: line.qty,
           unit_price_cents: line.unitPriceCents,
           discount_cents: pl.discountCents,
           line_total_cents: pl.netCents,
-          astro_program_id: prod.astroProgramId,
+          astro_program_id: prod?.astroProgramId ?? null,
           earns_punches: pl.earnsPunches,
           tax_cents: taxShares[i]!,
         })
@@ -366,6 +478,18 @@ async function finishSale(trx: Trx, ctx: Ctx, saleId: string): Promise<boolean> 
       .execute();
   }
 
+  // Grooms on the sale are paid: done, linked to the sale, and their supplies used.
+  for (const l of lines) {
+    if (!l.appointment_id) continue;
+    await trx
+      .updateTable("appointments")
+      .set({ status: "done", done_at: new Date(), sale_id: saleId })
+      .where("id", "=", l.appointment_id)
+      .where("status", "not in", ["canceled", "no_show"])
+      .execute();
+    await useSupplies(trx, ctx, l.appointment_id);
+  }
+
   const discounts = await trx
     .selectFrom("sale_discounts")
     .selectAll()
@@ -438,13 +562,15 @@ async function finishSale(trx: Trx, ctx: Ctx, saleId: string): Promise<boolean> 
             astroCustomerId: customer.astro_customer_id,
           }
         : null,
-      items: lines.map((l) => ({
-        sku: l.sku,
-        upc: l.barcode,
-        name: l.name,
-        qty: l.qty,
-        unitPriceCents: l.unit_price_cents,
-      })),
+      items: lines
+        .filter((l) => l.product_id)
+        .map((l) => ({
+          sku: l.sku,
+          upc: l.barcode,
+          name: l.name,
+          qty: l.qty,
+          unitPriceCents: l.unit_price_cents,
+        })),
       earned: sale.customer_id
         ? [...earned].map(([programId, punches]) => ({
             programId,

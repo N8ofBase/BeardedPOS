@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import {
   can,
   clockText,
@@ -14,6 +15,7 @@ import { errorMessage } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";
 import { useToast } from "../../ui/Toast.tsx";
 import { TwoTapButton } from "../../ui/TwoTapButton.tsx";
+import { AppointmentNotes } from "./Notes.tsx";
 
 /** Moves an appointment to a status, with the toasts the counter needs. */
 export function useStatus() {
@@ -48,6 +50,11 @@ export function PetAlerts({ a }: { a: AppointmentRow }) {
       {(a.coat || a.temperament) && (
         <span className="muted">{[a.coat, a.temperament].filter(Boolean).join(" · ")}</span>
       )}
+      {a.lastNote && (
+        <span>
+          <b>Last time:</b> {a.lastNote}
+        </span>
+      )}
     </>
   );
 }
@@ -64,6 +71,7 @@ export function AppointmentPanel({
   const { api, me } = useSession();
   const qc = useQueryClient();
   const toast = useToast();
+  const navigate = useNavigate();
   const status = useStatus();
   const role = me.staff.role;
   const canBook = can(role, "grooming.book");
@@ -130,6 +138,21 @@ export function AppointmentPanel({
               {s.label}
             </button>
           ))}
+          {can(role, "register.use") &&
+            ["booked", "checked_in", "in_progress", "ready"].includes(a.status) &&
+            a.customerId && (
+              <button
+                type="button"
+                className={a.status === "ready" ? "primary" : ""}
+                onClick={() =>
+                  navigate("/register", {
+                    state: { groom: { appointmentId: a.id, customerId: a.customerId } },
+                  })
+                }
+              >
+                Check out at register
+              </button>
+            )}
           {canBook && open && (
             <button type="button" onClick={onEdit}>
               Edit
@@ -145,12 +168,15 @@ export function AppointmentPanel({
             />
           )}
         </div>
-        {a.status === "ready" && (
-          <p className="muted small" style={{ margin: 0 }}>
-            Checking out at the register comes in the next update. Until then a manager can mark it done when
-            it's paid.
+        {a.status === "done" && (
+          <p style={{ margin: 0 }}>
+            {a.receiptNumber ? `Paid · receipt #${a.receiptNumber}` : "Done (paid outside the register)"}
+            {a.saleRefundedCents > 0 && (
+              <span className="tag low"> Refunded {formatMoney(a.saleRefundedCents)}</span>
+            )}
           </p>
         )}
+        <AppointmentNotes appointmentId={a.id} />
       </div>
     </SlideOver>
   );

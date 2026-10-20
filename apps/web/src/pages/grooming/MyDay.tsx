@@ -1,6 +1,9 @@
-import { clockText, nextSteps, STATUS_LABEL } from "@pet-pos/core";
+import { useState } from "react";
+import { can, clockText, nextSteps, STATUS_LABEL } from "@pet-pos/core";
 import type { AppointmentRow } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
+import { SlideOver } from "../../ui/SlideOver.tsx";
+import { NoteForm } from "./Notes.tsx";
 import { PetAlerts, useStatus } from "./AppointmentPanel.tsx";
 
 /**
@@ -16,6 +19,8 @@ export function MyDay({
 }) {
   const { me } = useSession();
   const status = useStatus();
+  const canNote = can(me.staff.role, "grooming.notes");
+  const [noting, setNoting] = useState<AppointmentRow | null>(null);
   const list = appointments.filter((a) => a.status !== "canceled").sort((a, b) => a.start - b.start);
 
   if (!list.length) return <p className="muted">No appointments.</p>;
@@ -56,6 +61,11 @@ export function MyDay({
                 {forward.label}
               </button>
             )}
+            {canNote && a.status !== "booked" && (
+              <button type="button" onClick={() => setNoting(a)}>
+                Add note or photos{a.noteCount ? ` (${a.noteCount} saved)` : ""}
+              </button>
+            )}
             {back && (
               <button
                 type="button"
@@ -69,6 +79,11 @@ export function MyDay({
           </article>
         );
       })}
+      {noting && (
+        <SlideOver title={`Note for ${noting.petName}`} onClose={() => setNoting(null)}>
+          <NoteForm appointmentId={noting.id} onDone={() => setNoting(null)} />
+        </SlideOver>
+      )}
     </div>
   );
 }

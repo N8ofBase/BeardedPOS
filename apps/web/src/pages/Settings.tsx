@@ -90,6 +90,7 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     astroDiscountsBeforeTax: s.astroDiscountsBeforeTax,
     refundLimit: centsToInput(s.refundApprovalCents),
     drawerFloat: centsToInput(s.drawerFloatCents),
+    groomingTaxable: s.groomingTaxable,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -234,6 +235,17 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
           <p className="muted small" style={{ margin: 0 }}>
             Check the store's Astro agreement. When this is off, tax is charged on the price before the Astro
             discount.
+          </p>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={f.groomingTaxable}
+              onChange={(e) => setF({ ...f, groomingTaxable: e.target.checked })}
+            />
+            Charge sales tax on grooming
+          </label>
+          <p className="muted small" style={{ margin: 0 }}>
+            Many states don't tax pet grooming; some do. Check your state's rules.
           </p>
         </fieldset>
 

@@ -21,6 +21,7 @@ import { BirthdayTag, PetChip, Punches } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
 import { OrderHistory } from "./OrderHistory.tsx";
+import { PetGroomingHistory } from "./PetGroomingHistory.tsx";
 import { UpcomingAppointments } from "./UpcomingAppointments.tsx";
 
 export function CustomerProfilePage() {
@@ -122,11 +123,12 @@ function PetPanel({ pet, customerId, canEdit }: { pet: PetDetail; customerId: st
       </div>
       {lapsed && rabies && (
         <p className="warn-line">
-          Rabies expired {formatDate(rabies.expiresOn)}; booking will be blocked until it's updated.
+          Rabies expired {formatDate(rabies.expiresOn)}. Booking a groom will ask for proof first.
         </p>
       )}
       <PetDetails pet={pet} customerId={customerId} canEdit={canEdit} />
       <Vaccinations pet={pet} customerId={customerId} canEdit={canEdit} />
+      <PetGroomingHistory petId={pet.id} />
     </section>
   );
 }

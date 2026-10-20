@@ -22,6 +22,8 @@ export interface BusinessesTable {
   refund_approval_cents: Generated<number>;
   /** Starting cash left in the drawer each morning. */
   drawer_float_cents: Generated<number>;
+  /** Charge sales tax on grooming. */
+  grooming_taxable: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -83,6 +85,10 @@ export interface ProductsTable {
   astro_program_id: string | null;
   astro_offer_label: string | null;
   astro_offer_cents: number | null;
+  /** Used in grooming, not sold: hidden from the register. */
+  back_bar: Generated<boolean>;
+  /** "oz", "each"; null means each. */
+  unit: string | null;
   active: Generated<boolean>;
   import_batch_id: string | null;
   is_demo: Generated<boolean>;
@@ -472,9 +478,49 @@ export interface AppointmentsTable {
   canceled_at: Date | null;
   sale_id: string | null;
   deposit_payment_id: string | null;
+  supplies_used_at: Date | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+}
+
+export interface ServiceSuppliesTable {
+  id: Generated<string>;
+  business_id: string;
+  service_id: string;
+  product_id: string;
+  qty_s: number;
+  qty_m: number;
+  qty_l: number;
+  qty_xl: number;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface GroomingNotesTable {
+  id: Generated<string>;
+  business_id: string;
+  pet_id: string;
+  appointment_id: string | null;
+  staff_id: string | null;
+  note: string;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
+export interface GroomingPhotosTable {
+  id: Generated<string>;
+  business_id: string;
+  note_id: string;
+  kind: "before" | "after";
+  image_data: string | null;
+  storage_key: string | null;
+  width: number;
+  height: number;
+  bytes: number;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
 }
 
 export interface AppointmentAddonsTable {
@@ -583,6 +629,9 @@ export interface DB {
   time_off: TimeOffTable;
   appointments: AppointmentsTable;
   appointment_addons: AppointmentAddonsTable;
+  service_supplies: ServiceSuppliesTable;
+  grooming_notes: GroomingNotesTable;
+  grooming_photos: GroomingPhotosTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

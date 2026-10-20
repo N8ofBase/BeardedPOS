@@ -150,3 +150,15 @@ export function canStep(from: ApptStatus, to: ApptStatus, role: Role): boolean {
 export function quoteText(q: Quote, size: PetSize): string {
   return `${q.label} · size ${size} · ${formatMoney(q.priceCents)} · ${durationText(q.minutes)}`;
 }
+
+export interface SupplyRates {
+  productId: string;
+  qty: Record<PetSize, number>;
+}
+
+/** What a groom uses at a pet size: amounts per product added up, zeros left out. */
+export function suppliesFor(rates: SupplyRates[], size: PetSize): { productId: string; qty: number }[] {
+  const total = new Map<string, number>();
+  for (const r of rates) total.set(r.productId, (total.get(r.productId) ?? 0) + r.qty[size]);
+  return [...total].filter(([, qty]) => qty > 0).map(([productId, qty]) => ({ productId, qty }));
+}

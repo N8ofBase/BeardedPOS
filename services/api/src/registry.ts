@@ -49,6 +49,15 @@ import {
   setAppointmentStatus,
   updateAppointment,
 } from "./handlers/grooming.ts";
+import {
+  addGroomingNote,
+  appointmentNotes,
+  deleteGroomingNote,
+  groomsToCheckOut,
+  listServiceSupplies,
+  petGroomingHistory,
+  saveServiceSupplies,
+} from "./handlers/groomingHistory.ts";
 import { customerHistory } from "./handlers/history.ts";
 import { deleteDiscount, listDiscounts, saveDiscount } from "./handlers/discounts.ts";
 import {
@@ -134,6 +143,13 @@ export const handlers = {
   setAppointmentStatus,
   cancelAppointment,
   customerAppointments,
+  addGroomingNote,
+  deleteGroomingNote,
+  appointmentNotes,
+  petGroomingHistory,
+  listServiceSupplies,
+  saveServiceSupplies,
+  groomsToCheckOut,
 };
 
 export type Handlers = typeof handlers;

@@ -24,6 +24,8 @@ const PERMISSIONS = {
   "grooming.book": ["owner", "manager", "cashier"],
   /** The service menu, groomer hours and time off. */
   "grooming.manage": ["owner", "manager"],
+  /** Grooming notes and before/after photos. */
+  "grooming.notes": ["owner", "manager", "groomer"],
   "sales.view": ["owner", "manager"],
   /** Managers only up to the store's refund limit; above it an owner approves. */
   "sales.refund": ["owner", "manager"],

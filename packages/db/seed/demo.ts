@@ -32,6 +32,7 @@ export async function ensureDemo(db: Kysely<DB>): Promise<string> {
     await once(trx, businessId, "customers", "customers", seedCustomers);
     await once(trx, businessId, "discounts", "discounts", seedDiscounts);
     await once(trx, businessId, "grooming", "services", seedGrooming);
+    await once(trx, businessId, "grooming_supplies", "service_supplies", seedGroomingSupplies);
     return businessId;
   });
 }
@@ -44,7 +45,7 @@ async function once(
   trx: Transaction<DB>,
   businessId: string,
   part: string,
-  table: "products" | "customers" | "discounts" | "services",
+  table: "products" | "customers" | "discounts" | "services" | "service_supplies",
   seed: (trx: Transaction<DB>, businessId: string) => Promise<void>,
 ): Promise<void> {
   const done = await trx
@@ -609,4 +610,165 @@ async function seedGrooming(trx: Transaction<DB>, businessId: string): Promise<v
   await book("Biscuit", a.id, full, 9 * 60, "checked_in", "M", 8000, 130, 15, "Short summer cut", teeth);
   await book("Rex", b.id, bath, 10 * 60 + 30, "in_progress", "L", 6000, 90, 15, null);
   await book("Mo", a.id, bath, 13 * 60, "booked", "S", 3500, 60, 15, "Nervous with dryers");
+}
+
+/** A simple sample picture (SVG), so the demo's grooming history has photos to show. */
+function samplePhoto(label: string, color: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480"><rect width="640" height="480" fill="${color}"/><circle cx="320" cy="250" r="90" fill="#ffffff" opacity="0.85"/><circle cx="250" cy="150" r="34" fill="#ffffff" opacity="0.85"/><circle cx="320" cy="122" r="34" fill="#ffffff" opacity="0.85"/><circle cx="390" cy="150" r="34" fill="#ffffff" opacity="0.85"/><text x="320" y="430" font-family="sans-serif" font-size="40" text-anchor="middle" fill="#ffffff">${label} (sample)</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+// Back-bar supplies for the sample services, and a past groom for Biscuit with a
+// note and photos, so the grooming history isn't empty.
+async function seedGroomingSupplies(trx: Transaction<DB>, businessId: string): Promise<void> {
+  const location = await trx
+    .selectFrom("locations")
+    .select("id")
+    .where("business_id", "=", businessId)
+    .orderBy("created_at")
+    .executeTakeFirstOrThrow();
+  const supply = async (
+    sku: string,
+    name: string,
+    unit: string,
+    onHand: number,
+    reorderAt: number,
+    costCents: number,
+  ) => {
+    const row = await trx
+      .insertInto("products")
+      .values({
+        business_id: businessId,
+        sku,
+        name,
+        category: "Back-bar",
+        price_cents: 0,
+        cost_cents: costCents,
+        tax_class: "exempt",
+        reorder_at: reorderAt,
+        back_bar: true,
+        unit,
+        is_demo: true,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await trx
+      .insertInto("inventory_moves")
+      .values({
+        business_id: businessId,
+        product_id: row.id,
+        location_id: location.id,
+        qty_change: onHand,
+        reason: "adjust",
+        note: "Opening count",
+        is_demo: true,
+      })
+      .execute();
+    return row.id;
+  };
+  const shampoo = await supply("BB-01", "Sample Oatmeal shampoo (DEMO)", "oz", 128, 32, 12);
+  const conditioner = await supply("BB-02", "Sample Conditioner (DEMO)", "oz", 64, 16, 15);
+  await supply("BB-03", "Sample Clipper blade (DEMO)", "each", 4, 2, 2400);
+
+  const services = await trx
+    .selectFrom("services")
+    .select(["id", "name"])
+    .where("business_id", "=", businessId)
+    .where("is_demo", "=", true)
+    .execute();
+  const full = services.find((x) => x.name.startsWith("Sample Full groom"));
+  const bath = services.find((x) => x.name.startsWith("Sample Bath"));
+  const link = (serviceId: string, productId: string, qty: [number, number, number, number]) =>
+    trx
+      .insertInto("service_supplies")
+      .values({
+        business_id: businessId,
+        service_id: serviceId,
+        product_id: productId,
+        qty_s: qty[0],
+        qty_m: qty[1],
+        qty_l: qty[2],
+        qty_xl: qty[3],
+        is_demo: true,
+      })
+      .execute();
+  if (full) {
+    await link(full.id, shampoo, [2, 3, 4, 6]);
+    await link(full.id, conditioner, [1, 1, 2, 3]);
+  }
+  if (bath) await link(bath.id, shampoo, [2, 3, 4, 6]);
+
+  // Biscuit's groom three weeks ago, paid elsewhere (before this system).
+  const biscuit = await trx
+    .selectFrom("pets")
+    .select(["id", "customer_id", "name"])
+    .where("business_id", "=", businessId)
+    .where("is_demo", "=", true)
+    .where("name", "=", "Biscuit")
+    .executeTakeFirst();
+  const groomer = await trx
+    .selectFrom("staff")
+    .select("id")
+    .where("business_id", "=", businessId)
+    .where("role", "=", "groomer")
+    .where("is_demo", "=", true)
+    .orderBy("name")
+    .executeTakeFirst();
+  if (!biscuit || !groomer || !full) return;
+  const day = addDays(todayIso(), -21);
+  const past = await trx
+    .insertInto("appointments")
+    .values({
+      business_id: businessId,
+      location_id: location.id,
+      customer_id: biscuit.customer_id,
+      pet_id: biscuit.id,
+      staff_id: groomer.id,
+      service_id: full.id,
+      service_name: full.name,
+      pet_name: biscuit.name,
+      size: "M",
+      starts_at: atLocal(day, 10 * 60),
+      ends_at: atLocal(day, 12 * 60),
+      block_ends_at: atLocal(day, 12 * 60 + 15),
+      status: "done",
+      price_cents: 7000,
+      done_at: atLocal(day, 12 * 60),
+      supplies_used_at: atLocal(day, 12 * 60),
+      is_demo: true,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  const note = await trx
+    .insertInto("grooming_notes")
+    .values({
+      business_id: businessId,
+      pet_id: biscuit.id,
+      appointment_id: past.id,
+      staff_id: groomer.id,
+      note: "Short summer cut. A little matted behind the ears; brush there weekly.",
+      created_at: atLocal(day, 12 * 60),
+      is_demo: true,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  for (const [kind, color] of [
+    ["before", "#8a6d4b"],
+    ["after", "#0f6e5a"],
+  ] as const) {
+    const data = samplePhoto(kind === "before" ? "Before" : "After", color);
+    await trx
+      .insertInto("grooming_photos")
+      .values({
+        business_id: businessId,
+        note_id: note.id,
+        kind,
+        image_data: data,
+        width: 640,
+        height: 480,
+        bytes: data.length,
+        is_demo: true,
+      })
+      .execute();
+  }
 }

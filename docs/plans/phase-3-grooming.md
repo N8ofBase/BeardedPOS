@@ -1,6 +1,6 @@
 # Phase 3 plan: grooming
 
-Status: **3a done 2026-10-20, with My day folded in.** 3b and 3c not started.
+Status: **3a and 3b done 2026-10-20** (My day folded into 3a). 3c not started.
 
 **3a built differently from this plan:**
 - **Live checks while booking:** the form asks the server (`checkAppointment`) as you fill it in, so the quote, warnings and clash message are the server's own. Nothing is saved until **Book it**.
@@ -164,3 +164,130 @@ New permissions: `grooming.book` (owner, manager, cashier) and `grooming.manage`
 ### Out of scope for 3a
 
 Checkout, notes and photos, and back-bar (3b); week view, drag, bulk move and the ready text (3c); online booking, deposits and reminders (Phase 4).
+
+---
+
+## Session 3b: checkout, grooming history and back-bar
+
+Status: **done 2026-10-20.**
+
+**Built differently from this plan:**
+- **Item discounts on a groom line** aren't offered on the register yet. The discount picker lists retail lines only. Whole-ticket discounts (employee, senior) do cover grooming.
+- **The pet's grooming history** lists grooms from check-in on (booked ones are upcoming, not history), by status rather than by time of day.
+- **The sample photos** in the demo are simple pictures (SVG) made by the seed. Real photos are JPEGs resized in the browser.
+- **The camera:** on a phone, "Add before photo" / "Add after photo" opens it directly.
+
+When it's done:
+- **Checkout:** a finished groom goes onto the register ticket next to any retail items. Paying for it marks the appointment done and links it to the sale.
+- **Grooming history:** groomers write notes and take before and after photos on their phone. The pet's profile shows each past groom with its notes and photos.
+- **Back-bar:** the shampoo, conditioner and blades a service uses come off stock automatically when the groom is finished.
+
+### Checking out a groom
+
+- **Putting it on the ticket:**
+  - **Check out at register** on the appointment (booked, checked in, in progress or ready) opens the register with the groom on the ticket and the customer attached. Groomers don't see this button, since they don't use the register.
+  - **On the register:** once a customer is attached, the customer box shows their grooms from today that haven't been paid ("Biscuit · Full groom · ready for pickup"), each with **Add**.
+- **The line:** "Full groom + Teeth brushing · Biscuit". The price is the appointment's booked price (add-ons included), quantity 1, no stepper.
+- **One sale per groom:**
+  - A groom can be on only one open sale at a time; adding it to a second ticket is refused.
+  - A ticket whose customer doesn't match the groom is refused: "This groom is for Sample Customer. Change the customer or remove the groom."
+- **Discounts and tax:**
+  - **Store discounts** work as usual. An item discount can go on the groom line, and whole-ticket discounts (employee, senior) cover grooming too.
+  - **Astro:** grooming doesn't earn punches.
+  - **Tax:** new store setting **"Charge sales tax on grooming"**, off by default. Many states don't tax pet grooming, but some do; the owner checks theirs.
+- **Paying:** finishing the sale (cash, card or split) sets the appointment to **done**, records done_at and sale_id, and the receipt shows the groom line.
+- **Afterwards:**
+  - **Canceling the sale** before payment leaves the appointment as it was.
+  - **Refunding the groom line** refunds the money (2b). The appointment stays done, with "Refunded" shown on it.
+- **Manual "Mark done (paid elsewhere)"** from 3a stays, for owners and managers.
+- **On the calendar,** a done appointment shows "Paid · receipt #1043" with a link to the receipt.
+
+### Grooming notes and photos
+
+- **Writing a note:** **Add note** on the appointment panel and on My day cards. A short text ("Matted behind ears, shaved short") plus up to 6 photos marked Before or After.
+- **Photos:**
+  - On a phone, the photo button opens the camera, and the photo is resized in the browser (longest side 1280 px, JPEG).
+  - **Demo:** photos are saved in the demo database, each under about 250 KB.
+  - **Hosted:** photos go to S3 and only the key is stored.
+- **Who:**
+  - **Writing:** groomers, managers and owners (new permission `grooming.notes`).
+  - **Reading:** everyone who can see customers.
+  - **Deleting:** a note's author can delete their own on the same day; owners and managers can delete any note.
+- **Where they show:**
+  - the appointment panel
+  - a new **Grooming history** on each pet on the customer profile: date, service, groomer, price, notes and photo thumbnails, newest first, with a photo opening full size
+  - My day's card for that pet (the last groom's note, so the groomer sees "last time: short summer cut")
+
+### Back-bar supplies
+
+- **Products:**
+  - **Back-bar supply:** a new flag for supplies used in grooming and not sold. They're hidden from the register grid and search, and still show in Inventory with stock, reorder points and low-stock alerts.
+  - **Unit:** an optional label ("oz", "bottle", "each") shown next to on-hand counts, so a gallon of shampoo can be counted in ounces.
+- **Supplies per service:** each service (and add-on) gets **Supplies used**: a product and an amount by pet size, e.g. "Oatmeal shampoo: 2 · 3 · 4 · 6 oz", with "Same for all sizes".
+  - Any product can be listed, including a retail product the shop also uses on grooms.
+- **When stock comes off:** when the groom is marked **ready for pickup**, the groom is finished and the supplies are used.
+  - **Stock moves:** `consume` moves for the main service and each add-on, at the appointment's size, referencing the appointment.
+  - **Undo ready:** puts them back with a matching move, so a mis-tap doesn't lose stock.
+  - **Done by hand:** for an appointment marked done without passing through ready, the supplies come off then.
+- **Price:** back-bar use doesn't change the groom's price.
+- **The 1b column:** `inventory_levels.back_bar_on_hand` from 1b isn't needed and stays unused. One on-hand count per product is simpler for a small shop.
+
+### Database: migration 015_grooming_checkout
+
+| Table / change | Fields |
+| --- | --- |
+| `businesses` | + grooming_taxable (default false) |
+| `sale_lines` | appointment_id gets a `(business_id, id)` foreign key to appointments, and a check that a line has a product or an appointment |
+| `appointments` | + supplies_used_at (so supplies come off once) |
+| `products` | + back_bar (default false), + unit |
+| `service_supplies` | service_id, product_id, qty_s, qty_m, qty_l, qty_xl (whole numbers in the product's unit) |
+| `grooming_notes` | pet_id, appointment_id, staff_id, note, created_at |
+| `grooming_photos` | note_id, kind (before, after), image_data (demo), storage_key (hosted), width, height, bytes |
+
+As always: business_id, is_demo, forced row-level security and `(business_id, id)` foreign keys. Notes and photos can't be changed by the app, only added or deleted by the rules above.
+
+### Handlers
+
+| Handler | Who | What |
+| --- | --- | --- |
+| `startCheckout` | register.use | Ticket lines can be `{appointmentId}`. The server prices them from the appointment, checks the customer and that the groom isn't on another open sale, and applies the grooming tax setting |
+| finishing a sale | (internal) | Marks the sale's appointments done |
+| `groomsToCheckOut {customerId}` | register.use | Today's unpaid grooms for the register's customer box |
+| `addGroomingNote {appointmentId, note, photos}`, `deleteGroomingNote` | grooming.notes | Photo size and type checked on the server |
+| `petGroomingHistory {petId, before?}` | customers.view | Past grooms with notes and photos, 10 at a time |
+| `saveServiceSupplies {serviceId, supplies}` | grooming.manage | Supplies per service |
+| `setAppointmentStatus` | as 3a | + uses or returns supplies on ready / undo ready |
+| `saveProduct` | products.edit | + back-bar, unit |
+| `updateSettings` | settings.edit | + grooming taxable |
+
+### Demo data (a new `once()` part)
+
+- **Supplies:** Sample Oatmeal shampoo (oz), Sample Conditioner (oz) and Sample Clipper blade (each) as back-bar supplies, linked to the sample services.
+- **History:** a past groom for Biscuit with a note and two small sample photos, so the pet's grooming history isn't empty.
+
+### Tests
+
+- **core:**
+  - supply amounts by size, for the main service and add-ons
+  - the ticket's groom line (price, quantity 1, no stepper)
+- **api:**
+  - **Checkout:** a groom plus retail items; tax on or off; an employee discount covering grooming; paying marks it done with sale_id; canceling the sale leaves it as it was.
+  - **Refusals:** a groom already on another open sale; the wrong customer; a canceled appointment.
+  - **Refunds:** refunding the groom line.
+  - **Back-bar:** supplies used once on ready and put back on undo; back-bar products hidden from the register's product search.
+  - **Notes:** the rules for who adds and deletes; the photo size limit.
+  - **History:** paging.
+  - **Separation** between businesses.
+- **web:**
+  - the groom line on the ticket
+  - "grooms waiting" in the customer box
+  - the note form's photo picker
+  - the pet's grooming history
+
+### Out of scope for 3b
+
+- **3c:** week view, drag, bulk move, the ready text and grooming revenue by groomer.
+- **Phase 4:** deposits.
+- **Not yet planned:**
+  - **Tips for groomers:** common in grooming shops, and worth a small session of its own.
+  - **No-show fees.**

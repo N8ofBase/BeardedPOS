@@ -39,6 +39,17 @@ export type {
   ServiceInput,
   ServiceRow,
 } from "./handlers/grooming.ts";
+export {
+  MAX_PHOTO_CHARS,
+  MAX_PHOTOS,
+  type GroomingNote,
+  type GroomingPhoto,
+  type GroomToCheckOut,
+  type PetGroom,
+  type PetGroomingHistory,
+  type PhotoInput,
+  type ServiceSupply,
+} from "./handlers/groomingHistory.ts";
 export type { MoneyTotals } from "./handlers/totals.ts";
 export { MAX_ASTRO_ATTEMPTS, processAstroQueue, type SendSummary } from "./astro/sender.ts";
 export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";

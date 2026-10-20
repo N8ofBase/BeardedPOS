@@ -80,7 +80,7 @@ describe("upgrading a demo browser from session 1a", () => {
     expect(await ensureDemo(old)).toBe(biz.id);
     const count = async (t: "products" | "customers" | "pets") =>
       (await old.selectFrom(t).select("id").where("business_id", "=", biz.id).execute()).length;
-    expect(await count("products")).toBe(4);
+    expect(await count("products")).toBe(7);
     expect(await count("customers")).toBe(3);
     expect(await count("pets")).toBe(5);
   });

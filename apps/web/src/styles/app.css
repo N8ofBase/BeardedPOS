@@ -1132,3 +1132,47 @@ button.big {
 .mycard button.big {
   width: 100%;
 }
+
+/* grooming photos */
+.photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.photos figure {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.photos img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  display: block;
+}
+.photo-full {
+  max-width: min(92vw, 1280px);
+  max-height: 88vh;
+  margin: 4vh auto;
+  display: block;
+  border-radius: 10px;
+}
+label.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-weight: 700;
+  color: var(--fg);
+}
+.photo-view {
+  z-index: 30;
+  background: rgb(0 0 0 / 0.8);
+}
