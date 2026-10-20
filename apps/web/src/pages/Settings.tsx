@@ -89,13 +89,18 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     taxPercent: taxPercentInput(s.taxRateMpct),
     astroDiscountsBeforeTax: s.astroDiscountsBeforeTax,
     refundLimit: centsToInput(s.refundApprovalCents),
+    drawerFloat: centsToInput(s.drawerFloatCents),
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const save = useMutation({
     mutationFn: () => {
-      const { refundLimit, ...rest } = f;
-      return api.call("updateSettings", { ...rest, refundApprovalCents: parseMoney(refundLimit)! });
+      const { refundLimit, drawerFloat, ...rest } = f;
+      return api.call("updateSettings", {
+        ...rest,
+        refundApprovalCents: parseMoney(refundLimit)!,
+        drawerFloatCents: parseMoney(drawerFloat)!,
+      });
     },
     onSuccess: () => {
       toast("Settings saved");
@@ -125,6 +130,8 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     if (tax) return setErrors({ taxPercent: tax });
     if (parseMoney(f.refundLimit) === null)
       return setErrors({ refundApprovalCents: "Enter the refund limit in dollars, like 50.00." });
+    if (parseMoney(f.drawerFloat) === null)
+      return setErrors({ drawerFloatCents: "Enter the starting cash in dollars, like 100.00." });
     save.mutate();
   }
 
@@ -175,6 +182,17 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
               />
               {err("refundApprovalCents")}
               <span className="muted small">Above this, the owner approves the refund on the tablet.</span>
+            </label>
+            <label>
+              Starting cash in the drawer ($)
+              <input
+                value={f.drawerFloat}
+                onChange={(e) => setF({ ...f, drawerFloat: e.target.value })}
+                inputMode="decimal"
+                aria-invalid={!!errors.drawerFloatCents}
+              />
+              {err("drawerFloatCents")}
+              <span className="muted small">Left in the drawer each morning; end of day counts from it.</span>
             </label>
             <label>
               Brand color

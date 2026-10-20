@@ -8,7 +8,7 @@ import { ComingSoon } from "../pages/ComingSoon.tsx";
 import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
 import { RegisterPage } from "../pages/register/RegisterPage.tsx";
-import { SalesPage } from "../pages/SalesPage.tsx";
+import { SalesRoutes } from "../pages/SalesPage.tsx";
 import { SettingsRoutes } from "../pages/Settings.tsx";
 import { DemoBanner } from "./DemoBanner.tsx";
 import { navFor } from "./nav.ts";
@@ -28,7 +28,7 @@ const PAGES: Record<string, () => React.ReactNode> = {
   ),
   "/inventory": () => <InventoryRoutes />,
   "/customers": () => <CustomersRoutes />,
-  "/sales": () => <SalesPage />,
+  "/sales": () => <SalesRoutes />,
   "/astro": () => <AstroPage />,
   "/settings": () => <SettingsRoutes />,
 };

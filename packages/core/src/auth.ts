@@ -23,6 +23,8 @@ const PERMISSIONS = {
   "sales.view": ["owner", "manager"],
   /** Managers only up to the store's refund limit; above it an owner approves. */
   "sales.refund": ["owner", "manager"],
+  /** End-of-day drawer count. */
+  "drawer.count": ["owner", "manager"],
   "astro.view": ["owner", "manager", "cashier"],
   "astro.edit": ["owner", "manager"],
   "settings.view": ["owner", "manager"],

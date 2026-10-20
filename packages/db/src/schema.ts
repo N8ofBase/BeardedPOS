@@ -20,6 +20,8 @@ export interface BusinessesTable {
   astro_discounts_before_tax: Generated<boolean>;
   /** Managers can refund up to this without an owner's OK. */
   refund_approval_cents: Generated<number>;
+  /** Starting cash left in the drawer each morning. */
+  drawer_float_cents: Generated<number>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -237,7 +239,8 @@ export interface SalesTable {
   location_id: string;
   customer_id: string | null;
   staff_id: string | null;
-  receipt_number: number;
+  /** Null for imported orders. */
+  receipt_number: number | null;
   status: Generated<SaleStatus>;
   source: Generated<"register" | "import">;
   subtotal_cents: number;
@@ -249,6 +252,9 @@ export interface SalesTable {
   paid_at: Date | null;
   canceled_at: Date | null;
   refunded_cents: Generated<number>;
+  /** Imported orders: the old receipt number, or "date:YYYY-MM-DD". */
+  import_key: string | null;
+  import_batch_id: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -382,8 +388,28 @@ export interface ReceiptOutboxTable {
   updated_at: UpdatedAt;
 }
 
-export type ImportType = "customers" | "pets" | "products" | "programs" | "punches";
-export type ImportEntity = "customer" | "pet" | "vaccination" | "product" | "program" | "punch" | "stock";
+export type ImportType = "customers" | "pets" | "products" | "programs" | "punches" | "orders";
+export type ImportEntity =
+  "customer" | "pet" | "vaccination" | "product" | "program" | "punch" | "stock" | "sale";
+
+export interface DrawerCountsTable {
+  id: Generated<string>;
+  business_id: string;
+  location_id: string;
+  business_date: string;
+  staff_id: string | null;
+  starting_cents: number;
+  cash_in_cents: number;
+  cash_out_cents: number;
+  expected_cents: number;
+  counted_cents: number;
+  over_short_cents: number;
+  card_cents: number;
+  denominations: Json<Record<string, number>> | null;
+  note: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
 export type ImportOp = "created" | "updated" | "deleted" | "moved";
 
 export interface ImportBatchesTable {
@@ -454,6 +480,7 @@ export interface DB {
   refund_lines: RefundLinesTable;
   refund_payments: RefundPaymentsTable;
   receipt_outbox: ReceiptOutboxTable;
+  drawer_counts: DrawerCountsTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

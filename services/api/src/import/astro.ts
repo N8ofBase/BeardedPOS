@@ -79,7 +79,13 @@ export async function punchRow(r: Row, rc: RowCtx): Promise<RowResult> {
     .where("program_id", "=", program.id)
     .execute();
   const earnedHere = punches.reduce(
-    (s, p) => s + (p.kind === "earn" ? p.qty : p.kind === "redeem" ? -p.qty : 0),
+    (s, p) =>
+      s +
+      (p.kind === "earn" || p.kind === "reward_return"
+        ? p.qty
+        : p.kind === "redeem" || p.kind === "refund_reversal"
+          ? -p.qty
+          : 0),
     0,
   );
   const opening = n - earnedHere;

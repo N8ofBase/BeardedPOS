@@ -32,6 +32,8 @@ import {
   undoPreview,
 } from "./handlers/import.ts";
 import { demoDataPreview, removeDemoData } from "./handlers/demo.ts";
+import { drawerSummary, listDrawerCounts, saveDrawerCount } from "./handlers/drawer.ts";
+import { customerHistory } from "./handlers/history.ts";
 import { deleteDiscount, listDiscounts, saveDiscount } from "./handlers/discounts.ts";
 import {
   cancelSale,
@@ -98,6 +100,10 @@ export const handlers = {
   sendReceipt,
   listAstroQueue,
   markAstroEntered,
+  drawerSummary,
+  saveDrawerCount,
+  listDrawerCounts,
+  customerHistory,
 };
 
 export type Handlers = typeof handlers;

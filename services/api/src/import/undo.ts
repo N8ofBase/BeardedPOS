@@ -14,6 +14,7 @@ const TABLE: Record<Exclude<ImportEntity, "stock">, string> = {
   product: "products",
   program: "astro_programs",
   punch: "astro_punches",
+  sale: "sales",
 };
 
 const NOUN: Record<ImportEntity, string> = {
@@ -24,6 +25,7 @@ const NOUN: Record<ImportEntity, string> = {
   program: "Program",
   punch: "Punch card",
   stock: "Stock",
+  sale: "Order",
 };
 
 export interface UndoResult {
@@ -89,6 +91,12 @@ export async function undoBatch(trx: Transaction<DB>, ctx: Ctx, batchId: string)
 
     if (c.op === "created") {
       if (!current) continue;
+      if (c.entity === "sale") {
+        // The app role can't delete sales; this function deletes imported orders only.
+        await sql`SELECT delete_imported_sale(${c.entity_id})`.execute(trx);
+        result.deleted++;
+        continue;
+      }
       if (c.entity === "customer") {
         const pets = await trx
           .selectFrom("pets")

@@ -140,7 +140,7 @@ export const listAstroQueue = defineHandler<{ status: "pending" | "entered" }, A
         status: r.status,
         createdAt: r.created_at,
         saleId: r.sale_id,
-        receiptNumber: r.receipt_number,
+        receiptNumber: r.receipt_number!,
         customerName: r.customer_name ?? payload.customer?.name ?? null,
         customerPhone: r.customer_phone ?? payload.customer?.phone ?? null,
         entries: astroEntryLines(r.kind, payload),

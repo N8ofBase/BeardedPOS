@@ -20,6 +20,7 @@ import { useToast } from "../../ui/Toast.tsx";
 import { BirthdayTag, PetChip, Punches } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
+import { OrderHistory } from "./OrderHistory.tsx";
 
 export function CustomerProfilePage() {
   const { id = "" } = useParams();
@@ -100,9 +101,9 @@ export function CustomerProfilePage() {
       ))}
       {c.pets.length === 0 && <p className="muted">No pets yet. Edit the customer to add one.</p>}
 
-      <p className="muted small">
-        Order history and appointments show here once the register and grooming calendar are built.
-      </p>
+      <OrderHistory customerId={c.id} />
+
+      <p className="muted small">Appointments show here once the grooming calendar is built.</p>
 
       {editing && <CustomerForm id={c.id} onClose={() => setEditing(false)} />}
     </>

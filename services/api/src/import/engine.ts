@@ -15,6 +15,7 @@ import {
   type RowResult,
 } from "./base.ts";
 import { customerRow, petRow } from "./customers.ts";
+import { orderRow } from "./orders.ts";
 import { productRow } from "./products.ts";
 
 export type { ImportResult, RowOutcome } from "./base.ts";
@@ -25,6 +26,7 @@ const HANDLERS: Record<ImportType, (r: Row, rc: RowCtx) => Promise<RowResult>> =
   products: productRow,
   programs: programRow,
   punches: punchRow,
+  orders: orderRow,
 };
 
 /** Plain words for the database refusals a row can hit. */
@@ -97,6 +99,7 @@ function rowLabel(r: Row): string {
     r.name ||
     [r.first, r.last].filter(Boolean).join(" ") ||
     r.petName ||
+    r.item ||
     r.sku ||
     r.program ||
     r.phone ||

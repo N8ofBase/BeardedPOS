@@ -70,7 +70,7 @@ describe("PreviewView", () => {
     };
     render(<PreviewView result={result} />);
     expect(screen.getAllByText("Phone isn't 10 digits")).toHaveLength(2);
-    expect(screen.getByText("1 warning: imported, with a cell left out")).toBeTruthy();
+    expect(screen.getByText("1 warning: imported, with a note to check")).toBeTruthy();
     expect(screen.getByText("Pat Lee")).toBeTruthy();
     expect(screen.getByText("Skip")).toBeTruthy();
   });

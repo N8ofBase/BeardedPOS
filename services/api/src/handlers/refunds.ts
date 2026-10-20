@@ -78,11 +78,22 @@ export interface RefundPlan {
 async function planRefund(trx: Trx, ctx: Ctx, input: RefundInput, lock: boolean): Promise<RefundPlan> {
   let saleQuery = trx
     .selectFrom("sales")
-    .select(["id", "status", "receipt_number", "tax_cents", "customer_id", "total_cents", "refunded_cents"])
+    .select([
+      "id",
+      "status",
+      "source",
+      "receipt_number",
+      "tax_cents",
+      "customer_id",
+      "total_cents",
+      "refunded_cents",
+    ])
     .where("id", "=", input.saleId);
   if (lock) saleQuery = saleQuery.forUpdate();
   const sale = await saleQuery.executeTakeFirst();
   if (!sale) throw new AppError("not_found", "That sale doesn't exist.");
+  if (sale.source === "import")
+    throw new AppError("invalid", "Orders imported from the old system can't be refunded here.");
   if (sale.status !== "paid")
     throw new AppError(
       "invalid",
@@ -209,7 +220,7 @@ async function planRefund(trx: Trx, ctx: Ctx, input: RefundInput, lock: boolean)
 
   return {
     saleId: sale.id,
-    receiptNumber: sale.receipt_number,
+    receiptNumber: sale.receipt_number!,
     refundable: rows.map((r) => ({
       saleLineId: r.id,
       name: r.name,

@@ -91,8 +91,8 @@ export function PreviewView({ result }: { result: ImportResult }) {
       {result.warnings.length > 0 && (
         <details>
           <summary>
-            {result.warnings.length} warning{result.warnings.length === 1 ? "" : "s"}: imported, with a cell
-            left out
+            {result.warnings.length} warning{result.warnings.length === 1 ? "" : "s"}: imported, with a note
+            to check
           </summary>
           <ul className="small">
             {result.warnings.slice(0, 100).map((w, i) => (

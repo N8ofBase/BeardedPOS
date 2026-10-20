@@ -13,6 +13,8 @@ export interface StoreSettings {
   astroDiscountsBeforeTax: boolean;
   /** Managers can refund up to this without the owner's OK. */
   refundApprovalCents: number;
+  /** Starting cash left in the drawer each morning. */
+  drawerFloatCents: number;
 }
 
 /** Largest logo data URL accepted (the browser resizes to 256 px first). */
@@ -23,7 +25,14 @@ export const getSettings = defineHandler<void, StoreSettings>({
   async run(trx, ctx) {
     const b = await trx
       .selectFrom("businesses")
-      .select(["name", "brand_color", "logo_data", "astro_discounts_before_tax", "refund_approval_cents"])
+      .select([
+        "name",
+        "brand_color",
+        "logo_data",
+        "astro_discounts_before_tax",
+        "refund_approval_cents",
+        "drawer_float_cents",
+      ])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
     const loc = await trx
@@ -41,6 +50,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
       taxRateMpct: loc.tax_rate_mpct,
       astroDiscountsBeforeTax: b.astro_discounts_before_tax,
       refundApprovalCents: b.refund_approval_cents,
+      drawerFloatCents: b.drawer_float_cents,
     };
   },
 });
@@ -56,6 +66,8 @@ export interface SettingsInput {
   astroDiscountsBeforeTax: boolean;
   /** Left out: unchanged. */
   refundApprovalCents?: number;
+  /** Left out: unchanged. */
+  drawerFloatCents?: number;
 }
 
 export const updateSettings = defineHandler<SettingsInput, void>({
@@ -78,6 +90,9 @@ export const updateSettings = defineHandler<SettingsInput, void>({
     const limit = input.refundApprovalCents;
     if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 0 || limit > 10_000_000))
       errors.refundApprovalCents = "Enter the refund limit in dollars, like 50.00.";
+    const float = input.drawerFloatCents;
+    if (float !== undefined && (!Number.isSafeInteger(float) || float < 0 || float > 10_000_000))
+      errors.drawerFloatCents = "Enter the starting cash in dollars, like 100.00.";
     const first = Object.values(errors)[0];
     if (first) throw new AppError("invalid", first, errors);
 
@@ -90,6 +105,7 @@ export const updateSettings = defineHandler<SettingsInput, void>({
       .updateTable("businesses")
       .set({
         ...(limit !== undefined ? { refund_approval_cents: limit } : {}),
+        ...(float !== undefined ? { drawer_float_cents: float } : {}),
         name,
         brand_color: input.brandColor,
         logo_data: input.logo,

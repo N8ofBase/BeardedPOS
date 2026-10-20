@@ -1,7 +1,7 @@
 // What each import file can hold. Aliases come from the prototype's IMP table and the
 // spec's accepted columns; header names are compared after normalizeHeader().
 
-export const IMPORT_TYPE_KEYS = ["customers", "pets", "products", "programs", "punches"] as const;
+export const IMPORT_TYPE_KEYS = ["customers", "pets", "products", "programs", "punches", "orders"] as const;
 export type ImportType = (typeof IMPORT_TYPE_KEYS)[number];
 
 export interface FieldDef {
@@ -134,6 +134,38 @@ export const IMPORT_TYPES: Record<ImportType, ImportTypeDef> = {
       { message: "Pick the customer phone or email column.", anyOf: ["phone", "email"] },
       { message: "Pick the program name column.", anyOf: ["program"] },
       { message: "Pick the current punches column.", anyOf: ["count"] },
+    ],
+  },
+  orders: {
+    label: "Past orders",
+    help: "One row per item sold. Rows for the same customer and receipt number become one order (with no receipt number, the same date). Customers must already be here; they're matched by phone, then email. Items are matched to products by SKU, then barcode; others keep their name. Past orders fill in order history and \"usually buys\" but don't change stock, payments or Astro punches. Importing the same orders again skips them.",
+    fields: [
+      f("date", "Date", "2025-03-14", ["order date", "sale date", "date sold", "transaction date"]),
+      f("receipt", "Receipt number", "A-1043", [
+        "receipt",
+        "receipt #",
+        "order number",
+        "order #",
+        "order",
+        "invoice",
+        "invoice number",
+        "ticket",
+      ]),
+      f("phone", "Customer phone", "(212) 555-0199", ["phone", "mobile", "cell", "phone number"]),
+      f("email", "Customer email", "", ["email"]),
+      f("customer", "Customer name", "Pat Lee", ["customer", "name"]),
+      f("sku", "SKU", "B-100", ["item code", "item number", "item #"]),
+      f("barcode", "Barcode", "", ["upc", "ean", "gtin"]),
+      f("item", "Item name", "Test Kibble 5 lb", ["item", "description", "product", "product name"]),
+      f("qty", "Quantity", "2", ["qty", "quantity sold", "units"]),
+      f("unitPrice", "Unit price", "19.99", ["price", "unit price", "each"]),
+      f("lineTotal", "Line total", "39.98", ["total", "amount", "extended price", "line amount"]),
+    ],
+    needs: [
+      { message: "Pick the date column.", anyOf: ["date"] },
+      { message: "Pick the customer phone or email column.", anyOf: ["phone", "email"] },
+      { message: "Pick the item name, SKU or barcode column.", anyOf: ["item", "sku", "barcode"] },
+      { message: "Pick the unit price or line total column.", anyOf: ["unitPrice", "lineTotal"] },
     ],
   },
 };

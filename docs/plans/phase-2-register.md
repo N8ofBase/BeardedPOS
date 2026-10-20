@@ -1,6 +1,6 @@
 # Phase 2 plan: register and checkout
 
-Status: **2a and 2b done 2026-10-19.** 2c–2d not started.
+Status: **2a and 2b done 2026-10-19, 2c done 2026-10-20.** 2d not started.
 
 **2a built differently from this plan:**
 - **Manager approval:** a manager picks their name on the tablet (demo), and `startCheckout` checks that the approver is an active owner or manager. A manager ringing the sale approves it themselves. There's no separate `approveDiscount` handler; hosted mode adds a PIN.

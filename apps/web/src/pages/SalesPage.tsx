@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link, Route, Routes } from "react-router";
 import { can, formatMoney, REFUND_REASON_LABEL, todayIso } from "@pet-pos/core";
 import type { SaleListRow } from "@pet-pos/api";
 import { useSession } from "../session.tsx";
@@ -7,7 +8,17 @@ import { errorMessage } from "../ui/errors.ts";
 import { SlideOver } from "../ui/SlideOver.tsx";
 import { ReceiptView } from "./register/ReceiptView.tsx";
 import { ReceiptSend } from "./sales/ReceiptSend.tsx";
+import { EndOfDayPage } from "./sales/EndOfDay.tsx";
 import { RefundPanel } from "./sales/RefundPanel.tsx";
+
+export function SalesRoutes() {
+  return (
+    <Routes>
+      <Route index element={<SalesPage />} />
+      <Route path="close" element={<EndOfDayPage />} />
+    </Routes>
+  );
+}
 
 /** Local midnight to the next midnight of a "YYYY-MM-DD" day. */
 export function dayRange(day: string): { from: string; to: string } {
@@ -35,7 +46,7 @@ export function refundTag(s: Pick<SaleListRow, "refundedCents" | "totalCents">):
 }
 
 export function SalesPage() {
-  const { api } = useSession();
+  const { api, me } = useSession();
   const today = todayIso();
   const [day, setDay] = useState(today);
   const [q, setQ] = useState("");
@@ -62,6 +73,7 @@ export function SalesPage() {
             year: label ? undefined : "numeric",
           })}
         </span>
+        {can(me.staff.role, "drawer.count") && <Link to="close">Close the day</Link>}
       </div>
       <div className="toolbar">
         <div className="cat-tabs" style={{ marginTop: 0 }}>
@@ -155,13 +167,12 @@ export function SalesPage() {
           </tbody>
         </table>
       </div>
-      <p className="muted small">The end-of-day drawer count comes next.</p>
       {open && <SaleReceipt id={open} onClose={() => setOpen(null)} />}
     </>
   );
 }
 
-function SaleReceipt({ id, onClose }: { id: string; onClose: () => void }) {
+export function SaleReceipt({ id, onClose }: { id: string; onClose: () => void }) {
   const { api, me } = useSession();
   const [refunding, setRefunding] = useState(false);
   const r = useQuery({ queryKey: ["sale", id], queryFn: () => api.call("getSale", { id }) });

@@ -22,6 +22,7 @@ import { terminal } from "../payments/terminal.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
 import { toCards, CUSTOMER_COLUMNS, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
+import { moneyTotals } from "./totals.ts";
 
 type Trx = Transaction<DB>;
 
@@ -427,7 +428,7 @@ async function finishSale(trx: Trx, ctx: Ctx, saleId: string): Promise<boolean> 
       : undefined;
     const payload: AstroSalePayload = {
       saleId,
-      receiptNumber: sale.receipt_number,
+      receiptNumber: sale.receipt_number!,
       soldAt: new Date().toISOString(),
       customer: customer
         ? {
@@ -673,6 +674,7 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
         "c.phone as customer_phone",
       ])
       .where("s.id", "=", id)
+      .where("s.source", "=", "register")
       .executeTakeFirst();
     if (!s) throw new AppError("not_found", "That sale doesn't exist.");
     const biz = await trx
@@ -714,7 +716,7 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
     const refunds = await saleRefunds(trx, id);
     return {
       id: s.id,
-      receiptNumber: s.receipt_number,
+      receiptNumber: s.receipt_number!,
       status: s.status,
       createdAt: s.created_at,
       paidAt: s.paid_at,
@@ -844,8 +846,8 @@ export interface SalesDay {
 
 /**
  * Sales and totals for a range, as on the prototype's Sales tab. from/to are ISO
- * times. q finds a receipt number or customer name. Totals are net of refunds made
- * in the range, on any sale.
+ * times. q finds a receipt number or customer name; the totals are for the whole range
+ * (moneyTotals, shared with end of day), net of refunds made in it.
  */
 export const listSales = defineHandler<{ from: string; to: string; q?: string }, SalesDay>({
   action: "sales.view",
@@ -872,61 +874,25 @@ export const listSales = defineHandler<{ from: string; to: string; q?: string },
       ])
       .where("s.created_at", ">=", new Date(from))
       .where("s.created_at", "<", new Date(to))
-      .where("s.status", "in", ["paid", "canceled"]);
+      .where("s.status", "in", ["paid", "canceled"])
+      .where("s.source", "=", "register");
     if (/^\d{1,9}$/.test(term))
       query = query.where((eb) =>
         eb.or([eb("s.receipt_number", "=", Number(term)), eb("c.name", "ilike", likePattern(term))]),
       );
     else if (term) query = query.where("c.name", "ilike", likePattern(term));
     const rows = await query.orderBy("s.created_at", "desc").limit(500).execute();
-    const paidIds = rows.filter((r) => r.status === "paid").map((r) => r.id);
-    const byMethod = paidIds.length
-      ? await trx
-          .selectFrom("payments")
-          .select(["method", sql<number>`sum(amount_cents)::int`.as("n")])
-          .where("sale_id", "in", paidIds)
-          .where("status", "=", "completed")
-          .groupBy("method")
-          .execute()
-      : [];
-    const astro = paidIds.length
-      ? await trx
-          .selectFrom("sale_discounts")
-          .select(sql<number>`coalesce(sum(amount_cents), 0)::int`.as("n"))
-          .where("sale_id", "in", paidIds)
-          .where("source", "in", ["astro_offer", "astro_reward"])
-          .executeTakeFirstOrThrow()
-      : { n: 0 };
-    // Refunds made in the range, by where the money went.
-    const back = await trx
-      .selectFrom("refund_payments as rp")
-      .innerJoin("refunds as r", "r.id", "rp.refund_id")
-      .select(["rp.method", sql<number>`sum(rp.amount_cents)::int`.as("n")])
-      .where("r.created_at", ">=", new Date(from))
-      .where("r.created_at", "<", new Date(to))
-      .groupBy("rp.method")
-      .execute();
-    const refunded = await trx
-      .selectFrom("refunds")
-      .select([
-        sql<number>`count(*)::int`.as("n"),
-        sql<number>`coalesce(sum(amount_cents + tax_cents), 0)::int`.as("cents"),
-      ])
-      .where("created_at", ">=", new Date(from))
-      .where("created_at", "<", new Date(to))
-      .executeTakeFirstOrThrow();
-    const backBy = (m: "card" | "cash") => back.find((r) => r.method === m)?.n ?? 0;
-    const paid = rows.filter((r) => r.status === "paid");
+    const t = await moneyTotals(trx, new Date(from), new Date(to));
     return {
-      sales: rows.map((r) => ({ ...r, items: r.items ?? "" })),
-      count: paid.length,
-      totalCents: paid.reduce((s, r) => s + r.totalCents, 0) - refunded.cents,
-      cardCents: (byMethod.find((m) => m.method === "card")?.n ?? 0) - backBy("card"),
-      cashCents: (byMethod.find((m) => m.method === "cash")?.n ?? 0) - backBy("cash"),
-      discountCents: paid.reduce((s, r) => s + r.discountCents, 0),
-      astroDiscountCents: astro.n,
-      refundCount: refunded.n,
-      refundCents: refunded.cents,
+      sales: rows.map((r) => ({ ...r, receiptNumber: r.receiptNumber!, items: r.items ?? "" })),
+      count: t.count,
+      totalCents: t.netCents,
+      cardCents: t.cardInCents - t.cardBackCents,
+      cashCents: t.cashInCents - t.cashBackCents,
+      discountCents: t.discountCents,
+      astroDiscountCents: t.astroDiscountCents,
+      refundCount: t.refundCount,
+      refundCents: t.refundCents,
     };
   },
 });
