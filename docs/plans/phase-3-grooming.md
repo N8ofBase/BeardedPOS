@@ -1,6 +1,6 @@
 # Phase 3 plan: grooming
 
-Status: **3a and 3b done 2026-10-20** (My day folded into 3a). 3c not started.
+Status: **Phase 3 done.** 3a and 3b 2026-10-20 (My day folded into 3a), 3c 2026-10-21.
 
 **3a built differently from this plan:**
 - **Live checks while booking:** the form asks the server (`checkAppointment`) as you fill it in, so the quote, warnings and clash message are the server's own. Nothing is saved until **Book it**.
@@ -291,3 +291,130 @@ As always: business_id, is_demo, forced row-level security and `(business_id, id
 - **Not yet planned:**
   - **Tips for groomers:** common in grooming shops, and worth a small session of its own.
   - **No-show fees.**
+
+---
+
+## Session 3c: busy-day tools
+
+Status: **done 2026-10-21.**
+
+**Built differently from this plan:**
+- **The one-groomer week** is a list by day (like the phone view), not a time grid. Dragging works in the day view; in the week view you tap an appointment and use **Move**.
+- **Texting after a move:** the appointment panel's **Texts to the customer** has "Text the customer the current time and groomer" any time the groom is booked or checked in. It isn't tied to whether the last move changed the time.
+- **The call-out** includes checked-in appointments as well as booked ones: a groomer can call out after a dog has been dropped off.
+- **Day view bookings and moves** share one check (`checkSlot()` in the grooming handlers), so they can't disagree.
+
+When it's done:
+- **Week view:** the front desk sees the week at a glance.
+- **Rescheduling:** an appointment moves by dragging it to another time or groomer.
+- **A groomer calls out:** their whole day moves in a few taps.
+- **Ready text:** the customer gets a text when their pet is ready. The demo shows the text instead of sending it.
+- **Sales page:** grooming revenue by groomer.
+
+### Week view
+
+- **Where:** a **Day / Week** switch on the calendar. The week runs Monday to Sunday, with previous and next week and **This week**.
+- **Everyone:** one row per groomer and one column per day. Each cell lists that day's appointments as short chips ("9:00 Biscuit · Full groom"), colored by status, with the day's count and expected sales. Days a groomer doesn't work are greyed out, and so is their time off.
+- **One groomer:** pick a groomer and the week becomes a time grid, one column per day, like the day view.
+- **Getting around:** tap a chip to open the appointment. Tap a day's header to open that day in the day view.
+- **Phones:** narrow screens get a list by day instead.
+
+### Drag to reschedule (day view and one-groomer week)
+
+- **What can move:** **booked** and **checked in** appointments, by drag to another time or another groomer's column. They snap to 15 minutes.
+  - On a tablet you press and hold, then drag, so scrolling the calendar doesn't move anything by accident.
+  - Appointments that have started (in progress, ready, done) stay put.
+- **While dragging,** the block shows the new time ("10:30 – 12:40 · Groomer B"). The server checks the move, using the same check as booking:
+  - **A clash:** the block snaps back with the plain message ("Groomer B already has Rex at 10:30 AM").
+  - **A warning** (outside hours, time off, rabies): "Move anyway?" with **Move** / **Cancel**.
+  - **Otherwise:** it moves, with a toast "Moved Biscuit to 10:30 AM with Groomer B · **Undo**".
+- **What stays the same:** the price, services and notes. Only the groomer and time change. The database's double-booking rule still has the last word.
+- **No-drag alternative:** **Move** in the appointment panel picks a new groomer, day and time, for anyone who can't drag (keyboard, accessibility).
+- **Customer text:** if the move changes the day or time and the customer has a phone, the panel offers **Text the customer**, previewed as below. A groomer swap at the same time doesn't need a text.
+
+### A groomer calls out
+
+- **Starting it:** **Groomer called out** in the day view's menu. Pick the groomer and the day; it opens a slide-over with each of their appointments for that day.
+- **Suggestions:** each row gets a suggested fix, which you can change:
+  - **Move to another groomer at the same time:** the first groomer who works then and is free, buffer included.
+  - **Needs a new time:** when nobody is free. You pick a time or another day, or leave it and call the customer.
+  - **Cancel:** for a customer who'd rather not come.
+- **Apply:** **Apply changes** runs every row in one transaction, so it's all or nothing.
+  - **Time off:** it also adds all-day time off for the groomer, so nobody books them by mistake.
+  - **Clashes:** if anything clashes (someone booked the slot meanwhile), nothing changes, and the row that clashed is shown.
+- **Texts:** **Text the customers whose time or groomer changed** is ticked by default. Each text is saved as a preview, e.g. "Sample Pet Store: Biscuit's groom on Tue Oct 21 is now at 11:00 AM with Groomer B. Reply or call to change it."
+- **Audit:** the whole call-out writes one `audit_log` entry (`grooming.callout`): the groomer, the day, and each move and cancel.
+
+### Ready-for-pickup text
+
+- **When it's sent:** marking a groom **ready for pickup** creates the text: "Sample Pet Store: Biscuit is ready for pickup!"
+  - It goes to the customer's phone, and only once per appointment, even if "ready" is undone and redone.
+  - It's a transactional message the customer expects, like a receipt, so it doesn't need marketing opt-in.
+- **Setting:** new store setting **"Text customers when their pet is ready"**, on by default.
+- **Demo:** the text is saved as a preview and shown in the appointment panel ("Text to (212) 555-0100: …") with the demo note. Hosted mode sends it with Amazon SMS.
+- **Groomer's toast:** it now says "Biscuit is ready. Text sent to (212) 555-0100 (preview in the demo)" instead of asking them to text.
+
+### Grooming revenue by groomer (Sales page)
+
+- **Where:** a **Grooming** section under the KPIs for the chosen day (or a range).
+- **Each groomer:** grooms paid, grooming sales, average groom, and refunds, plus a total row.
+- **Grooming sales:** what was paid for groom lines (after discounts, before tax), net of groom-line refunds made in the range.
+- **No-shows** that day, as a count, since they're lost grooming time.
+- **Shared totals:** the numbers come from `moneyTotals()` so the Sales KPIs, end of day and this section agree. Grooming sales are already inside the day's gross sales; this only breaks them down.
+
+### Database: migration 016_busy_day
+
+| Table / change | Fields |
+| --- | --- |
+| `appointment_messages` | appointment_id, kind (ready, moved, canceled), channel (sms), to_address, body, status (preview, queued, sent, failed), created_by, created_at. One ready text per appointment (unique where kind = ready). |
+| `businesses` | + text_when_ready (default true) |
+
+As always: business_id, is_demo, forced row-level security and `(business_id, id)` foreign keys. Messages can't be edited by the app.
+
+### Handlers
+
+| Handler | Who | What |
+| --- | --- | --- |
+| `groomingWeek {start, staffId?}` | grooming.view | Seven days of groomers, hours, time off and appointments, with per-day counts and expected sales |
+| `moveAppointment {id, staffId, day, start, override?}` | grooming.book | New groomer and time only, same services and price. Same checks as booking. Returns what changed so Undo can put it back |
+| `textAppointment {id, kind}` | grooming.book | Saves a "moved" text preview for the customer |
+| `calloutPreview {staffId, day}` | grooming.book | The groomer's appointments that day, each with a suggestion |
+| `applyCallout {staffId, day, rows, notify}` | grooming.book | Moves, leaves and cancels in one transaction, adds the time off, saves the texts and audits |
+| `appointmentMessages {appointmentId}` | grooming.view | Texts for the panel |
+| `setAppointmentStatus` | as 3b | + saves the ready text, once |
+| `listSales` | sales.view | + grooming by groomer and no-shows |
+| `updateSettings` | settings.edit | + text when ready |
+
+**Core** (`packages/core/src/grooming.ts`):
+- `snapMinutes()` for the 15-minute snap
+- `weekDays()` for Monday to Sunday
+- `suggestCallout()`: which groomer is free at the same time, given hours, time off and bookings
+- the text wording for ready, moved and canceled
+
+### Tests
+
+- **core:**
+  - snapping
+  - week days across a month and year end
+  - call-out suggestions: free, needs a new time, buffer respected, time off respected
+  - text wording
+- **api:**
+  - **Moving:** keeps the price and services; refuses a clash; warnings need override; started appointments can't move; Undo moves it back.
+  - **Call-out:** the preview's suggestions; apply moves, leaves and cancels together; the time off is added; a clash rolls everything back; one audit entry; texts saved only for changed ones.
+  - **Ready text:** saved once, skipped with no phone, skipped when the setting is off.
+  - **Grooming revenue:** by groomer, with discounts and refunds; no-shows counted.
+  - **Week:** across groomers, with time off.
+  - **Separation** between businesses.
+- **web:**
+  - the week grid's cells and greyed days
+  - the drag math (pixels to a snapped time and a column) and the Undo toast
+  - the call-out panel's suggestions and Apply
+  - the ready text preview in the panel
+  - the grooming table on the Sales page
+
+### Out of scope for 3c
+
+- **Repeating appointments** ("every 6 weeks"): the rebook nudge is Phase 4, so a repeat booking fits better there.
+- **Phase 4:** online booking and customer reminders.
+- **Hosted mode:** real texting, with Amazon SMS sending the queued previews.
+- **Not yet planned:** tips and no-show fees, still noted for later.

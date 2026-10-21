@@ -91,6 +91,7 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     refundLimit: centsToInput(s.refundApprovalCents),
     drawerFloat: centsToInput(s.drawerFloatCents),
     groomingTaxable: s.groomingTaxable,
+    textWhenReady: s.textWhenReady,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -247,6 +248,14 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
           <p className="muted small" style={{ margin: 0 }}>
             Many states don't tax pet grooming; some do. Check your state's rules.
           </p>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={f.textWhenReady}
+              onChange={(e) => setF({ ...f, textWhenReady: e.target.checked })}
+            />
+            Text customers when their pet is ready for pickup
+          </label>
         </fieldset>
 
         <div>

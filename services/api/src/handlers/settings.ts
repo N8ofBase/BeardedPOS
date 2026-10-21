@@ -17,6 +17,8 @@ export interface StoreSettings {
   drawerFloatCents: number;
   /** Charge sales tax on grooming. */
   groomingTaxable: boolean;
+  /** Text customers when their pet is ready for pickup. */
+  textWhenReady: boolean;
 }
 
 /** Largest logo data URL accepted (the browser resizes to 256 px first). */
@@ -35,6 +37,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
         "refund_approval_cents",
         "drawer_float_cents",
         "grooming_taxable",
+        "text_when_ready",
       ])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
@@ -55,6 +58,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
       refundApprovalCents: b.refund_approval_cents,
       drawerFloatCents: b.drawer_float_cents,
       groomingTaxable: b.grooming_taxable,
+      textWhenReady: b.text_when_ready,
     };
   },
 });
@@ -74,6 +78,8 @@ export interface SettingsInput {
   drawerFloatCents?: number;
   /** Left out: unchanged. */
   groomingTaxable?: boolean;
+  /** Left out: unchanged. */
+  textWhenReady?: boolean;
 }
 
 export const updateSettings = defineHandler<SettingsInput, void>({
@@ -113,6 +119,7 @@ export const updateSettings = defineHandler<SettingsInput, void>({
         ...(limit !== undefined ? { refund_approval_cents: limit } : {}),
         ...(float !== undefined ? { drawer_float_cents: float } : {}),
         ...(input.groomingTaxable !== undefined ? { grooming_taxable: input.groomingTaxable } : {}),
+        ...(input.textWhenReady !== undefined ? { text_when_ready: input.textWhenReady } : {}),
         name,
         brand_color: input.brandColor,
         logo_data: input.logo,

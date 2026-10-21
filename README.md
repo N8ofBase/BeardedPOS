@@ -6,7 +6,7 @@ Register, inventory, customers and pets, grooming calendar and booking, and Astr
 - `docs/prototype.html` — working prototype; open it in a browser to see the screens and flows
 - `CLAUDE.md` — instructions Claude Code reads at the start of every session
 
-Status: **Phase 1, 2a–2c, 3a and 3b are done** in demo mode.
+Status: **Phases 1, 2 (except 2d, real Square) and 3 are done** in demo mode.
 - Phase 1: products and inventory, customers and pets, bulk import, store settings, staff and demo data.
 - Phase 2a, the register: cash, simulated card reader and split payments, store discounts, Astro punches, rewards and offers, receipts, and camera barcode scanning.
 - Phase 2b: sales history by day and search, refunds (card first, then cash, with stock and Astro punches put right and owner approval above the manager limit), receipts by email or text (previewed in the demo), and the "To enter in Astro" queue.
@@ -17,7 +17,9 @@ Status: **Phase 1, 2a–2c, 3a and 3b are done** in demo mode.
 
 - Phase 3b: checking out a groom at the register next to retail items (grooming tax as a store setting), grooming notes with before/after photos and a grooming history per pet, and back-bar supplies used per service.
 
-The demo is live at https://petpos-demo.prismcortex.net. Next: 3c (week view, drag to reschedule, bulk move, the ready text and grooming revenue by groomer).
+- Phase 3c: a week view, drag to reschedule with Undo, moving a groomer's day when they call out, the ready-for-pickup text (previewed in the demo), and grooming revenue by groomer on the Sales page.
+
+The demo is live at https://petpos-demo.prismcortex.net. Next: Phase 4 (online booking, deposits and reminders).
 
 ## Run it
 

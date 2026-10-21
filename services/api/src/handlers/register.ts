@@ -23,7 +23,7 @@ import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts"
 import { toCards, CUSTOMER_COLUMNS, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
 import { useSupplies } from "./supplies.ts";
-import { moneyTotals } from "./totals.ts";
+import { groomingTotals, moneyTotals, type GroomerTotals } from "./totals.ts";
 
 type Trx = Transaction<DB>;
 
@@ -968,6 +968,9 @@ export interface SalesDay {
   /** Refunds made in the range, on any sale. */
   refundCount: number;
   refundCents: number;
+  /** Grooming sales by groomer, part of the total above. */
+  grooming: GroomerTotals[];
+  noShows: number;
 }
 
 /**
@@ -1009,6 +1012,7 @@ export const listSales = defineHandler<{ from: string; to: string; q?: string },
     else if (term) query = query.where("c.name", "ilike", likePattern(term));
     const rows = await query.orderBy("s.created_at", "desc").limit(500).execute();
     const t = await moneyTotals(trx, new Date(from), new Date(to));
+    const g = await groomingTotals(trx, new Date(from), new Date(to));
     return {
       sales: rows.map((r) => ({ ...r, receiptNumber: r.receiptNumber!, items: r.items ?? "" })),
       count: t.count,
@@ -1019,6 +1023,8 @@ export const listSales = defineHandler<{ from: string; to: string; q?: string },
       astroDiscountCents: t.astroDiscountCents,
       refundCount: t.refundCount,
       refundCents: t.refundCents,
+      grooming: g.groomers,
+      noShows: g.noShows,
     };
   },
 });

@@ -89,3 +89,76 @@ export async function moneyTotals(trx: Transaction<DB>, from: Date, to: Date): P
     netCents: sales.gross - refunds.cents,
   };
 }
+
+export interface GroomerTotals {
+  staffId: string;
+  name: string;
+  grooms: number;
+  /** Paid for groom lines (after discounts, before tax), net of groom-line refunds in the range. */
+  salesCents: number;
+  refundCents: number;
+}
+
+/** Grooming sales by groomer for a range, and the no-shows. Part of the day's gross sales, broken down. */
+export async function groomingTotals(
+  trx: Transaction<DB>,
+  from: Date,
+  to: Date,
+): Promise<{ groomers: GroomerTotals[]; noShows: number }> {
+  const sold = await trx
+    .selectFrom("sale_lines as l")
+    .innerJoin("sales as s", "s.id", "l.sale_id")
+    .innerJoin("appointments as a", "a.id", "l.appointment_id")
+    .innerJoin("staff as st", "st.id", "a.staff_id")
+    .select([
+      "st.id",
+      "st.name",
+      sql<number>`count(*)::int`.as("grooms"),
+      sql<number>`coalesce(sum(l.line_total_cents), 0)::int`.as("cents"),
+    ])
+    .where("s.source", "=", "register")
+    .where("s.status", "=", "paid")
+    .where("s.created_at", ">=", from)
+    .where("s.created_at", "<", to)
+    .groupBy(["st.id", "st.name"])
+    .execute();
+  const back = await trx
+    .selectFrom("refund_lines as rl")
+    .innerJoin("refunds as r", "r.id", "rl.refund_id")
+    .innerJoin("sale_lines as l", "l.id", "rl.sale_line_id")
+    .innerJoin("appointments as a", "a.id", "l.appointment_id")
+    .select(["a.staff_id", sql<number>`coalesce(sum(rl.amount_cents), 0)::int`.as("cents")])
+    .where("r.created_at", ">=", from)
+    .where("r.created_at", "<", to)
+    .groupBy("a.staff_id")
+    .execute();
+  const noShows = await trx
+    .selectFrom("appointments")
+    .select(sql<number>`count(*)::int`.as("n"))
+    .where("status", "=", "no_show")
+    .where("starts_at", ">=", from)
+    .where("starts_at", "<", to)
+    .executeTakeFirstOrThrow();
+  const ids = new Set([...sold.map((x) => x.id), ...back.map((x) => x.staff_id)]);
+  const names = ids.size
+    ? await trx
+        .selectFrom("staff")
+        .select(["id", "name"])
+        .where("id", "in", [...ids])
+        .execute()
+    : [];
+  const groomers = [...ids]
+    .map((id) => {
+      const s = sold.find((x) => x.id === id);
+      const r = back.find((x) => x.staff_id === id)?.cents ?? 0;
+      return {
+        staffId: id,
+        name: names.find((n) => n.id === id)?.name ?? "",
+        grooms: s?.grooms ?? 0,
+        salesCents: (s?.cents ?? 0) - r,
+        refundCents: r,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return { groomers, noShows: noShows.n };
+}

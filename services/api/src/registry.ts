@@ -48,6 +48,12 @@ import {
   saveService,
   setAppointmentStatus,
   updateAppointment,
+  appointmentMessages,
+  applyCallout,
+  calloutPreview,
+  groomingWeek,
+  moveAppointment,
+  textAppointment,
 } from "./handlers/grooming.ts";
 import {
   addGroomingNote,
@@ -150,6 +156,12 @@ export const handlers = {
   listServiceSupplies,
   saveServiceSupplies,
   groomsToCheckOut,
+  groomingWeek,
+  moveAppointment,
+  textAppointment,
+  appointmentMessages,
+  calloutPreview,
+  applyCallout,
 };
 
 export type Handlers = typeof handlers;

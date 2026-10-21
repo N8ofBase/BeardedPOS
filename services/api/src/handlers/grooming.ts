@@ -14,7 +14,12 @@ import {
   rabiesLapsed,
   SIZES,
   timeToMinutes,
+  weekDays,
+  weekStart,
   withinHours,
+  appointmentText,
+  suggestCallout,
+  type CalloutGroomer,
   type ApptStatus,
   type Ctx,
   type PetSize,
@@ -497,58 +502,70 @@ export interface GroomingDay {
 
 export const groomingDay = defineHandler<{ day: string }, GroomingDay>({
   action: "grooming.view",
-  async run(trx, _ctx, { day }) {
-    const { from, to, weekday } = dayBounds(day);
-    const appointments = await appointmentRows(trx, { from, to });
-    const staff = await trx
-      .selectFrom("staff")
-      .select(["id", "name", "grooms", "active"])
-      .orderBy("name")
-      .execute();
-    const hours = await trx
-      .selectFrom("groomer_hours")
-      .select(["staff_id", "start_time", "end_time"])
-      .where("weekday", "=", weekday)
-      .execute();
-    const off = await trx
-      .selectFrom("time_off")
-      .select(["staff_id", "starts_at", "ends_at", "note"])
-      .where("starts_at", "<", to)
-      .where("ends_at", ">", from)
-      .execute();
-    const busy = new Set(appointments.map((a) => a.staffId));
-    const groomers: DayGroomer[] = staff
-      .filter((s) => (s.grooms && s.active && hours.some((h) => h.staff_id === s.id)) || busy.has(s.id))
-      .map((s) => {
-        const h = hours.find((x) => x.staff_id === s.id);
-        return {
-          staffId: s.id,
-          name: s.name,
-          hours:
-            h && s.grooms ? { start: timeToMinutes(h.start_time), end: timeToMinutes(h.end_time) } : null,
-          timeOff: off
-            .filter((t) => t.staff_id === s.id)
-            .map((t) => ({
-              start: t.starts_at <= from ? 0 : minutesOfDay(t.starts_at),
-              end: t.ends_at >= to ? 24 * 60 : minutesOfDay(t.ends_at),
-              note: t.note,
-            })),
-        };
-      });
-    const live = appointments.filter((a) => a.status !== "no_show");
-    return {
-      day,
-      groomers,
-      appointments,
-      summary: {
-        appointments: live.length,
-        inShop: appointments.filter((a) => a.status === "checked_in" || a.status === "in_progress").length,
-        ready: appointments.filter((a) => a.status === "ready").length,
-        expectedCents: live.reduce((s, a) => s + a.priceCents, 0),
-      },
-    };
+  run: (trx, _ctx, { day }) => loadDay(trx, day),
+});
+
+/** Seven days from a Monday, for the week view. */
+export const groomingWeek = defineHandler<{ start: string }, { start: string; days: GroomingDay[] }>({
+  action: "grooming.view",
+  async run(trx, _ctx, { start }) {
+    if (!isIsoDate(start)) throw new AppError("invalid", "Pick a week.");
+    const days: GroomingDay[] = [];
+    for (const d of weekDays(weekStart(start))) days.push(await loadDay(trx, d));
+    return { start: weekStart(start), days };
   },
 });
+
+async function loadDay(trx: Trx, day: string): Promise<GroomingDay> {
+  const { from, to, weekday } = dayBounds(day);
+  const appointments = await appointmentRows(trx, { from, to });
+  const staff = await trx
+    .selectFrom("staff")
+    .select(["id", "name", "grooms", "active"])
+    .orderBy("name")
+    .execute();
+  const hours = await trx
+    .selectFrom("groomer_hours")
+    .select(["staff_id", "start_time", "end_time"])
+    .where("weekday", "=", weekday)
+    .execute();
+  const off = await trx
+    .selectFrom("time_off")
+    .select(["staff_id", "starts_at", "ends_at", "note"])
+    .where("starts_at", "<", to)
+    .where("ends_at", ">", from)
+    .execute();
+  const busy = new Set(appointments.map((a) => a.staffId));
+  const groomers: DayGroomer[] = staff
+    .filter((s) => (s.grooms && s.active && hours.some((h) => h.staff_id === s.id)) || busy.has(s.id))
+    .map((s) => {
+      const h = hours.find((x) => x.staff_id === s.id);
+      return {
+        staffId: s.id,
+        name: s.name,
+        hours: h && s.grooms ? { start: timeToMinutes(h.start_time), end: timeToMinutes(h.end_time) } : null,
+        timeOff: off
+          .filter((t) => t.staff_id === s.id)
+          .map((t) => ({
+            start: t.starts_at <= from ? 0 : minutesOfDay(t.starts_at),
+            end: t.ends_at >= to ? 24 * 60 : minutesOfDay(t.ends_at),
+            note: t.note,
+          })),
+      };
+    });
+  const live = appointments.filter((a) => a.status !== "no_show");
+  return {
+    day,
+    groomers,
+    appointments,
+    summary: {
+      appointments: live.length,
+      inShop: appointments.filter((a) => a.status === "checked_in" || a.status === "in_progress").length,
+      ready: appointments.filter((a) => a.status === "ready").length,
+      expectedCents: live.reduce((s, a) => s + a.priceCents, 0),
+    },
+  };
+}
 
 // ---- booking ----
 
@@ -589,6 +606,93 @@ interface Plan extends BookingCheck {
   setPetSize: boolean;
 }
 
+interface Slot {
+  startsAt: Date;
+  endsAt: Date;
+  blockEndsAt: Date;
+  /** "9:00 AM – 11:10 AM" */
+  when: string;
+  warnings: string[];
+  clash: string | null;
+}
+
+/**
+ * Whether a groomer can take a groom at a time: hours, time off and the pet's
+ * rabies give warnings; another booking in the way (buffer included) is a clash.
+ * Shared by booking, moving and the call-out.
+ */
+async function checkSlot(
+  trx: Trx,
+  v: {
+    groomer: { id: string; name: string };
+    petId: string | null;
+    petName: string;
+    day: string;
+    start: number;
+    minutes: number;
+    buffer: number;
+    ignoreId: string | null;
+  },
+): Promise<Slot> {
+  if (!isIsoDate(v.day)) throw new AppError("invalid", "Pick a day.");
+  const start = v.start;
+  const end = start + v.minutes;
+  const blockEnd = end + v.buffer;
+  if (blockEnd > 24 * 60) throw new AppError("invalid", "That runs past midnight. Pick an earlier time.");
+  const startsAt = atLocal(v.day, start);
+  const endsAt = atLocal(v.day, end);
+  const blockEndsAt = atLocal(v.day, blockEnd);
+  const { groomer } = v;
+
+  const warnings: string[] = [];
+  const h = await trx
+    .selectFrom("groomer_hours")
+    .select(["start_time", "end_time"])
+    .where("staff_id", "=", groomer.id)
+    .where("weekday", "=", startsAt.getDay())
+    .executeTakeFirst();
+  const hours = h ? { start: timeToMinutes(h.start_time), end: timeToMinutes(h.end_time) } : null;
+  if (!hours) warnings.push(`${groomer.name} doesn't work on this day.`);
+  else if (!withinHours(start, end, hours))
+    warnings.push(
+      `This is outside ${groomer.name}'s hours (${clockText(hours.start)} – ${clockText(hours.end)}).`,
+    );
+  const off = await trx
+    .selectFrom("time_off")
+    .select(["note"])
+    .where("staff_id", "=", groomer.id)
+    .where("starts_at", "<", endsAt)
+    .where("ends_at", ">", startsAt)
+    .executeTakeFirst();
+  if (off) warnings.push(`${groomer.name} has time off then${off.note ? ` (${off.note})` : ""}.`);
+  if (v.petId) {
+    const vacc = await trx
+      .selectFrom("vaccinations")
+      .select(["vaccine", "expires_on"])
+      .where("pet_id", "=", v.petId)
+      .execute();
+    const rabies = vacc.find((x) => x.vaccine.trim().toLowerCase() === "rabies");
+    if (rabies && rabiesLapsed([{ vaccine: rabies.vaccine, expiresOn: rabies.expires_on }], v.day))
+      warnings.push(
+        `${v.petName}'s rabies vaccination expired ${rabies.expires_on}. Ask for proof before the groom.`,
+      );
+  }
+
+  let clashQ = trx
+    .selectFrom("appointments")
+    .select(["pet_name", "starts_at"])
+    .where("staff_id", "=", groomer.id)
+    .where("status", "not in", ["canceled", "no_show"])
+    .where("starts_at", "<", blockEndsAt)
+    .where("block_ends_at", ">", startsAt);
+  if (v.ignoreId) clashQ = clashQ.where("id", "!=", v.ignoreId);
+  const other = await clashQ.executeTakeFirst();
+  const clash = other
+    ? `${groomer.name} already has ${other.pet_name} at ${clockText(minutesOfDay(other.starts_at))}. Pick another time or groomer.`
+    : null;
+  return { startsAt, endsAt, blockEndsAt, when: `${clockText(start)} – ${clockText(end)}`, warnings, clash };
+}
+
 async function planBooking(trx: Trx, input: BookingInput, ignoreId: string | null): Promise<Plan> {
   if (!isIsoDate(input.day)) throw new AppError("invalid", "Pick a day.");
   const pet = await trx
@@ -622,64 +726,22 @@ async function planBooking(trx: Trx, input: BookingInput, ignoreId: string | nul
     .executeTakeFirst();
   if (!groomer || !groomer.grooms || !groomer.active) throw new AppError("invalid", "Pick a groomer.");
 
-  const start = timeToMinutes(input.start);
-  const end = start + quote.minutes;
-  const blockEnd = end + quote.bufferMinutes;
-  if (blockEnd > 24 * 60) throw new AppError("invalid", "That runs past midnight. Pick an earlier time.");
-  const startsAt = atLocal(input.day, start);
-  const endsAt = atLocal(input.day, end);
-  const blockEndsAt = atLocal(input.day, blockEnd);
-
-  const warnings: string[] = [];
-  const weekday = startsAt.getDay();
-  const h = await trx
-    .selectFrom("groomer_hours")
-    .select(["start_time", "end_time"])
-    .where("staff_id", "=", groomer.id)
-    .where("weekday", "=", weekday)
-    .executeTakeFirst();
-  const hours = h ? { start: timeToMinutes(h.start_time), end: timeToMinutes(h.end_time) } : null;
-  if (!hours) warnings.push(`${groomer.name} doesn't work on this day.`);
-  else if (!withinHours(start, end, hours))
-    warnings.push(
-      `This is outside ${groomer.name}'s hours (${clockText(hours.start)} – ${clockText(hours.end)}).`,
-    );
-  const off = await trx
-    .selectFrom("time_off")
-    .select(["note"])
-    .where("staff_id", "=", groomer.id)
-    .where("starts_at", "<", endsAt)
-    .where("ends_at", ">", startsAt)
-    .executeTakeFirst();
-  if (off) warnings.push(`${groomer.name} has time off then${off.note ? ` (${off.note})` : ""}.`);
-  const vacc = await trx
-    .selectFrom("vaccinations")
-    .select(["vaccine", "expires_on"])
-    .where("pet_id", "=", pet.id)
-    .execute();
-  const rabies = vacc.find((v) => v.vaccine.trim().toLowerCase() === "rabies");
-  if (rabies && rabiesLapsed([{ vaccine: rabies.vaccine, expiresOn: rabies.expires_on }], input.day))
-    warnings.push(
-      `${pet.name}'s rabies vaccination expired ${rabies.expires_on}. Ask for proof before the groom.`,
-    );
-
-  let clashQ = trx
-    .selectFrom("appointments")
-    .select(["pet_name", "starts_at"])
-    .where("staff_id", "=", groomer.id)
-    .where("status", "not in", ["canceled", "no_show"])
-    .where("starts_at", "<", blockEndsAt)
-    .where("block_ends_at", ">", startsAt);
-  if (ignoreId) clashQ = clashQ.where("id", "!=", ignoreId);
-  const other = await clashQ.executeTakeFirst();
-  const clash = other
-    ? `${groomer.name} already has ${other.pet_name} at ${clockText(minutesOfDay(other.starts_at))}. Pick another time or groomer.`
-    : null;
+  const slot = await checkSlot(trx, {
+    groomer,
+    petId: pet.id,
+    petName: pet.name,
+    day: input.day,
+    start: timeToMinutes(input.start),
+    minutes: quote.minutes,
+    buffer: quote.bufferMinutes,
+    ignoreId,
+  });
+  const { startsAt, endsAt, blockEndsAt, warnings, clash } = slot;
 
   return {
     quote,
     size,
-    when: `${clockText(start)} – ${clockText(end)}`,
+    when: slot.when,
     warnings,
     clash,
     startsAt,
@@ -867,6 +929,7 @@ export const setAppointmentStatus = defineHandler<{ id: string; status: ApptStat
     }
     // Back-bar supplies come off when the groom is finished, and go back if that's undone.
     if (status === "ready" || status === "done") await useSupplies(trx, ctx, id);
+    if (status === "ready") await readyText(trx, ctx, id);
     else if (a.status === "ready") await returnSupplies(trx, ctx, id);
     return (await appointmentRows(trx, { ids: [id] }))[0]!;
   },
@@ -932,3 +995,411 @@ export async function countUpcomingFor(trx: Trx, customerId: string): Promise<nu
     .executeTakeFirstOrThrow();
   return r.n;
 }
+
+// ---- busy-day tools (3c) ----
+
+async function storeName(trx: Trx, ctx: Ctx): Promise<string> {
+  const b = await trx
+    .selectFrom("businesses")
+    .select("name")
+    .where("id", "=", ctx.businessId)
+    .executeTakeFirstOrThrow();
+  return b.name;
+}
+
+async function saveText(
+  trx: Trx,
+  ctx: Ctx,
+  appointmentId: string,
+  kind: "ready" | "moved" | "canceled",
+  to: string,
+  body: string,
+) {
+  await trx
+    .insertInto("appointment_messages")
+    .values({
+      business_id: ctx.businessId,
+      appointment_id: appointmentId,
+      kind,
+      to_address: to,
+      body,
+      created_by: ctx.staffId,
+    })
+    .execute();
+}
+
+/** The ready-for-pickup text: once per appointment, when the store has it on and the customer has a phone. */
+async function readyText(trx: Trx, ctx: Ctx, id: string) {
+  const b = await trx
+    .selectFrom("businesses")
+    .select(["name", "text_when_ready"])
+    .where("id", "=", ctx.businessId)
+    .executeTakeFirstOrThrow();
+  if (!b.text_when_ready) return;
+  const a = await trx
+    .selectFrom("appointments as a")
+    .leftJoin("customers as c", "c.id", "a.customer_id")
+    .select(["a.pet_name", "c.phone"])
+    .where("a.id", "=", id)
+    .executeTakeFirst();
+  if (!a?.phone) return;
+  const sent = await trx
+    .selectFrom("appointment_messages")
+    .select("id")
+    .where("appointment_id", "=", id)
+    .where("kind", "=", "ready")
+    .executeTakeFirst();
+  if (sent) return;
+  await saveText(trx, ctx, id, "ready", a.phone, appointmentText.ready(b.name, a.pet_name));
+}
+
+export interface AppointmentMessage {
+  id: string;
+  kind: "ready" | "moved" | "canceled";
+  to: string;
+  body: string;
+  status: "preview" | "queued" | "sent" | "failed";
+  createdAt: Date;
+}
+
+export const appointmentMessages = defineHandler<{ appointmentId: string }, AppointmentMessage[]>({
+  action: "grooming.view",
+  async run(trx, _ctx, { appointmentId }) {
+    return trx
+      .selectFrom("appointment_messages")
+      .select(["id", "kind", "to_address as to", "body", "status", "created_at as createdAt"])
+      .where("appointment_id", "=", appointmentId)
+      .orderBy("created_at")
+      .execute();
+  },
+});
+
+function localDay(d: Date): string {
+  const x = new Date(d);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+}
+
+/** Texts the customer that their groom moved or was canceled (a preview in the demo). */
+export const textAppointment = defineHandler<{ id: string; kind: "moved" | "canceled" }, AppointmentMessage>({
+  action: "grooming.book",
+  async run(trx, ctx, { id, kind }) {
+    const a = await trx
+      .selectFrom("appointments as a")
+      .innerJoin("staff as st", "st.id", "a.staff_id")
+      .leftJoin("customers as c", "c.id", "a.customer_id")
+      .select(["a.pet_name", "a.starts_at", "st.name as groomer", "c.phone"])
+      .where("a.id", "=", id)
+      .executeTakeFirst();
+    if (!a) throw new AppError("not_found", "That appointment doesn't exist.");
+    if (!a.phone) throw new AppError("invalid", "This customer has no phone number on file.");
+    const store = await storeName(trx, ctx);
+    const day = localDay(a.starts_at);
+    const body =
+      kind === "moved"
+        ? appointmentText.moved(store, a.pet_name, day, minutesOfDay(a.starts_at), a.groomer)
+        : appointmentText.canceled(store, a.pet_name, day, minutesOfDay(a.starts_at));
+    await saveText(trx, ctx, id, kind, a.phone, body);
+    const rows = await trx
+      .selectFrom("appointment_messages")
+      .select(["id", "kind", "to_address as to", "body", "status", "created_at as createdAt"])
+      .where("appointment_id", "=", id)
+      .orderBy("created_at", "desc")
+      .limit(1)
+      .execute();
+    return rows[0]!;
+  },
+});
+
+export interface MoveResult {
+  appointment: AppointmentRow;
+  /** Where it was, so Undo can put it back. */
+  from: { staffId: string; day: string; start: number };
+  /** The day or time changed (a groomer swap alone doesn't need a text). */
+  timeChanged: boolean;
+}
+
+/**
+ * Moves an appointment to another groomer or time, keeping its services, price and
+ * length. Warnings (outside hours, time off, rabies) need override, as with booking.
+ */
+export const moveAppointment = defineHandler<
+  { id: string; staffId: string; day: string; start: number; override?: boolean },
+  MoveResult
+>({
+  action: "grooming.book",
+  async run(trx, _ctx, input) {
+    const a = await trx
+      .selectFrom("appointments")
+      .select(["id", "status", "staff_id", "pet_id", "pet_name", "starts_at", "ends_at", "block_ends_at"])
+      .where("id", "=", input.id)
+      .forUpdate()
+      .executeTakeFirst();
+    if (!a) throw new AppError("not_found", "That appointment doesn't exist.");
+    if (a.status !== "booked" && a.status !== "checked_in")
+      throw new AppError("invalid", `${a.pet_name}'s groom has started, so it can't be moved.`);
+    const groomer = await trx
+      .selectFrom("staff")
+      .select(["id", "name", "grooms", "active"])
+      .where("id", "=", input.staffId)
+      .executeTakeFirst();
+    if (!groomer || !groomer.grooms || !groomer.active) throw new AppError("invalid", "Pick a groomer.");
+    requireInt(input.start, "Start time", { min: 0, max: 24 * 60 - 1 });
+    const minutes = Math.round((a.ends_at.getTime() - a.starts_at.getTime()) / 60000);
+    const buffer = Math.round((a.block_ends_at.getTime() - a.ends_at.getTime()) / 60000);
+    const slot = await checkSlot(trx, {
+      groomer,
+      petId: a.pet_id,
+      petName: a.pet_name,
+      day: input.day,
+      start: input.start,
+      minutes,
+      buffer,
+      ignoreId: a.id,
+    });
+    if (slot.clash) throw new AppError("conflict", slot.clash);
+    if (slot.warnings.length && !input.override)
+      throw new AppError("invalid", `${slot.warnings.join(" ")} Move it anyway?`, {
+        warnings: slot.warnings.join(" "),
+      });
+    try {
+      await sql`SAVEPOINT move`.execute(trx);
+      await trx
+        .updateTable("appointments")
+        .set({
+          staff_id: groomer.id,
+          starts_at: slot.startsAt,
+          ends_at: slot.endsAt,
+          block_ends_at: slot.blockEndsAt,
+        })
+        .where("id", "=", a.id)
+        .execute();
+      await sql`RELEASE SAVEPOINT move`.execute(trx);
+    } catch (err) {
+      await sql`ROLLBACK TO SAVEPOINT move`.execute(trx);
+      if ((err as { code?: string })?.code === "23P01")
+        throw new AppError("conflict", `${groomer.name} is already booked then. Pick another time.`);
+      throw err;
+    }
+    const fromDay = localDay(a.starts_at);
+    const fromStart = minutesOfDay(a.starts_at);
+    return {
+      appointment: (await appointmentRows(trx, { ids: [a.id] }))[0]!,
+      from: { staffId: a.staff_id, day: fromDay, start: fromStart },
+      timeChanged: fromDay !== input.day || fromStart !== input.start,
+    };
+  },
+});
+
+// ---- a groomer calls out ----
+
+export interface CalloutRow {
+  appointment: AppointmentRow;
+  /** Another groomer free at the same time, or null when it needs a new time. */
+  suggestion: { staffId: string; name: string } | null;
+}
+
+async function dayGroomers(trx: Trx, day: string, exceptStaffId: string): Promise<CalloutGroomer[]> {
+  const d = await loadDay(trx, day);
+  const staff = await trx
+    .selectFrom("staff")
+    .select(["id", "name"])
+    .where("grooms", "=", true)
+    .where("active", "=", true)
+    .where("id", "!=", exceptStaffId)
+    .orderBy("name")
+    .execute();
+  return staff.map((st) => {
+    const g = d.groomers.find((x) => x.staffId === st.id);
+    return {
+      staffId: st.id,
+      name: st.name,
+      hours: g?.hours ?? null,
+      timeOff: g?.timeOff.map((t) => ({ start: t.start, end: t.end })) ?? [],
+      busy: d.appointments
+        .filter((a) => a.staffId === st.id && a.status !== "no_show")
+        .map((a) => ({ start: a.start, end: a.blockEnd })),
+    };
+  });
+}
+
+export const calloutPreview = defineHandler<{ staffId: string; day: string }, CalloutRow[]>({
+  action: "grooming.book",
+  async run(trx, _ctx, { staffId, day }) {
+    const d = await loadDay(trx, day);
+    const mine = d.appointments.filter(
+      (a) => a.staffId === staffId && (a.status === "booked" || a.status === "checked_in"),
+    );
+    const suggestions = suggestCallout(
+      mine.map((a) => ({ id: a.id, start: a.start, end: a.end, blockEnd: a.blockEnd })),
+      await dayGroomers(trx, day, staffId),
+    );
+    return mine.map((a) => {
+      const s = suggestions.find((x) => x.appointmentId === a.id)!;
+      return { appointment: a, suggestion: s.staffId ? { staffId: s.staffId, name: s.name! } : null };
+    });
+  },
+});
+
+export interface CalloutChange {
+  id: string;
+  action: "move" | "leave" | "cancel";
+  staffId?: string;
+  day?: string;
+  start?: number;
+}
+
+export interface CalloutResult {
+  moved: number;
+  canceled: number;
+  left: number;
+  texts: number;
+}
+
+/**
+ * Applies a call-out in one transaction: moves, cancels and leaves, all-day time off
+ * for the groomer, texts to customers whose groom changed, and one audit entry.
+ * A clash anywhere rolls the whole thing back.
+ */
+export const applyCallout = defineHandler<
+  { staffId: string; day: string; changes: CalloutChange[]; notify: boolean; addTimeOff: boolean },
+  CalloutResult
+>({
+  action: "grooming.book",
+  async run(trx, ctx, { staffId, day, changes, notify, addTimeOff: off }) {
+    if (!isIsoDate(day)) throw new AppError("invalid", "Pick a day.");
+    const out: CalloutResult = { moved: 0, canceled: 0, left: 0, texts: 0 };
+    const log: Record<string, unknown>[] = [];
+    const store = await storeName(trx, ctx);
+    for (const c of changes) {
+      const a = await trx
+        .selectFrom("appointments as a")
+        .leftJoin("customers as cu", "cu.id", "a.customer_id")
+        .select([
+          "a.id",
+          "a.status",
+          "a.staff_id",
+          "a.pet_id",
+          "a.pet_name",
+          "a.starts_at",
+          "a.ends_at",
+          "a.block_ends_at",
+          "cu.phone",
+        ])
+        .where("a.id", "=", c.id)
+        .forUpdate("a")
+        .executeTakeFirst();
+      if (!a || a.staff_id !== staffId)
+        throw new AppError("invalid", "An appointment in the list isn't this groomer's anymore.");
+      if (c.action === "leave") {
+        out.left++;
+        continue;
+      }
+      if (a.status !== "booked" && a.status !== "checked_in")
+        throw new AppError("invalid", `${a.pet_name}'s groom has started, so it can't be changed here.`);
+      if (c.action === "cancel") {
+        await trx
+          .updateTable("appointments")
+          .set({ status: "canceled", canceled_at: new Date() })
+          .where("id", "=", a.id)
+          .execute();
+        out.canceled++;
+        log.push({ id: a.id, pet: a.pet_name, action: "cancel" });
+        if (notify && a.phone) {
+          await saveText(
+            trx,
+            ctx,
+            a.id,
+            "canceled",
+            a.phone,
+            appointmentText.canceled(store, a.pet_name, localDay(a.starts_at), minutesOfDay(a.starts_at)),
+          );
+          out.texts++;
+        }
+        continue;
+      }
+      const groomer = await trx
+        .selectFrom("staff")
+        .select(["id", "name", "grooms", "active"])
+        .where("id", "=", c.staffId ?? "")
+        .executeTakeFirst();
+      if (!groomer || !groomer.grooms || !groomer.active)
+        throw new AppError("invalid", `Pick a groomer for ${a.pet_name}.`);
+      const toDay = c.day ?? day;
+      const toStart = c.start ?? minutesOfDay(a.starts_at);
+      const minutes = Math.round((a.ends_at.getTime() - a.starts_at.getTime()) / 60000);
+      const buffer = Math.round((a.block_ends_at.getTime() - a.ends_at.getTime()) / 60000);
+      const slot = await checkSlot(trx, {
+        groomer,
+        petId: a.pet_id,
+        petName: a.pet_name,
+        day: toDay,
+        start: toStart,
+        minutes,
+        buffer,
+        ignoreId: a.id,
+      });
+      if (slot.clash) throw new AppError("conflict", `${a.pet_name}: ${slot.clash} Nothing was changed.`);
+      await trx
+        .updateTable("appointments")
+        .set({
+          staff_id: groomer.id,
+          starts_at: slot.startsAt,
+          ends_at: slot.endsAt,
+          block_ends_at: slot.blockEndsAt,
+        })
+        .where("id", "=", a.id)
+        .execute();
+      out.moved++;
+      log.push({
+        id: a.id,
+        pet: a.pet_name,
+        action: "move",
+        to_staff: groomer.name,
+        day: toDay,
+        start: toStart,
+      });
+      if (notify && a.phone) {
+        await saveText(
+          trx,
+          ctx,
+          a.id,
+          "moved",
+          a.phone,
+          appointmentText.moved(store, a.pet_name, toDay, toStart, groomer.name),
+        );
+        out.texts++;
+      }
+    }
+    if (off) {
+      const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+      const from = new Date(y, m - 1, d);
+      const to = new Date(y, m - 1, d + 1);
+      const has = await trx
+        .selectFrom("time_off")
+        .select("id")
+        .where("staff_id", "=", staffId)
+        .where("starts_at", "<=", from)
+        .where("ends_at", ">=", to)
+        .executeTakeFirst();
+      if (!has)
+        await trx
+          .insertInto("time_off")
+          .values({
+            business_id: ctx.businessId,
+            staff_id: staffId,
+            starts_at: from,
+            ends_at: to,
+            note: "Called out",
+          })
+          .execute();
+    }
+    const who = await trx.selectFrom("staff").select("name").where("id", "=", staffId).executeTakeFirst();
+    await audit(trx, ctx, {
+      action: "grooming.callout",
+      entity: "staff",
+      entityId: staffId,
+      after: { groomer: who?.name ?? null, day, ...out, changes: log, time_off: off },
+    });
+    return out;
+  },
+});

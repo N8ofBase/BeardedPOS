@@ -14,6 +14,8 @@ export interface Me {
     astroDiscountsBeforeTax: boolean;
     /** Charge sales tax on grooming. */
     groomingTaxable: boolean;
+    /** Text customers when their pet is ready. */
+    textWhenReady: boolean;
   };
   /** taxRateMpct: thousandths of a percent (8.875% = 8875). */
   location: { id: string; name: string; taxRateMpct: number } | null;
@@ -42,6 +44,7 @@ export const me = defineHandler<void, Me>({
         "modules",
         "astro_discounts_before_tax",
         "grooming_taxable",
+        "text_when_ready",
       ])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
@@ -61,6 +64,7 @@ export const me = defineHandler<void, Me>({
         modules: business.modules,
         astroDiscountsBeforeTax: business.astro_discounts_before_tax,
         groomingTaxable: business.grooming_taxable,
+        textWhenReady: business.text_when_ready,
       },
       location: location
         ? { id: location.id, name: location.name, taxRateMpct: location.tax_rate_mpct }

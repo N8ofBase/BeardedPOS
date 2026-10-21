@@ -29,8 +29,13 @@ export type {
 } from "./handlers/drawer.ts";
 export type { CustomerHistory, HistoryOrder } from "./handlers/history.ts";
 export type {
+  AppointmentMessage,
   AppointmentRow,
   BookingCheck,
+  CalloutChange,
+  CalloutResult,
+  CalloutRow,
+  MoveResult,
   BookingInput,
   DayGroomer,
   GroomerInput,
@@ -50,7 +55,7 @@ export {
   type PhotoInput,
   type ServiceSupply,
 } from "./handlers/groomingHistory.ts";
-export type { MoneyTotals } from "./handlers/totals.ts";
+export type { GroomerTotals, MoneyTotals } from "./handlers/totals.ts";
 export { MAX_ASTRO_ATTEMPTS, processAstroQueue, type SendSummary } from "./astro/sender.ts";
 export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";
 export type { ImportResult, RowOutcome } from "./import/engine.ts";

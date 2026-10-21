@@ -1176,3 +1176,86 @@ label.button {
   z-index: 30;
   background: rgb(0 0 0 / 0.8);
 }
+.toast-action {
+  background: none;
+  border: 0;
+  color: var(--bg);
+  text-decoration: underline;
+  font-weight: 700;
+  padding: 0;
+  min-height: 0;
+  cursor: pointer;
+}
+
+/* grooming week and drag */
+.week {
+  display: grid;
+  min-width: min-content;
+}
+.week .cell {
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 4px;
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  min-height: 64px;
+  min-width: 120px;
+}
+.week .cell.off {
+  background: repeating-linear-gradient(135deg, var(--sunk) 0 6px, transparent 6px 12px);
+}
+.week .wk-hd {
+  font-weight: 700;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 0.88rem;
+}
+.week .wk-hd small {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+}
+.wk-chip {
+  display: block;
+  text-align: left;
+  font-size: 0.78rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  background: var(--surface);
+  min-height: 0;
+  line-height: 1.25;
+}
+.wk-chip.checked_in,
+.wk-chip.in_progress {
+  border-left-color: var(--astro);
+  background: var(--astro-soft);
+}
+.wk-chip.ready {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+.wk-chip.done {
+  border-left-color: var(--good);
+  color: var(--muted);
+}
+.wk-chip.no_show {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.appt.dragging {
+  opacity: 0.35;
+}
+.appt.ghost {
+  pointer-events: none;
+  opacity: 0.9;
+  border-style: dashed;
+  z-index: 3;
+}
+.appt.movable {
+  cursor: grab;
+}

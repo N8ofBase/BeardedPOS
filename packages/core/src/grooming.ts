@@ -1,6 +1,7 @@
 // Grooming: quotes, times and the appointment status flow. Pure functions shared by
 // the calendar, the booking form and the server (which reprices every booking).
 // Money is integer cents; times are minutes since midnight in the store's local time.
+import { addDays } from "./dates.ts";
 import { AppError } from "./errors.ts";
 import { formatMoney } from "./money.ts";
 import { SIZES, type PetSize } from "./pets.ts";
@@ -162,3 +163,81 @@ export function suppliesFor(rates: SupplyRates[], size: PetSize): { productId: s
   for (const r of rates) total.set(r.productId, (total.get(r.productId) ?? 0) + r.qty[size]);
   return [...total].filter(([, qty]) => qty > 0).map(([productId, qty]) => ({ productId, qty }));
 }
+
+/** Snaps minutes since midnight to the nearest step (15 minutes on the calendar). */
+export function snapMinutes(n: number, step = 15): number {
+  return Math.max(0, Math.min(24 * 60 - step, Math.round(n / step) * step));
+}
+
+/** The Monday of the week a day falls in ("YYYY-MM-DD"). */
+export function weekStart(day: string): string {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  const wd = new Date(y, m - 1, d, 12).getDay();
+  return addDays(day, wd === 0 ? -6 : 1 - wd);
+}
+
+/** Monday to Sunday from a week's start. */
+export function weekDays(start: string): string[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
+const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Tue Oct 21" for a "YYYY-MM-DD" day. */
+export function shortDay(day: string): string {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  return `${WEEKDAY[new Date(y, m - 1, d, 12).getDay()]} ${MONTH[m - 1]} ${d}`;
+}
+
+export interface CalloutGroomer {
+  staffId: string;
+  name: string;
+  /** Hours that day, minutes since midnight; null when they don't work. */
+  hours: { start: number; end: number } | null;
+  timeOff: { start: number; end: number }[];
+  /** Their bookings that day: start to end plus buffer. */
+  busy: { start: number; end: number }[];
+}
+
+export interface CalloutSuggestion {
+  appointmentId: string;
+  /** Another groomer free at the same time, or null: it needs a new time. */
+  staffId: string | null;
+  name: string | null;
+}
+
+/**
+ * For a groomer who called out: who can take each appointment at the same time.
+ * The first groomer (in the order given) whose hours cover the groom, who has no
+ * time off then and no booking in the way, buffer included. Each suggestion counts
+ * as booked for the ones after it.
+ */
+export function suggestCallout(
+  appointments: { id: string; start: number; end: number; blockEnd: number }[],
+  groomers: CalloutGroomer[],
+): CalloutSuggestion[] {
+  const busy = new Map(groomers.map((g) => [g.staffId, [...g.busy]]));
+  return [...appointments]
+    .sort((a, b) => a.start - b.start)
+    .map((a) => {
+      const g = groomers.find(
+        (x) =>
+          withinHours(a.start, a.end, x.hours) &&
+          !x.timeOff.some((t) => overlaps(a.start, a.blockEnd, t.start, t.end)) &&
+          !busy.get(x.staffId)!.some((b) => overlaps(a.start, a.blockEnd, b.start, b.end)),
+      );
+      if (!g) return { appointmentId: a.id, staffId: null, name: null };
+      busy.get(g.staffId)!.push({ start: a.start, end: a.blockEnd });
+      return { appointmentId: a.id, staffId: g.staffId, name: g.name };
+    });
+}
+
+/** The texts customers get about their appointments. Short and plain. */
+export const appointmentText = {
+  ready: (store: string, pet: string) => `${store}: ${pet} is ready for pickup!`,
+  moved: (store: string, pet: string, day: string, time: number, groomer: string) =>
+    `${store}: ${pet}'s groom is now ${shortDay(day)} at ${clockText(time)} with ${groomer}. Reply or call to change it.`,
+  canceled: (store: string, pet: string, day: string, time: number) =>
+    `${store}: ${pet}'s groom on ${shortDay(day)} at ${clockText(time)} is canceled. Call us to book a new time.`,
+};

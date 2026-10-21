@@ -24,6 +24,8 @@ export interface BusinessesTable {
   drawer_float_cents: Generated<number>;
   /** Charge sales tax on grooming. */
   grooming_taxable: Generated<boolean>;
+  /** Text the customer when their pet is ready for pickup. */
+  text_when_ready: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -523,6 +525,20 @@ export interface GroomingPhotosTable {
   created_at: CreatedAt;
 }
 
+export interface AppointmentMessagesTable {
+  id: Generated<string>;
+  business_id: string;
+  appointment_id: string;
+  kind: "ready" | "moved" | "canceled";
+  channel: Generated<"sms">;
+  to_address: string;
+  body: string;
+  status: Generated<"preview" | "queued" | "sent" | "failed">;
+  created_by: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
 export interface AppointmentAddonsTable {
   id: Generated<string>;
   business_id: string;
@@ -632,6 +648,7 @@ export interface DB {
   service_supplies: ServiceSuppliesTable;
   grooming_notes: GroomingNotesTable;
   grooming_photos: GroomingPhotosTable;
+  appointment_messages: AppointmentMessagesTable;
 }
 
 export type Business = Selectable<BusinessesTable>;
