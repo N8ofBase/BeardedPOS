@@ -76,6 +76,9 @@ async function seedBusiness(trx: Transaction<DB>): Promise<string> {
       slug: "sample-pet-store-demo",
       brand_color: "#0f6e5a",
       modules: JSON.stringify({ astro: true, grooming: true }),
+      booking_enabled: true,
+      public_phone: "2125550199",
+      booking_message: "Book a bath or full groom for your pet. New customers are welcome!",
       is_demo: true,
     })
     .returning("id")
@@ -771,4 +774,10 @@ async function seedGroomingSupplies(trx: Transaction<DB>, businessId: string): P
       })
       .execute();
   }
+}
+
+/** The sample store's id, for the demo's public booking page. */
+export async function demoBusinessId(db: Kysely<DB>): Promise<string | null> {
+  const b = await db.selectFrom("businesses").select("id").where("is_demo", "=", true).executeTakeFirst();
+  return b?.id ?? null;
 }

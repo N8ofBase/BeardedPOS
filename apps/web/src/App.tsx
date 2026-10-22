@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router";
 import { isRole } from "@pet-pos/core";
 import { listDemoStaff, type DemoStaff } from "@pet-pos/db";
 import { createDemoApi } from "./api/client.ts";
 import { RolePicker } from "./auth/RolePicker.tsx";
 import { bootDemo, OtherTabError, type DemoRuntime } from "./demo/boot.ts";
+import { BookingApp } from "./book/BookingApp.tsx";
 import { AdminShell } from "./layout/AdminShell.tsx";
 import { loadPicked, savePicked, SessionContext, type PickedStaff } from "./session.tsx";
 
@@ -12,6 +14,7 @@ type Boot = { state: "loading" } | { state: "ready"; rt: DemoRuntime } | { state
 
 export function App() {
   const [boot, setBoot] = useState<Boot>({ state: "loading" });
+  const location = useLocation();
 
   useEffect(() => {
     bootDemo().then(
@@ -31,6 +34,9 @@ export function App() {
 
   if (boot.state === "loading") return <Center>Setting up the demo register…</Center>;
   if (boot.state === "error") return <Center>{boot.message}</Center>;
+  // The public booking page: the customer's view, with no staff sign-in.
+  if (location.pathname === "/book" || location.pathname.startsWith("/book/"))
+    return <BookingApp db={boot.rt.db} />;
   return <Signed rt={boot.rt} />;
 }
 

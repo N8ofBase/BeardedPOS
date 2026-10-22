@@ -98,6 +98,7 @@ function GroomerForm({ g, onClose }: { g: GroomerRow; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [grooms, setGrooms] = useState(g.grooms);
+  const [booksOnline, setBooksOnline] = useState(g.booksOnline);
   const [days, setDays] = useState(() =>
     DAYS.map((_, d) => {
       const h = g.hours.find((x) => x.weekday === d);
@@ -115,6 +116,7 @@ function GroomerForm({ g, onClose }: { g: GroomerRow; onClose: () => void }) {
       api.call("saveGroomer", {
         staffId: g.staffId,
         grooms,
+        booksOnline,
         hours: grooms
           ? days.flatMap((d, i) => (d.on ? [{ weekday: i, start: d.start, end: d.end }] : []))
           : [],
@@ -171,6 +173,12 @@ function GroomerForm({ g, onClose }: { g: GroomerRow; onClose: () => void }) {
           <input type="checkbox" checked={grooms} onChange={(e) => setGrooms(e.target.checked)} />
           Grooms (shows on the grooming calendar)
         </label>
+        {grooms && (
+          <label className="check">
+            <input type="checkbox" checked={booksOnline} onChange={(e) => setBooksOnline(e.target.checked)} />
+            Takes online bookings
+          </label>
+        )}
         {grooms && (
           <fieldset style={{ border: 0, padding: 0, margin: 0, display: "grid", gap: 6 }}>
             <legend style={{ fontWeight: 700, marginBottom: 6 }}>Weekly hours</legend>

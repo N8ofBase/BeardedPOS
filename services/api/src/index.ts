@@ -1,7 +1,12 @@
 export { handlers, invoke, type HandlerName, type InputOf, type OutputOf } from "./registry.ts";
 export { defineHandler, type Handler } from "./handler.ts";
 export type { Me, StaffInput, StaffListItem } from "./handlers/staff.ts";
-export { MAX_LOGO_CHARS, type SettingsInput, type StoreSettings } from "./handlers/settings.ts";
+export {
+  MAX_LOGO_CHARS,
+  type BookingSettings,
+  type SettingsInput,
+  type StoreSettings,
+} from "./handlers/settings.ts";
 export type { DemoCounts } from "./handlers/demo.ts";
 export type {
   CountLine,
@@ -81,3 +86,19 @@ export type {
   SalesDay,
   TicketInput,
 } from "./handlers/register.ts";
+export {
+  invokePublic,
+  type PublicCaller,
+  type PublicInput,
+  type PublicName,
+  type PublicOutput,
+} from "./public/registry.ts";
+export type {
+  BookingPage,
+  CodeSent,
+  MyAccount,
+  MyAppointment,
+  MyPet,
+  OpenDay,
+  VerifyResult,
+} from "./public/booking.ts";

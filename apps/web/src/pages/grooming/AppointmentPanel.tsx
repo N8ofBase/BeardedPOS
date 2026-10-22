@@ -130,6 +130,7 @@ export function AppointmentPanel({
             <span className="muted small">{a.label}</span>
           </div>
         </div>
+        {a.source === "online" && <span className="muted small">Booked online by the customer.</span>}
         <PetAlerts a={a} />
         {a.notes && (
           <p style={{ margin: 0 }}>

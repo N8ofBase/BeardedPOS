@@ -1259,3 +1259,30 @@ label.button {
 .appt.movable {
   cursor: grab;
 }
+
+/* public booking page */
+.book {
+  min-height: 100vh;
+  background: var(--bg);
+}
+.book-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.book-head small {
+  display: block;
+  opacity: 0.85;
+}
+.book-main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+.book .demo-banner a {
+  color: inherit;
+  font-weight: 700;
+}

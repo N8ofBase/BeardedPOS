@@ -70,7 +70,7 @@ type ServiceDb = {
   archived_at: Date | null;
 };
 
-function toService(s: ServiceDb): ServiceRow {
+export function toService(s: ServiceDb): ServiceRow {
   return {
     id: s.id,
     name: s.name,
@@ -86,7 +86,7 @@ function toService(s: ServiceDb): ServiceRow {
   };
 }
 
-const rates = (s: ServiceRow): ServiceRates => ({
+export const rates = (s: ServiceRow): ServiceRates => ({
   name: s.name,
   priceCents: s.priceCents,
   minutes: s.minutes,
@@ -208,6 +208,8 @@ export interface GroomerRow {
   name: string;
   role: string;
   grooms: boolean;
+  /** Takes online bookings. */
+  booksOnline: boolean;
   active: boolean;
   /** Weekly hours: "09:00" times. */
   hours: { weekday: number; start: string; end: string }[];
@@ -220,7 +222,7 @@ export const listGroomers = defineHandler<{ all?: boolean }, GroomerRow[]>({
   async run(trx, _ctx, input) {
     let q = trx
       .selectFrom("staff")
-      .select(["id", "name", "role", "grooms", "active"])
+      .select(["id", "name", "role", "grooms", "books_online", "active"])
       .where("active", "=", true);
     if (!input?.all) q = q.where("grooms", "=", true);
     const staff = await q.orderBy("name").execute();
@@ -244,6 +246,7 @@ export const listGroomers = defineHandler<{ all?: boolean }, GroomerRow[]>({
       name: s.name,
       role: s.role,
       grooms: s.grooms,
+      booksOnline: s.books_online,
       active: s.active,
       hours: hours
         .filter((h) => h.staff_id === s.id)
@@ -258,12 +261,14 @@ export const listGroomers = defineHandler<{ all?: boolean }, GroomerRow[]>({
 export interface GroomerInput {
   staffId: string;
   grooms: boolean;
+  /** Left out: unchanged. */
+  booksOnline?: boolean;
   hours: { weekday: number; start: string; end: string }[];
 }
 
 export const saveGroomer = defineHandler<GroomerInput, void>({
   action: "grooming.manage",
-  async run(trx, ctx, { staffId, grooms, hours }) {
+  async run(trx, ctx, { staffId, grooms, hours, booksOnline }) {
     const s = await trx.selectFrom("staff").select("id").where("id", "=", staffId).executeTakeFirst();
     if (!s) throw new AppError("not_found", "That staff member doesn't exist.");
     const seen = new Set<number>();
@@ -282,7 +287,11 @@ export const saveGroomer = defineHandler<GroomerInput, void>({
         end_time: minutesToTime(end),
       };
     });
-    await trx.updateTable("staff").set({ grooms }).where("id", "=", staffId).execute();
+    await trx
+      .updateTable("staff")
+      .set({ grooms, ...(booksOnline !== undefined ? { books_online: booksOnline } : {}) })
+      .where("id", "=", staffId)
+      .execute();
     await trx.deleteFrom("groomer_hours").where("staff_id", "=", staffId).execute();
     if (rows.length) await trx.insertInto("groomer_hours").values(rows).execute();
   },
@@ -361,6 +370,8 @@ export interface AppointmentRow {
   notes: string | null;
   /** Rabies lapsed by the appointment's date. */
   rabiesLapsed: boolean;
+  /** Booked by staff, or online by the customer. */
+  source: "staff" | "online";
   /** The sale that paid for it. */
   saleId: string | null;
   receiptNumber: number | null;
@@ -372,7 +383,7 @@ export interface AppointmentRow {
   lastNote: string | null;
 }
 
-async function appointmentRows(
+export async function appointmentRows(
   trx: Trx,
   where: { from?: Date; to?: Date; ids?: string[]; customerId?: string },
 ) {
@@ -404,6 +415,7 @@ async function appointmentRows(
       "a.block_ends_at",
       "a.price_cents",
       "a.notes",
+      "a.source",
       "a.sale_id",
       sql<number | null>`(SELECT s.receipt_number FROM sales s WHERE s.id = a.sale_id)`.as("receipt_number"),
       sql<number>`coalesce((SELECT s.refunded_cents FROM sales s WHERE s.id = a.sale_id), 0)`.as(
@@ -470,6 +482,7 @@ async function appointmentRows(
       blockEnd: minutesOfDay(r.block_ends_at),
       priceCents: r.price_cents,
       notes: r.notes,
+      source: r.source,
       saleId: r.sale_id,
       receiptNumber: r.receipt_number,
       saleRefundedCents: r.sale_refunded_cents,
@@ -516,7 +529,7 @@ export const groomingWeek = defineHandler<{ start: string }, { start: string; da
   },
 });
 
-async function loadDay(trx: Trx, day: string): Promise<GroomingDay> {
+export async function loadDay(trx: Trx, day: string): Promise<GroomingDay> {
   const { from, to, weekday } = dayBounds(day);
   const appointments = await appointmentRows(trx, { from, to });
   const staff = await trx
@@ -621,7 +634,7 @@ interface Slot {
  * rabies give warnings; another booking in the way (buffer included) is a clash.
  * Shared by booking, moving and the call-out.
  */
-async function checkSlot(
+export async function checkSlot(
   trx: Trx,
   v: {
     groomer: { id: string; name: string };
@@ -1074,7 +1087,7 @@ export const appointmentMessages = defineHandler<{ appointmentId: string }, Appo
   },
 });
 
-function localDay(d: Date): string {
+export function localDay(d: Date): string {
   const x = new Date(d);
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
 }

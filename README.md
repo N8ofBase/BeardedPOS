@@ -19,7 +19,9 @@ Status: **Phases 1, 2 (except 2d, real Square) and 3 are done** in demo mode.
 
 - Phase 3c: a week view, drag to reschedule with Undo, moving a groomer's day when they call out, the ready-for-pickup text (previewed in the demo), and grooming revenue by groomer on the Sales page.
 
-The demo is live at https://petpos-demo.prismcortex.net. Next: Phase 4 (online booking, deposits and reminders).
+- Phase 4a: an online booking page at `/book` (sign-in with a one-time code, pick a pet, service, groomer and open time, see, cancel or reschedule up to a cutoff), online bookings tagged on the staff calendar, and Online booking settings.
+
+The demo is live at https://petpos-demo.prismcortex.net (booking page: https://petpos-demo.prismcortex.net/book). Next: Phase 4b (deposits) and 4c (confirmations, reminders and rebook nudges).
 
 ## Run it
 

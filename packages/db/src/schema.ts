@@ -26,6 +26,14 @@ export interface BusinessesTable {
   grooming_taxable: Generated<boolean>;
   /** Text the customer when their pet is ready for pickup. */
   text_when_ready: Generated<boolean>;
+  booking_enabled: Generated<boolean>;
+  booking_days_ahead: Generated<number>;
+  booking_notice_minutes: Generated<number>;
+  booking_cutoff_hours: Generated<number>;
+  booking_step_minutes: Generated<number>;
+  booking_message: string | null;
+  /** 10 digits, shown to customers. */
+  public_phone: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -53,6 +61,8 @@ export interface StaffTable {
   active: Generated<boolean>;
   /** Shows on the grooming calendar. True for the Groomer role. */
   grooms: Generated<boolean>;
+  /** Takes online bookings. */
+  books_online: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -481,6 +491,7 @@ export interface AppointmentsTable {
   sale_id: string | null;
   deposit_payment_id: string | null;
   supplies_used_at: Date | null;
+  source: Generated<"staff" | "online">;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -522,6 +533,27 @@ export interface GroomingPhotosTable {
   height: number;
   bytes: number;
   is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
+export interface CustomerLoginCodesTable {
+  id: Generated<string>;
+  business_id: string;
+  contact: string;
+  code_hash: string;
+  expires_at: Date;
+  attempts: Generated<number>;
+  used_at: Date | null;
+  created_at: CreatedAt;
+}
+
+export interface CustomerSessionsTable {
+  id: Generated<string>;
+  business_id: string;
+  customer_id: string;
+  token_hash: string;
+  expires_at: Date;
+  last_seen_at: Generated<Date>;
   created_at: CreatedAt;
 }
 
@@ -649,6 +681,8 @@ export interface DB {
   grooming_notes: GroomingNotesTable;
   grooming_photos: GroomingPhotosTable;
   appointment_messages: AppointmentMessagesTable;
+  customer_login_codes: CustomerLoginCodesTable;
+  customer_sessions: CustomerSessionsTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

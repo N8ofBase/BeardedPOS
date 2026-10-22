@@ -465,6 +465,7 @@ function DayGrid({
                   >
                     <b>{a.petName}</b> <span className="muted">{clockText(a.start)}</span>
                     {a.rabiesLapsed && <span title="Rabies expired"> ⚠</span>}
+                    {a.source === "online" && <span className="tag astro"> Online</span>}
                     <br />
                     {a.serviceName} · {a.size}
                     {h > 60 && (

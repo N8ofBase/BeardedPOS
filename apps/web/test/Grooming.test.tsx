@@ -48,6 +48,7 @@ const appt = (over: Partial<AppointmentRow> = {}): AppointmentRow => ({
   saleRefundedCents: 0,
   noteCount: 0,
   lastNote: null,
+  source: "staff",
   ...over,
 });
 
