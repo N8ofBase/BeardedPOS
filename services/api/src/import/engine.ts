@@ -14,7 +14,7 @@ import {
   type RowOutcome,
   type RowResult,
 } from "./base.ts";
-import { customerRow, petRow } from "./customers.ts";
+import { customerRow } from "./customers.ts";
 import { orderRow } from "./orders.ts";
 import { productRow } from "./products.ts";
 
@@ -22,7 +22,6 @@ export type { ImportResult, RowOutcome } from "./base.ts";
 
 const HANDLERS: Record<ImportType, (r: Row, rc: RowCtx) => Promise<RowResult>> = {
   customers: customerRow,
-  pets: petRow,
   products: productRow,
   programs: programRow,
   punches: punchRow,
@@ -37,7 +36,6 @@ function refusalReason(err: unknown): string {
     ["products_sku_per_business", "Another product already has that SKU"],
     ["customers_phone_per_business", "Another customer already has that phone number"],
     ["customers_email_per_business", "Another customer already has that email"],
-    ["pets_name_per_customer", "This customer already has a pet with that name"],
     ["astro_programs_name_per_business", "There's already a program with that name"],
   ];
   for (const [constraint, reason] of unique) if (isUniqueViolation(err, constraint)) return reason;
@@ -98,13 +96,11 @@ function rowLabel(r: Row): string {
   return (
     r.name ||
     [r.first, r.last].filter(Boolean).join(" ") ||
-    r.petName ||
     r.item ||
     r.sku ||
     r.program ||
     r.phone ||
     r.email ||
-    r.ownerPhone ||
     "(blank row)"
   );
 }

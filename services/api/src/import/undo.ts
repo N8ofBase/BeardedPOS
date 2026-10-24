@@ -9,8 +9,6 @@ import { sameValue } from "./base.ts";
 
 const TABLE: Record<Exclude<ImportEntity, "stock">, string> = {
   customer: "customers",
-  pet: "pets",
-  vaccination: "vaccinations",
   product: "products",
   program: "astro_programs",
   punch: "astro_punches",
@@ -19,8 +17,6 @@ const TABLE: Record<Exclude<ImportEntity, "stock">, string> = {
 
 const NOUN: Record<ImportEntity, string> = {
   customer: "Customer",
-  pet: "Pet",
-  vaccination: "Vaccination",
   product: "Product",
   program: "Program",
   punch: "Punch card",
@@ -97,19 +93,13 @@ export async function undoBatch(trx: Transaction<DB>, ctx: Ctx, batchId: string)
         result.deleted++;
         continue;
       }
-      if (c.entity === "customer") {
-        const pets = await trx
-          .selectFrom("pets")
-          .select("id")
-          .where("customer_id", "=", c.entity_id)
-          .execute();
+      if (c.entity === "customer")
         await audit(trx, ctx, {
           action: "customer.delete",
           entity: "customer",
           entityId: c.entity_id,
-          before: { name: current.name, pets: pets.length, via: "import undo" },
+          before: { name: current.name, via: "import undo" },
         });
-      }
       await sql`DELETE FROM ${sql.table(table)} WHERE id = ${c.entity_id}`.execute(trx);
       result.deleted++;
     } else if (c.op === "updated") {

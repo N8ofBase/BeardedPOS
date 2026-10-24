@@ -1,29 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import {
-  BREED_PLACEHOLDER,
-  duplicatePetName,
-  formatPhone,
-  SPECIES,
-  SPECIES_LABEL,
-  validateCustomer,
-  type CustomerInput,
-  type Species,
-} from "@pet-pos/core";
+import { formatPhone, validateCustomer, type CustomerInput } from "@pet-pos/core";
 import type { CustomerProfile } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";
 import { useToast } from "../../ui/Toast.tsx";
-
-interface PetRow {
-  key: number;
-  id?: string;
-  name: string;
-  species: Species;
-  breed: string;
-  birthday: string;
-}
 
 const EMPTY: CustomerInput = {
   name: "",
@@ -38,10 +20,7 @@ const EMPTY: CustomerInput = {
   notes: "",
 };
 
-let nextKey = 1;
-const blankPet = (): PetRow => ({ key: nextKey++, name: "", species: "dog", breed: "", birthday: "" });
-
-/** Add or edit a customer and their pets in one form, as in the prototype. */
+/** Add or edit a customer in one form, as in the prototype. */
 export function CustomerForm({
   id,
   onClose,
@@ -99,18 +78,6 @@ function Form({
   const qc = useQueryClient();
   const toast = useToast();
   const [c, setC] = useState<CustomerInput>(profile ? toInput(profile) : EMPTY);
-  const [pets, setPets] = useState<PetRow[]>(
-    profile?.pets.length
-      ? profile.pets.map((p) => ({
-          key: nextKey++,
-          id: p.id,
-          name: p.name,
-          species: p.species,
-          breed: p.breed ?? "",
-          birthday: p.birthday ?? "",
-        }))
-      : [blankPet()],
-  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const save = useMutation({
@@ -118,7 +85,6 @@ function Form({
       api.call("saveCustomer", {
         id: profile?.id,
         customer: c,
-        pets: pets.map(({ id, name, species, breed, birthday }) => ({ id, name, species, breed, birthday })),
       }),
     onSuccess: ({ id }) => {
       toast(profile ? "Customer saved" : "Customer added");
@@ -136,8 +102,6 @@ function Form({
   function submit(e: FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = { ...validateCustomer(c) };
-    const dup = duplicatePetName(pets.map((p) => p.name));
-    if (dup) errs.pets = dup;
     setErrors(errs);
     if (Object.keys(errs).length) return;
     save.mutate();
@@ -145,8 +109,6 @@ function Form({
 
   const set = (k: keyof CustomerInput) => (e: { target: { value: string } }) =>
     setC({ ...c, [k]: e.target.value });
-  const setPet = (key: number, patch: Partial<PetRow>) =>
-    setPets((ps) => ps.map((p) => (p.key === key ? { ...p, ...patch } : p)));
   const field = (
     k: keyof CustomerInput,
     label: string,
@@ -189,81 +151,12 @@ function Form({
             checked={c.smsOptIn}
             onChange={(e) => setC({ ...c, smsOptIn: e.target.checked })}
           />
-          Text messages OK (reminders and pickup alerts)
+          Text messages OK (order and pickup alerts)
         </label>
         <label>
           Notes
           <textarea rows={2} value={c.notes} onChange={set("notes")} />
         </label>
-
-        <div style={{ display: "grid", gap: 8 }}>
-          <b style={{ fontSize: ".9rem" }}>Pets</b>
-          {pets.map((p) => (
-            <div className="petrow" key={p.key}>
-              <label>
-                Pet name
-                <input
-                  value={p.name}
-                  onChange={(e) => setPet(p.key, { name: e.target.value })}
-                  placeholder="e.g. Biscuit"
-                  autoComplete="off"
-                />
-              </label>
-              <fieldset className="ptype">
-                <legend>Type</legend>
-                {SPECIES.map((s) => (
-                  <label key={s}>
-                    <input
-                      type="radio"
-                      name={`ptype-${p.key}`}
-                      value={s}
-                      checked={p.species === s}
-                      onChange={() => setPet(p.key, { species: s })}
-                    />{" "}
-                    {SPECIES_LABEL[s]}
-                  </label>
-                ))}
-              </fieldset>
-              <label style={{ flex: "0 1 170px" }}>
-                Birthday (optional)
-                <input
-                  type="date"
-                  value={p.birthday}
-                  onChange={(e) => setPet(p.key, { birthday: e.target.value })}
-                />
-              </label>
-              <label>
-                Breed or notes
-                <input
-                  value={p.breed}
-                  onChange={(e) => setPet(p.key, { breed: e.target.value })}
-                  placeholder={BREED_PLACEHOLDER[p.species]}
-                  autoComplete="off"
-                />
-              </label>
-              {(pets.length > 1 || p.name) && (
-                <button
-                  type="button"
-                  aria-label={`Remove ${p.name || "this pet"}`}
-                  onClick={() =>
-                    setPets((ps) => (ps.length > 1 ? ps.filter((x) => x.key !== p.key) : [blankPet()]))
-                  }
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          ))}
-          {errors.pets && <span className="field-error">{errors.pets}</span>}
-          <div>
-            <button type="button" onClick={() => setPets((ps) => [...ps, blankPet()])}>
-              + Add another pet
-            </button>
-          </div>
-          {profile && profile.pets.some((p) => !pets.some((r) => r.id === p.id)) && (
-            <p className="warn-line">Removing a pet deletes its details and vaccinations when you save.</p>
-          )}
-        </div>
 
         <div className="actions">
           <button className="primary" type="submit" disabled={save.isPending}>

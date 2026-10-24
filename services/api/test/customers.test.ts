@@ -38,7 +38,7 @@ beforeEach(async () => {
 });
 
 describe("demo seed", () => {
-  it("adds sample customers with pets, a punch card and vaccinations", async () => {
+  it("adds sample customers and a punch card", async () => {
     const cards = await invoke(db, cashier, "searchCustomers", { q: "" });
     expect(cards.map((c) => c.name)).toEqual([
       "Sample Cat Parent (DEMO)",
@@ -46,15 +46,8 @@ describe("demo seed", () => {
       "Sample Family (DEMO)",
     ]);
     const sample = cards.find((c) => c.name === "Sample Customer (DEMO)")!;
-    expect(sample.pets.map((p) => p.name)).toEqual(["Biscuit"]);
     expect(sample.punchCards).toMatchObject([
       { programName: "Sample dry food club (DEMO)", balance: 11, buyCount: 12 },
-    ]);
-    const family = cards.find((c) => c.name === "Sample Family (DEMO)")!;
-    expect(family.pets.map((p) => [p.name, p.species])).toEqual([
-      ["Clover", "other"],
-      ["Juno", "dog"],
-      ["Rex", "dog"],
     ]);
   });
 });
@@ -77,18 +70,14 @@ describe("demo seed after deletes", () => {
 
 describe("saveCustomer", () => {
   it("stores the phone as 10 digits and the state in capitals", async () => {
-    const { id } = await invoke(db, cashier, "saveCustomer", {
-      customer: pat,
-      pets: [{ name: "Daisy", species: "dog", breed: "Corgi", birthday: "" }],
-    });
+    const { id } = await invoke(db, cashier, "saveCustomer", { customer: pat });
     const p = await invoke(db, cashier, "getCustomer", { id });
     expect(p).toMatchObject({ phone: "2125550199", state: "IL", smsOptIn: true });
-    expect(p.pets).toMatchObject([{ name: "Daisy", species: "dog", breed: "Corgi", birthday: null }]);
   });
 
   it("refuses a bad phone with the field's message", async () => {
     await expect(
-      invoke(db, cashier, "saveCustomer", { customer: { ...pat, phone: "555-0100" }, pets: [] }),
+      invoke(db, cashier, "saveCustomer", { customer: { ...pat, phone: "555-0100" } }),
     ).rejects.toMatchObject({ fields: { phone: "Enter a 10-digit phone number." } });
   });
 
@@ -96,74 +85,22 @@ describe("saveCustomer", () => {
     await expect(
       invoke(db, cashier, "saveCustomer", {
         customer: { ...pat, phone: "212-555-0100", email: "" },
-        pets: [],
       }),
     ).rejects.toThrow("Another customer already has that phone number.");
     await expect(
       invoke(db, cashier, "saveCustomer", {
         customer: { ...pat, email: "CUSTOMER.demo@example.com" },
-        pets: [],
       }),
     ).rejects.toThrow("Another customer already has that email.");
-  });
-
-  it("refuses two pets with the same name", async () => {
-    await expect(
-      invoke(db, cashier, "saveCustomer", {
-        customer: pat,
-        pets: [
-          { name: "Max", species: "dog", breed: "", birthday: "" },
-          { name: "max", species: "cat", breed: "", birthday: "" },
-        ],
-      }),
-    ).rejects.toThrow(/Two pets have the same name/);
-  });
-
-  it("adds, updates and removes pet rows to match the form", async () => {
-    const { id } = await invoke(db, owner, "saveCustomer", {
-      customer: pat,
-      pets: [
-        { name: "Daisy", species: "dog", breed: "", birthday: "" },
-        { name: "Tom", species: "cat", breed: "", birthday: "" },
-      ],
-    });
-    const before = await invoke(db, owner, "getCustomer", { id });
-    const daisy = before.pets.find((p) => p.name === "Daisy")!;
-    await invoke(db, owner, "saveCustomer", {
-      id,
-      customer: pat,
-      pets: [
-        { id: daisy.id, name: "Daisy Mae", species: "dog", breed: "Corgi", birthday: "" },
-        { name: "Hopper", species: "other", breed: "Rabbit", birthday: "" },
-      ],
-    });
-    const after = await invoke(db, owner, "getCustomer", { id });
-    expect(after.pets.map((p) => [p.name, p.breed])).toEqual([
-      ["Daisy Mae", "Corgi"],
-      ["Hopper", "Rabbit"],
-    ]);
-    expect(after.pets[0]!.id).toBe(daisy.id);
-  });
-
-  it("won't move another customer's pet", async () => {
-    const [sample] = await invoke(db, owner, "searchCustomers", { q: "Sample Customer" });
-    const biscuit = sample!.pets[0]!;
-    await expect(
-      invoke(db, owner, "saveCustomer", {
-        customer: pat,
-        pets: [{ id: biscuit.id, name: "Biscuit", species: "dog", breed: "", birthday: "" }],
-      }),
-    ).rejects.toThrow(/isn't this customer's pet/);
   });
 });
 
 describe("finding customers", () => {
-  it("matches name, email, pet name and part of a phone", async () => {
+  it("matches name, email and part of a phone", async () => {
     const names = async (q: string) =>
       (await invoke(db, cashier, "searchCustomers", { q })).map((c) => c.name);
     expect(await names("family")).toEqual(["Sample Family (DEMO)"]);
     expect(await names("customer.demo@")).toEqual(["Sample Customer (DEMO)"]);
-    expect(await names("clover")).toEqual(["Sample Family (DEMO)"]);
     expect(await names("555-0101")).toEqual(["Sample Cat Parent (DEMO)"]);
     expect(await names("(212) 555")).toHaveLength(3);
     expect(await names("01")).toEqual([]);
@@ -177,58 +114,12 @@ describe("finding customers", () => {
   });
 });
 
-describe("pet details and vaccinations", () => {
-  it("saves details and replaces the vaccine list", async () => {
-    const [sample] = await invoke(db, owner, "searchCustomers", { q: "Sample Customer" });
-    const biscuit = sample!.pets[0]!;
-    await invoke(db, cashier, "savePetDetails", {
-      petId: biscuit.id,
-      size: "L",
-      coat: "Short",
-      weightLb: 26.25,
-      temperament: "Calm",
-      allergies: "Chicken",
-      vetName: "Main St Vet",
-    });
-    await invoke(db, cashier, "saveVaccinations", {
-      petId: biscuit.id,
-      rows: [{ vaccine: "Rabies", expiresOn: "2028-01-01" }],
-    });
-    const p = await invoke(db, owner, "getCustomer", { id: sample!.id });
-    expect(p.pets[0]).toMatchObject({
-      size: "L",
-      weightLb: 26.3,
-      allergies: "Chicken",
-      vaccinations: [{ vaccine: "Rabies", expiresOn: "2028-01-01" }],
-    });
-  });
-
-  it("refuses a vaccine listed twice or without a date", async () => {
-    const [sample] = await invoke(db, owner, "searchCustomers", { q: "Sample Customer" });
-    const petId = sample!.pets[0]!.id;
-    await expect(
-      invoke(db, owner, "saveVaccinations", {
-        petId,
-        rows: [
-          { vaccine: "Rabies", expiresOn: "2028-01-01" },
-          { vaccine: "rabies", expiresOn: "2029-01-01" },
-        ],
-      }),
-    ).rejects.toThrow(/listed twice/);
-    await expect(
-      invoke(db, owner, "saveVaccinations", { petId, rows: [{ vaccine: "DHPP", expiresOn: "" }] }),
-    ).rejects.toThrow(/Enter the date DHPP expires/);
-  });
-});
-
 describe("deleteCustomer", () => {
   it("previews, deletes everything, and audits without contact details", async () => {
     const [sample] = await invoke(db, owner, "searchCustomers", { q: "Sample Customer" });
     expect(await invoke(db, manager, "deletePreview", { id: sample!.id })).toEqual({
       name: "Sample Customer (DEMO)",
-      petNames: ["Biscuit"],
       punchCards: 1,
-      vaccinations: 2,
     });
 
     await invoke(db, manager, "deleteCustomer", { id: sample!.id });
@@ -243,9 +134,7 @@ describe("deleteCustomer", () => {
         entity_id: sample!.id,
         before: {
           name: "Sample Customer (DEMO)",
-          pets: 1,
           punch_cards: 1,
-          vaccinations: 2,
         },
         after: null,
         staff_id: manager.staffId,
@@ -278,11 +167,11 @@ describe("separation between businesses", () => {
     expect(await invoke(db, otherCtx, "lookupByPhone", { phone: "2125550100" })).toBeNull();
     await expect(invoke(db, otherCtx, "getCustomer", { id: sample!.id })).rejects.toThrow(/doesn't exist/);
     await expect(invoke(db, otherCtx, "deleteCustomer", { id: sample!.id })).rejects.toThrow(/doesn't exist/);
-    await expect(
-      invoke(db, otherCtx, "saveCustomer", { id: sample!.id, customer: pat, pets: [] }),
-    ).rejects.toThrow(/doesn't exist/);
+    await expect(invoke(db, otherCtx, "saveCustomer", { id: sample!.id, customer: pat })).rejects.toThrow(
+      /doesn't exist/,
+    );
 
     // The same phone is fine in a different business.
-    await invoke(db, otherCtx, "saveCustomer", { customer: { ...pat, phone: "2125550100" }, pets: [] });
+    await invoke(db, otherCtx, "saveCustomer", { customer: { ...pat, phone: "2125550100" } });
   });
 });

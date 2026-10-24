@@ -48,7 +48,7 @@ async function importAll(ctx: Ctx, type: ImportType, rows: Rows, chunk = CHUNK_S
 const customers = (ctx: Ctx = owner) => invoke(db, ctx, "searchCustomers", { q: "" });
 const products = () => invoke(db, owner, "listProducts", { includeArchived: true });
 
-describe("customers and pets", () => {
+describe("customers", () => {
   it("matches on phone, then email, and creates the rest", async () => {
     const { batch, skips } = await importAll(owner, "customers", [
       // Existing by phone (typed differently): adds a street, keeps everything else.
@@ -79,14 +79,12 @@ describe("customers and pets", () => {
       { name: "Short Phone", phone: "555-0100" },
       { name: "", phone: "2125550188" },
       { name: "Two People", phone: "2125550100", email: "family.demo@example.com" },
-      { name: "Twins", phone: "2125550177", pets: "Max (dog), max (cat)" },
     ]);
     expect(skips).toEqual([
       { row: 2, reason: "No phone or email" },
       { row: 3, reason: "Phone isn't 10 digits" },
       { row: 4, reason: "No name" },
       { row: 5, reason: "Phone and email belong to two different customers" },
-      { row: 6, reason: "Two pets named max in this row" },
     ]);
   });
 
@@ -123,54 +121,6 @@ describe("customers and pets", () => {
     expect(batch).toMatchObject({ created: 1, updated: 1 });
     const pats = (await customers()).filter((c) => c.phone === "2125550199");
     expect(pats).toMatchObject([{ name: "Pat Lee", email: "pat@example.com" }]);
-  });
-
-  it("reads pets from the pets cell and numbered columns, matching by name", async () => {
-    await importAll(owner, "customers", [
-      { name: "", phone: "2125550100", pets: "biscuit (dog, Beagle mix), Pip (cat)" },
-      {
-        name: "Pat",
-        phone: "2125550199",
-        "pet1.name": "Hopper",
-        "pet1.type": "Rabbit",
-        "pet2.name": "Rex",
-        "pet2.breed": "Lab",
-        "pet2.birthday": "6/1/21",
-      },
-    ]);
-    const all = await customers();
-    const sample = all.find((c) => c.phone === "2125550100")!;
-    expect(sample.pets.map((p) => [p.name, p.species, p.breed])).toEqual([
-      ["Biscuit", "dog", "Beagle mix"],
-      ["Pip", "cat", null],
-    ]);
-    const pat = all.find((c) => c.phone === "2125550199")!;
-    expect(pat.pets.map((p) => [p.name, p.species, p.breed, p.birthday])).toEqual([
-      ["Hopper", "other", "Rabbit", null],
-      ["Rex", "dog", "Lab", "2021-06-01"],
-    ]);
-  });
-});
-
-describe("pets file", () => {
-  it("attaches pets to owners by phone or email and records rabies", async () => {
-    const { skips, batch } = await importAll(owner, "pets", [
-      { ownerPhone: "2125550100", petName: "BISCUIT", size: "large", rabiesExpires: "1/1/2030" },
-      { ownerEmail: "family.demo@example.com", petName: "Nova", species: "kitten", birthday: "2024-02-29" },
-      { ownerPhone: "2125559999", petName: "Ghost" },
-      { ownerPhone: "2125550100", petName: "" },
-    ]);
-    expect(batch).toMatchObject({ created: 1, updated: 1, skipped: 2 });
-    expect(skips.map((s) => s.reason)).toEqual(["No customer with that phone or email", "No pet name"]);
-    const sample = (await customers()).find((c) => c.phone === "2125550100")!;
-    const profile = await invoke(db, owner, "getCustomer", { id: sample.id });
-    expect(profile.pets[0]).toMatchObject({
-      name: "Biscuit",
-      size: "L",
-      vaccinations: expect.arrayContaining([
-        { id: expect.any(String), vaccine: "Rabies", expiresOn: "2030-01-01" },
-      ]),
-    });
   });
 });
 
@@ -302,7 +252,7 @@ describe("preview", () => {
   it("saves nothing and predicts the real import exactly", async () => {
     const rows: Rows = [
       { name: "", phone: "2125550100", street: "99 New St" },
-      { name: "Pat", phone: "2125550199", pets: "Rex (dog)" },
+      { name: "Pat", phone: "2125550199" },
       { name: "Bad", phone: "123" },
     ];
     const before = await customers();
@@ -352,7 +302,7 @@ describe("undo", () => {
       { sku: "0001", price: "70.00", onHand: "20" },
       { sku: "U-1", name: "Undo me", price: "5", onHand: "3" },
     ]);
-    await importAll(owner, "customers", [{ name: "Undo Person", phone: "2125550166", pets: "Bean (dog)" }]);
+    await importAll(owner, "customers", [{ name: "Undo Person", phone: "2125550166" }]);
 
     const res = await invoke(db, manager, "undoImport", { batchId });
     expect(res).toMatchObject({ deleted: 1, restored: 2, kept: [] });
@@ -411,13 +361,6 @@ describe("undo", () => {
         smsOptIn: profile.smsOptIn,
         notes: "",
       },
-      pets: profile.pets.map((p) => ({
-        id: p.id,
-        name: p.name,
-        species: p.species,
-        breed: p.breed ?? "",
-        birthday: p.birthday ?? "",
-      })),
     });
 
     const res = await invoke(db, owner, "undoImport", { batchId });
@@ -449,9 +392,7 @@ describe("undo", () => {
         .where("action", "=", "customer.delete")
         .execute(),
     );
-    expect(log).toEqual([
-      { action: "customer.delete", before: { name: "Temp", pets: 0, via: "import undo" } },
-    ]);
+    expect(log).toEqual([{ action: "customer.delete", before: { name: "Temp", via: "import undo" } }]);
   });
 });
 

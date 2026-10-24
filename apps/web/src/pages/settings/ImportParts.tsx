@@ -14,7 +14,7 @@ export function ColumnMatcher({
   mapping: ColumnMapping;
   onChange: (m: ColumnMapping) => void;
 }) {
-  const fields = fieldsFor(type, sheet.headers);
+  const fields = fieldsFor(type);
   const samples = (i: number) =>
     sheet.rows
       .map((r) => r[i] ?? "")

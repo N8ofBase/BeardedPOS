@@ -5,7 +5,7 @@ import type { CustomerCard, ProductRow, RegisterCustomer } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";
-import { BirthdayTag, PetChip } from "../customers/bits.tsx";
+import { BirthdayTag } from "../customers/bits.tsx";
 
 const rewardsReady = (c: CustomerCard) => c.punchCards.filter((p) => p.balance >= p.buyCount).length;
 
@@ -47,13 +47,6 @@ function Attached({
           )}
         </span>
         <span className="muted small">{formatPhone(c.card.phone)}</span>
-        {c.card.pets.length > 0 && (
-          <div>
-            {c.card.pets.map((p) => (
-              <PetChip key={p.id} pet={p} />
-            ))}
-          </div>
-        )}
         <BirthdayTag birthday={c.card.birthday} />
         {c.usuallyBuys.length > 0 && (
           <div style={{ display: "grid", gap: 4 }}>
@@ -118,7 +111,6 @@ function Lookup({ onAttach }: { onAttach: (c: RegisterCustomer) => void }) {
           smsOptIn: false,
           notes: "",
         },
-        pets: [],
       });
       return api.call("registerCustomer", { id });
     },
@@ -167,7 +159,6 @@ function Lookup({ onAttach }: { onAttach: (c: RegisterCustomer) => void }) {
           >
             <span>
               <b>{c.name}</b> <span className="muted mono">{formatPhone(c.phone)}</span>
-              {c.pets.length > 0 && <span className="sub">{c.pets.map((p) => p.name).join(", ")}</span>}
             </span>
             {r > 0 && <span className="tag astro">{r} ready</span>}
           </button>

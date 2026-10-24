@@ -151,41 +151,6 @@ export interface CustomersTable {
   updated_at: UpdatedAt;
 }
 
-export type Species = "dog" | "cat" | "other";
-export type PetSize = "S" | "M" | "L" | "XL";
-
-export interface PetsTable {
-  id: Generated<string>;
-  business_id: string;
-  customer_id: string;
-  name: string;
-  species: Generated<Species>;
-  breed: string | null;
-  size: PetSize | null;
-  coat: string | null;
-  birthday: DateString | null;
-  weight_lb: number | null;
-  temperament: string | null;
-  allergies: string | null;
-  vet_name: string | null;
-  import_batch_id: string | null;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
-export interface VaccinationsTable {
-  id: Generated<string>;
-  business_id: string;
-  pet_id: string;
-  vaccine: string;
-  expires_on: DateString;
-  proof_file_key: string | null;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
 export type PunchKind = "earn" | "redeem" | "opening_balance" | "refund_reversal" | "reward_return";
 
 export interface AstroPunchesTable {
@@ -393,9 +358,8 @@ export interface ReceiptOutboxTable {
   updated_at: UpdatedAt;
 }
 
-export type ImportType = "customers" | "pets" | "products" | "programs" | "punches" | "orders";
-export type ImportEntity =
-  "customer" | "pet" | "vaccination" | "product" | "program" | "punch" | "stock" | "sale";
+export type ImportType = "customers" | "products" | "programs" | "punches" | "orders";
+export type ImportEntity = "customer" | "product" | "program" | "punch" | "stock" | "sale";
 
 export interface CustomerLoginCodesTable {
   id: Generated<string>;
@@ -488,8 +452,6 @@ export interface DB {
   inventory_moves: InventoryMovesTable;
   audit_log: AuditLogTable;
   customers: CustomersTable;
-  pets: PetsTable;
-  vaccinations: VaccinationsTable;
   astro_punches: AstroPunchesTable;
   astro_balances: AstroBalancesView;
   demo_seed_parts: DemoSeedPartsTable;

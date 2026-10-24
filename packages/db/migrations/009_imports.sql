@@ -3,7 +3,7 @@
 CREATE TABLE import_batches (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   business_id uuid NOT NULL REFERENCES businesses (id) ON DELETE CASCADE,
-  type        text NOT NULL CHECK (type IN ('customers', 'pets', 'products', 'programs', 'punches')),
+  type        text NOT NULL CHECK (type IN ('customers', 'products', 'programs', 'punches')),
   file_name   text NOT NULL,
   staff_id    uuid REFERENCES staff (id) ON DELETE SET NULL,
   status      text NOT NULL DEFAULT 'running' CHECK (status IN ('running', 'done', 'undone')),
@@ -34,7 +34,7 @@ CREATE TABLE import_changes (
   business_id uuid NOT NULL REFERENCES businesses (id) ON DELETE CASCADE,
   batch_id    uuid NOT NULL,
   seq         bigint GENERATED ALWAYS AS IDENTITY,
-  entity      text NOT NULL CHECK (entity IN ('customer', 'pet', 'vaccination', 'product', 'program', 'punch', 'stock')),
+  entity      text NOT NULL CHECK (entity IN ('customer', 'product', 'program', 'punch', 'stock')),
   entity_id   uuid NOT NULL,
   op          text NOT NULL CHECK (op IN ('created', 'updated', 'deleted', 'moved')),
   before      jsonb,
@@ -52,6 +52,5 @@ REVOKE UPDATE, DELETE ON import_changes FROM pos_app;
 
 -- The batch that created a row (spec: Bulk import → data model additions).
 ALTER TABLE customers ADD COLUMN import_batch_id uuid REFERENCES import_batches (id) ON DELETE SET NULL;
-ALTER TABLE pets ADD COLUMN import_batch_id uuid REFERENCES import_batches (id) ON DELETE SET NULL;
 ALTER TABLE products ADD COLUMN import_batch_id uuid REFERENCES import_batches (id) ON DELETE SET NULL;
 ALTER TABLE astro_punches ADD COLUMN import_batch_id uuid REFERENCES import_batches (id) ON DELETE SET NULL;

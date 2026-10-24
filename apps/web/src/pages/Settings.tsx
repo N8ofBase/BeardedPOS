@@ -58,8 +58,8 @@ function Settings() {
         <section className="panel">
           <h2>Bulk import</h2>
           <p className="muted">
-            Load customers and pets, products, Astro programs and punch balances from a CSV or Excel file. You
-            see a preview before anything is saved, and any import can be undone.
+            Load customers, products, Astro programs and punch balances from a CSV or Excel file. You see a
+            preview before anything is saved, and any import can be undone.
           </p>
           <div>
             <Link to="import">Import a file</Link>
@@ -425,12 +425,10 @@ function plural(n: number, one: string, many: string) {
   return `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 }
 
-/** "3 customers (5 pets), 4 products, 1 Astro program and 2 punch balances". */
+/** "3 customers, 4 products, 1 Astro program and 2 punch balances". */
 export function demoSummary(c: DemoCounts): string {
   const parts = [
-    c.customers
-      ? `${plural(c.customers, "customer", "customers")}${c.pets ? ` (${plural(c.pets, "pet", "pets")})` : ""}`
-      : "",
+    c.customers ? plural(c.customers, "customer", "customers") : "",
     c.products ? plural(c.products, "product", "products") : "",
     c.programs ? plural(c.programs, "Astro program", "Astro programs") : "",
     c.punches ? plural(c.punches, "punch balance", "punch balances") : "",

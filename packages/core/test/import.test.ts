@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   autoMatch,
-  fieldsFor,
   IMPORT_TYPE_KEYS,
   IMPORT_TYPES,
   mapRows,
@@ -11,9 +10,6 @@ import {
   normalizeZip,
   parseCount,
   parseLooseDate,
-  parsePetsCell,
-  parseSize,
-  parseSpecies,
   parseYesNo,
   templateCsv,
 } from "../src/import/index.ts";
@@ -52,24 +48,6 @@ describe("column matching", () => {
     });
   });
 
-  it("finds numbered pet columns", () => {
-    const headers = ["Name", "Phone", "Pet 1 Name", "Pet 1 Breed", "Pet 1 Type", "Pet 2 name", "pet2 dob"];
-    expect(
-      fieldsFor("customers", headers)
-        .slice(-5)
-        .map((f) => f.key),
-    ).toEqual(["pet1.breed", "pet1.name", "pet1.type", "pet2.birthday", "pet2.name"]);
-    expect(autoMatch("customers", headers)).toMatchObject({
-      name: 0,
-      phone: 1,
-      "pet1.name": 2,
-      "pet1.breed": 3,
-      "pet1.type": 4,
-      "pet2.name": 5,
-      "pet2.birthday": 6,
-    });
-  });
-
   it("matches the three game prices and the royalty columns", () => {
     const headers = ["SKU", "Sell price", "Wholesale", "Unit cost", "Royalty %", "Designer"];
     expect(autoMatch("products", headers)).toEqual({
@@ -85,12 +63,8 @@ describe("column matching", () => {
   });
 
   it("uses each column once", () => {
-    // "Phone" fits both the owner phone and nothing else; "Email" is free for owner email.
-    expect(autoMatch("pets", ["Phone", "Email", "Name"])).toEqual({
-      ownerPhone: 0,
-      ownerEmail: 1,
-      petName: 2,
-    });
+    // "Name" and "Description" both fit the product name; only the first is used.
+    expect(autoMatch("products", ["Name", "Description"])).toEqual({ name: 0 });
   });
 
   it("says what still has to be picked", () => {
@@ -156,20 +130,6 @@ describe("cell values", () => {
     expect(parseYesNo("maybe")).toBeUndefined();
   });
 
-  it("reads species, keeping other animals as the breed hint", () => {
-    expect(parseSpecies("Puppy")).toEqual({ species: "dog", hint: null });
-    expect(parseSpecies("kitten")).toEqual({ species: "cat", hint: null });
-    expect(parseSpecies("Rabbit")).toEqual({ species: "other", hint: "Rabbit" });
-    expect(parseSpecies("")).toBeNull();
-  });
-
-  it("reads sizes", () => {
-    expect(parseSize("small")).toBe("S");
-    expect(parseSize("Med")).toBe("M");
-    expect(parseSize("X-Large")).toBe("XL");
-    expect(parseSize("huge-ish")).toBeUndefined();
-  });
-
   it("reads counts", () => {
     expect(parseCount("12")).toBe(12);
     expect(parseCount("1,200")).toBe(1200);
@@ -184,16 +144,5 @@ describe("cell values", () => {
     expect(normalizeZip("62701")).toBe("62701");
     expect(normalizeZip("627011234")).toBe("62701-1234");
     expect(normalizeZip("ABC")).toBeUndefined();
-  });
-
-  it("reads the prototype's pets cell", () => {
-    expect(parsePetsCell("Biscuit (beagle), Mo (cat), Clover (rabbit), Rex, Pip (dog, shih tzu)")).toEqual([
-      { name: "Biscuit", species: "dog", breed: "beagle" },
-      { name: "Mo", species: "cat", breed: null },
-      { name: "Clover", species: "other", breed: "rabbit" },
-      { name: "Rex", species: null, breed: null },
-      { name: "Pip", species: "dog", breed: "shih tzu" },
-    ]);
-    expect(parsePetsCell("")).toEqual([]);
   });
 });

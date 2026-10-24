@@ -6,7 +6,6 @@ export * from "./context.ts";
 export * from "./catalog.ts";
 export * from "./product.ts";
 export * from "./dates.ts";
-export * from "./pets.ts";
 export * from "./customer.ts";
 export * from "./import/index.ts";
 export * from "./tax.ts";
