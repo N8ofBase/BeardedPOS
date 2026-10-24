@@ -1,5 +1,5 @@
 {
-  "name": "@pet-pos/core",
+  "name": "@bearded/core",
   "private": true,
   "type": "module",
   "exports": {

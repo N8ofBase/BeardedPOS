@@ -1,8 +1,8 @@
 import type { Kysely, Selectable } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import { todayIso, type Ctx } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import { todayIso, type Ctx } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { invoke } from "../src/registry.ts";
 
 let db: Kysely<DB>;
@@ -206,8 +206,8 @@ const phone = "(212) 555-0100";
 const file = (): Rows => [
   { date: "2025-03-14", receipt: "A-1", phone, sku: "0003", qty: "2", unitPrice: "12.99" },
   { date: "3/14/2025", receipt: "A-1", phone, barcode: "0012345678905", lineTotal: "60.00" },
-  { date: "2025-03-20", phone, item: "Old brand treats", lineTotal: "5.00" },
-  { date: "2025-03-20", phone, item: "Old brand treats", qty: "2", lineTotal: "10.00" },
+  { date: "2025-03-20", phone, item: "Old card game", lineTotal: "5.00" },
+  { date: "2025-03-20", phone, item: "Old card game", qty: "2", lineTotal: "10.00" },
   { date: "2025-03-21", phone: "9995550000", item: "Chew", lineTotal: "1.00" },
 ];
 
@@ -237,8 +237,8 @@ describe("past orders import", () => {
     const lines = (await rows("sale_lines")).filter((l) => imported.some((s) => s.id === l.sale_id));
     expect(lines.find((l) => l.line_total_cents === 6000)!.product_id).toBe(sku["0001"]!.id);
     expect(lines.filter((l) => l.product_id === null).map((l) => l.name)).toEqual([
-      "Old brand treats",
-      "Old brand treats",
+      "Old card game",
+      "Old card game",
     ]);
 
     // No stock or payments.
@@ -269,7 +269,7 @@ describe("customer order history", () => {
   it("adds up imported and new orders, net of refunds, with most bought", async () => {
     await importAll([
       { date: "2025-03-14", receipt: "A-1", phone, sku: "0003", qty: "2", unitPrice: "12.99" },
-      { date: "2025-03-20", phone, item: "Old brand treats", lineTotal: "5.00" },
+      { date: "2025-03-20", phone, item: "Old card game", lineTotal: "5.00" },
     ]);
     const s = await open([["0003", 3]], true);
     await cash(s.saleId, s.totalCents);
@@ -284,7 +284,7 @@ describe("customer order history", () => {
     const h = await invoke(db, cashier, "customerHistory", { id: sampleCustomer });
     expect(h).toMatchObject({ orders: 3, totalSpentCents: 2598 + 500 + 4170 - 1390, next: null });
     expect(new Date(h.firstVisit!).getFullYear()).toBe(2025);
-    expect(h.mostBought[0]).toEqual({ name: "Sample Freeze-Dried Treats (DEMO)", qty: 4 });
+    expect(h.mostBought[0]).toEqual({ name: "Sample Card Game (DEMO)", qty: 4 });
     expect(h.page.map((o) => o.label)).toEqual([`#${s.receiptNumber}`, "Imported order", "Imported #A-1"]);
     expect(h.page[0]!.refundedCents).toBe(1390);
 
@@ -296,7 +296,7 @@ describe("customer order history", () => {
     const days = Array.from({ length: 26 }, (_, i) => ({
       date: `2025-01-${String(i + 1).padStart(2, "0")}`,
       phone,
-      item: "Treat",
+      item: "Card game",
       lineTotal: "1.00",
     }));
     await importAll(days);

@@ -2,8 +2,8 @@
 // database refuses becomes a skip instead of failing the whole chunk. Every change
 // is recorded in import_changes (when there's a batch) so undo can reverse it.
 import { sql, type Transaction } from "kysely";
-import { AppError, isUniqueViolation, todayIso, type Ctx, type ImportType } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import { AppError, isUniqueViolation, todayIso, type Ctx, type ImportType } from "@bearded/core";
+import type { DB } from "@bearded/db";
 import {
   Changes,
   Skip,

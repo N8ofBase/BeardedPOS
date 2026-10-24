@@ -1,5 +1,5 @@
 import type { Kysely } from "kysely";
-import { createDb, ensureDemo, migrate, type DB } from "@pet-pos/db";
+import { createDb, ensureDemo, migrate, type DB } from "@bearded/db";
 import { WorkerDbClient } from "./db-client.ts";
 import { DEMO_DATA_DIR } from "./protocol.ts";
 
@@ -51,7 +51,7 @@ async function start(): Promise<DemoRuntime> {
 function holdTabLock(): Promise<boolean> {
   if (!("locks" in navigator)) return Promise.resolve(true);
   return new Promise((resolve) => {
-    void navigator.locks.request("petpos-demo-db", { ifAvailable: true }, (lock) => {
+    void navigator.locks.request("bearded-demo-db", { ifAvailable: true }, (lock) => {
       if (!lock) {
         resolve(false);
         return;

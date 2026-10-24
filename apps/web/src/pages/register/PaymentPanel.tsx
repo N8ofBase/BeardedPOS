@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { cashSuggestions, changeDue, formatMoney, parseMoney } from "@pet-pos/core";
-import type { CheckoutResult, PaymentResult } from "@pet-pos/api";
+import { cashSuggestions, changeDue, formatMoney, parseMoney } from "@bearded/core";
+import type { CheckoutResult, PaymentResult } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";

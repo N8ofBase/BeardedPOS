@@ -11,8 +11,8 @@ import {
   templateCsv,
   type ColumnMapping,
   type ImportType,
-} from "@pet-pos/core";
-import { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow, type ImportResult, type UndoResult } from "@pet-pos/api";
+} from "@bearded/core";
+import { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow, type ImportResult, type UndoResult } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { ConfirmTyped } from "../../ui/ConfirmTyped.tsx";
 import { errorMessage } from "../../ui/errors.ts";

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Me } from "@pet-pos/api";
+import type { Me } from "@bearded/api";
 import type { Api } from "./api/client.ts";
 
 export interface Session {
@@ -17,7 +17,7 @@ export function useSession(): Session {
   return s;
 }
 
-const KEY = "petpos.demo.staff";
+const KEY = "bearded.demo.staff";
 
 export interface PickedStaff {
   staffId: string;

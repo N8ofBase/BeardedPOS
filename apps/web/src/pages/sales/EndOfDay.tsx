@@ -12,8 +12,8 @@ import {
   overShortLabel,
   parseMoney,
   todayIso,
-} from "@pet-pos/core";
-import type { DrawerCountResult, DrawerSummary } from "@pet-pos/api";
+} from "@bearded/core";
+import type { DrawerCountResult, DrawerSummary } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";

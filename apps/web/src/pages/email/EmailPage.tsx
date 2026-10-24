@@ -10,8 +10,8 @@ import {
   type CustomerKind,
   type EmailAudience,
   type RenderedEmail,
-} from "@pet-pos/core";
-import type { CampaignDetail, CampaignRow } from "@pet-pos/api";
+} from "@bearded/core";
+import type { CampaignDetail, CampaignRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { TwoTapButton } from "../../ui/TwoTapButton.tsx";

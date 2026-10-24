@@ -1,5 +1,5 @@
-import { ROLE_LABEL, type Role } from "@pet-pos/core";
-import type { DemoStaff } from "@pet-pos/db";
+import { ROLE_LABEL, type Role } from "@bearded/core";
+import type { DemoStaff } from "@bearded/db";
 
 const WHAT: Record<Role, string> = {
   owner: "Everything: prices, staff, settings, reports and refunds.",

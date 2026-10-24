@@ -1,5 +1,5 @@
 import { sql } from "kysely";
-import { parseCount, parseMoney, parseTaxPercent } from "@pet-pos/core";
+import { parseCount, parseMoney, parseTaxPercent } from "@bearded/core";
 import { audit, currentLocationId } from "../shared.ts";
 import { diff, Skip, text, type Row, type RowCtx, type RowResult } from "./base.ts";
 
@@ -102,7 +102,7 @@ export async function productRow(r: Row, rc: RowCtx): Promise<RowResult> {
     }
   } else {
     const row = { ...Object.fromEntries(Object.entries(values).filter(([, v]) => v !== undefined)) };
-    if (!row.category) row.category = "Supplies";
+    if (!row.category) row.category = "Other";
     const inserted = await rc.trx
       .insertInto("products")
       .values({

@@ -1,7 +1,7 @@
 // Settings for bulk email (who it comes from, the footer address) and the store's tags.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import type { EmailSetup, TagRow } from "@pet-pos/api";
+import type { EmailSetup, TagRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
 import { TwoTapButton } from "../../ui/TwoTapButton.tsx";

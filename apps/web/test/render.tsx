@@ -4,8 +4,8 @@ import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { vi } from "vitest";
-import type { Role } from "@pet-pos/core";
-import type { Me } from "@pet-pos/api";
+import type { Role } from "@bearded/core";
+import type { Me } from "@bearded/api";
 import type { Api } from "../src/api/client.ts";
 import { SessionContext } from "../src/session.tsx";
 import { ToastProvider } from "../src/ui/Toast.tsx";
@@ -15,7 +15,7 @@ export function meFor(role: Role): Me {
     staff: { id: "s1", name: `Sample ${role} (DEMO)`, role },
     business: {
       id: "b1",
-      name: "Sample Pet Store (DEMO)",
+      name: "Sample Game Shop (DEMO)",
       brandColor: null,
       logo: null,
       modules: {},

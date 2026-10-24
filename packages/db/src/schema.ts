@@ -1,6 +1,6 @@
 // Kysely table types. Keep in step with migrations/.
 import type { ColumnType, Generated, Selectable } from "kysely";
-import type { Role } from "@pet-pos/core";
+import type { Role } from "@bearded/core";
 
 type CreatedAt = Generated<Date>;
 type UpdatedAt = Generated<Date>;

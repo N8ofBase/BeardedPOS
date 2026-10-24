@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { can, formatMoney } from "@pet-pos/core";
+import { can, formatMoney } from "@bearded/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { SaleReceipt } from "../SalesPage.tsx";

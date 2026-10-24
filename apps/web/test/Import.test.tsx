@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import { autoMatch, type ColumnMapping } from "@pet-pos/core";
-import type { ImportResult } from "@pet-pos/api";
+import { autoMatch, type ColumnMapping } from "@bearded/core";
+import type { ImportResult } from "@bearded/api";
 import { ColumnMatcher, PreviewView } from "../src/pages/settings/ImportParts.tsx";
 import type { Sheet } from "../src/pages/settings/readSheet.ts";
 
@@ -12,7 +12,7 @@ const sheet: Sheet = {
   fileName: "customers.csv",
   headers: ["Full Name", "Mobile", "Notes column"],
   rows: [
-    ["Pat Lee", "2125550199", "Likes treats"],
+    ["Pat Lee", "2125550199", "Likes co-op games"],
     ["Sam Ray", "2125550198", ""],
   ],
 };

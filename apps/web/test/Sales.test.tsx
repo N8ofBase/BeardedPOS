@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Receipt, RefundInput, RefundPlan, SentReceipt } from "@pet-pos/api";
+import type { Receipt, RefundInput, RefundPlan, SentReceipt } from "@bearded/api";
 import { dayRange, refundTag } from "../src/pages/SalesPage.tsx";
 import { DEMO_SEND_NOTE, ReceiptSend } from "../src/pages/sales/ReceiptSend.tsx";
 import { RefundPanel } from "../src/pages/sales/RefundPanel.tsx";
@@ -22,7 +22,7 @@ const preview =
       receiptNumber: 1001,
       refundable: [
         { saleLineId: "a", name: "Chew toy", qty: 3, refundedQty: 1, lineTotalCents: 3000 },
-        { saleLineId: "b", name: "Dog food", qty: 6, refundedQty: 0, lineTotalCents: 6000 },
+        { saleLineId: "b", name: "Strategy game", qty: 6, refundedQty: 0, lineTotalCents: 6000 },
       ],
       lines: [],
       amountCents: units * 1000,
@@ -55,7 +55,7 @@ describe("refund panel", () => {
     expect(screen.getByRole("button", { name: "Refund $21.40" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Refund everything" }));
-    expect(screen.getByLabelText("Dog food to refund").textContent).toBe("6 of 6");
+    expect(screen.getByLabelText("Strategy game to refund").textContent).toBe("6 of 6");
   });
 
   it("asks a manager for the owner's OK only when over the limit", async () => {
@@ -63,7 +63,7 @@ describe("refund panel", () => {
       refundPreview: preview("manager"),
       listStaff: staff,
     });
-    const more = await screen.findByRole("button", { name: "Refund more Dog food" });
+    const more = await screen.findByRole("button", { name: "Refund more Strategy game" });
     fireEvent.click(more);
     await waitFor(() => expect(screen.getByRole("button", { name: "Refund $10.70" })).toBeTruthy());
     expect(screen.queryByText(/the owner approves/)).toBeNull();
@@ -101,8 +101,8 @@ describe("receipt sending", () => {
       id: "o1",
       channel: "email",
       to: "pat@example.com",
-      subject: "Your receipt from Sample Pet Store (DEMO) (#1001)",
-      body: "Sample Pet Store (DEMO)\nTOTAL   $13.90",
+      subject: "Your receipt from Sample Game Shop (DEMO) (#1001)",
+      body: "Sample Game Shop (DEMO)\nTOTAL   $13.90",
       status: "preview",
     };
     const { call } = renderAs("cashier", <ReceiptSend receipt={receipt} />, { sendReceipt: sent });
@@ -115,7 +115,7 @@ describe("receipt sending", () => {
       channel: "email",
       to: "pat@example.com",
     });
-    expect(screen.getByText(/Your receipt from Sample Pet Store/)).toBeTruthy();
+    expect(screen.getByText(/Your receipt from Sample Game Shop/)).toBeTruthy();
     expect(screen.getByText(DEMO_SEND_NOTE)).toBeTruthy();
   });
 

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { addressLine, can, formatDate, formatMoney, formatPhone } from "@pet-pos/core";
+import { addressLine, can, formatDate, formatMoney, formatPhone } from "@bearded/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { BirthdayTag } from "./bits.tsx";

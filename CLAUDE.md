@@ -1,7 +1,8 @@
-# Pet store POS & grooming system
+# Bearded POS
 
-Point of sale, inventory and customers for one independent pet store, built by PrismCortex so it can host several local businesses (and a second location per business) later.
+Point of sale, inventory, customers and an online store for Bearded Board Games, an independent board game shop, built by PrismCortex so it can host several local businesses (and a second location per business) later.
 
+- This started as a pet store POS. Grooming, online booking, pets and Astro Loyalty were removed; ignore those parts of the spec and prototype.
 - Full spec: `docs/SPEC.md` (export of the "Pet Store POS & Grooming System Spec" doc). Read the section for the feature you are working on before writing code.
 - Working prototype: `docs/prototype.html`. It is the reference for screens, wording and behavior. Match its flows; do not copy its code structure (it is a single-file demo).
 - Current phase plan: `docs/plans/phase-1-foundation.md`. Its approved decisions override the spec where they differ.
@@ -10,14 +11,14 @@ Point of sale, inventory and customers for one independent pet store, built by P
 
 - Front end: React + TypeScript (Vite), one app with staff routes and, later, public customer routes. PWA for the counter tablet.
 - Two run modes, same code:
-  - **Demo mode (now):** handlers run in a Web Worker against PGlite (Postgres in the browser, saved to IndexedDB). Role picker instead of sign-in. Static site at `https://petpos-demo.prismcortex.net`.
+  - **Demo mode (now):** handlers run in a Web Worker against PGlite (Postgres in the browser, saved to IndexedDB). Role picker instead of sign-in. Static site at `https://bearded-pos-demo.prismcortex.net`.
   - **Hosted mode (Phase 1f, on hold):** API Gateway HTTP API + Lambda (Node.js 24) running the same handlers against RDS Postgres.
 - Handlers are plain functions `(ctx, input)` in `services/api/src/handlers`, sharing a data layer in `packages/core`. `ctx` carries business id, staff id and role.
 - Database: Postgres (PGlite in demo and tests, RDS in hosted). Migrations live in `packages/db/migrations`. Kysely for queries, no ORM.
 - Auth (hosted): Cognito user pool with groups `owner`, `manager`, `cashier` and a `business_id` claim. Customers sign in with a one-time code.
 - Payments: Square Terminal API (server-driven, Square Terminal device) at the counter, Square Payment Links (Checkout API) for online orders, Square webhooks into Lambda (verify the signature). Square Reader does not work from a web app; don't use it. Test in the Square Sandbox. Each business connects its own Square account via OAuth.
 - Background work: EventBridge Scheduler (reminders), SQS (webhooks).
-- Infrastructure: AWS CDK in TypeScript, region `us-east-1`. Stacks: `DemoSite` (S3 + CloudFront + Route 53 record), later `PetPos-dev` and `PetPos-prod`. Never deploy to `prod` unless asked.
+- Infrastructure: AWS CDK in TypeScript, region `us-east-1`. Stacks: `BeardedDemoSite` (S3 + CloudFront + Route 53 record), later `BeardedPos-dev` and `BeardedPos-prod`. The pet demo repo owns the `DemoSite` stack and `petpos-demo`; never deploy over them from here. Never deploy to `prod` unless asked.
 - DNS: the `prismcortex.net` hosted zone already serves the PrismCortex website. Only add records; never change or delete existing ones. Clients will live at `<client>.pos.prismcortex.net`.
 - Node 24 LTS locally. npm workspaces, Vitest.
 
@@ -44,7 +45,7 @@ Point of sale, inventory and customers for one independent pet store, built by P
 - `npm test` — all unit and database tests (Vitest; database tests use in-memory PGlite)
 - `npm run lint` / `npm run typecheck` / `npm run format`
 - `npm run build:demo` — static demo build in `apps/web/dist`
-- `npm run deploy:demo` — build and deploy to https://petpos-demo.prismcortex.net (DemoSite stack)
+- `npm run deploy:demo` — build and deploy to https://bearded-pos-demo.prismcortex.net (BeardedDemoSite stack)
 
 AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC_Dev). The AWS CLI takes `--profile prismcortex`. The CDK CLI can't read the `[sso-session]` config, so before `cdk` commands load short-lived credentials into the shell: `aws configure export-credentials --profile prismcortex --format powershell | Invoke-Expression` (never print or save them).
 

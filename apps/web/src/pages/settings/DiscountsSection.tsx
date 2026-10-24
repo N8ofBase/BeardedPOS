@@ -6,8 +6,8 @@ import {
   parseMoney,
   parseTaxPercent,
   taxPercentInput,
-} from "@pet-pos/core";
-import type { DiscountInput, DiscountRow } from "@pet-pos/api";
+} from "@bearded/core";
+import type { DiscountInput, DiscountRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";

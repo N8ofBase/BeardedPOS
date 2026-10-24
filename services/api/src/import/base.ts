@@ -1,7 +1,7 @@
 // Shared pieces for the import row handlers and the engine.
 import type { Transaction } from "kysely";
-import type { Ctx } from "@pet-pos/core";
-import type { DB, ImportEntity, ImportOp } from "@pet-pos/db";
+import type { Ctx } from "@bearded/core";
+import type { DB, ImportEntity, ImportOp } from "@bearded/db";
 
 export type Row = Record<string, string>;
 

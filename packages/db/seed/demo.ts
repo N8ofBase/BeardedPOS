@@ -4,7 +4,7 @@
 // ensureDemo() fills in whatever part is missing, so a browser seeded by an
 // earlier version picks up new sample data after an update without a reset.
 import type { Kysely, Transaction } from "kysely";
-import { addDays, isIsoDate, todayIso, type Role } from "@pet-pos/core";
+import { addDays, isIsoDate, todayIso, type Role } from "@bearded/core";
 import type { DB } from "../src/schema.ts";
 
 const DEMO_STAFF: { name: string; email: string; role: Role }[] = [
@@ -70,9 +70,9 @@ async function seedBusiness(trx: Transaction<DB>): Promise<string> {
   const business = await trx
     .insertInto("businesses")
     .values({
-      name: "Sample Pet Store (DEMO)",
-      slug: "sample-pet-store-demo",
-      brand_color: "#0f6e5a",
+      name: "Sample Game Shop (DEMO)",
+      slug: "sample-game-shop-demo",
+      brand_color: "#14614f",
       is_demo: true,
     })
     .returning("id")
@@ -97,13 +97,13 @@ async function seedBusiness(trx: Transaction<DB>): Promise<string> {
   return business.id;
 }
 
-// The prototype's sample products.
+// Sample games and an accessory, with the prototype's prices and stock.
 const DEMO_PRODUCTS = [
   {
     sku: "0001",
-    name: "Sample Adult Dog Food 24 lb (DEMO)",
+    name: "Sample Strategy Game (DEMO)",
     brand: "Sample Brand",
-    category: "Dog food",
+    category: "Strategy games",
     price_cents: 6499,
     cost_cents: 4300,
     reorder_at: 6,
@@ -111,9 +111,9 @@ const DEMO_PRODUCTS = [
   },
   {
     sku: "0002",
-    name: "Sample Cat Food 12 lb (DEMO)",
+    name: "Sample Family Game (DEMO)",
     brand: "Sample Brand",
-    category: "Cat food",
+    category: "Family games",
     price_cents: 3899,
     cost_cents: 2500,
     reorder_at: 5,
@@ -121,9 +121,9 @@ const DEMO_PRODUCTS = [
   },
   {
     sku: "0003",
-    name: "Sample Freeze-Dried Treats (DEMO)",
-    brand: "Sample Treat Co",
-    category: "Treats",
+    name: "Sample Card Game (DEMO)",
+    brand: "Sample Card Co",
+    category: "Card games",
     price_cents: 1299,
     cost_cents: 700,
     reorder_at: 10,
@@ -131,9 +131,9 @@ const DEMO_PRODUCTS = [
   },
   {
     sku: "0004",
-    name: "Sample Rope Toy (DEMO)",
+    name: "Sample Card Sleeves (DEMO)",
     brand: null,
-    category: "Supplies",
+    category: "Accessories",
     price_cents: 899,
     cost_cents: 350,
     reorder_at: 4,
@@ -397,8 +397,8 @@ async function seedCrm(trx: Transaction<DB>, businessId: string): Promise<void> 
   await trx
     .updateTable("businesses")
     .set({
-      email_from_name: "Sample Game Store (DEMO)",
-      email_from_address: "news@mail.petpos-demo.prismcortex.net",
+      email_from_name: "Sample Game Shop (DEMO)",
+      email_from_address: "news@mail.bearded-pos-demo.prismcortex.net",
       mailing_address: "100 Sample St (DEMO), St. Louis, MO 63101",
     })
     .where("id", "=", businessId)

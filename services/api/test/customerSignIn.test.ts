@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Ctx } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import type { Ctx } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { invoke } from "../src/registry.ts";
 import {
   invokePublic,
@@ -35,7 +35,7 @@ async function signIn(contact: string, name?: string): Promise<string> {
 
 describe("the store", () => {
   it("shows the store's name to anyone", async () => {
-    expect(await pub("storeInfo", undefined)).toMatchObject({ storeName: "Sample Pet Store (DEMO)" });
+    expect(await pub("storeInfo", undefined)).toMatchObject({ storeName: "Sample Game Shop (DEMO)" });
   });
 });
 

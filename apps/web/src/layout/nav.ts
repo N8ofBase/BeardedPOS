@@ -1,4 +1,4 @@
-import { can, type Action, type Role } from "@pet-pos/core";
+import { can, type Action, type Role } from "@bearded/core";
 
 export interface NavItem {
   path: string;

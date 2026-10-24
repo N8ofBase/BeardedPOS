@@ -13,8 +13,8 @@ import {
   normalizeEmail,
   normalizePhone,
   type Profit,
-} from "@pet-pos/core";
-import type { CustomerEventKind, DB } from "@pet-pos/db";
+} from "@bearded/core";
+import type { CustomerEventKind, DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { profitLineQuery } from "./profit.ts";
 

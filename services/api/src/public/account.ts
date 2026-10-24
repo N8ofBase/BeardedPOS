@@ -1,8 +1,8 @@
 // Customer accounts for the public pages: sign-in with a one-time code, sessions,
 // and the signed-in customer's own details.
 import { sql, type Transaction } from "kysely";
-import { AppError, CODE_RULES, codeFromBytes, formatPhone, normalizeContact } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import { AppError, CODE_RULES, codeFromBytes, formatPhone, normalizeContact } from "@bearded/core";
+import type { DB } from "@bearded/db";
 import { definePublic, type SignedCtx } from "./handler.ts";
 
 type Trx = Transaction<DB>;

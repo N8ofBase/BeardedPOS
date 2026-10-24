@@ -18,8 +18,8 @@ import {
   type EmailAudience,
   type EmailSender,
   type RenderedEmail,
-} from "@pet-pos/core";
-import type { CampaignStatus, DB, EmailSendStatus } from "@pet-pos/db";
+} from "@bearded/core";
+import type { CampaignStatus, DB, EmailSendStatus } from "@bearded/db";
 import { mailer as defaultMailer, newUnsubscribeToken, type Mailer } from "../email/mailer.ts";
 import { defineHandler } from "../handler.ts";
 import { addEvent } from "./crm.ts";

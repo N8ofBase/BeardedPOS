@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { isRole } from "@pet-pos/core";
-import { listDemoStaff, type DemoStaff } from "@pet-pos/db";
+import { isRole } from "@bearded/core";
+import { listDemoStaff, type DemoStaff } from "@bearded/db";
 import { createDemoApi } from "./api/client.ts";
 import { RolePicker } from "./auth/RolePicker.tsx";
 import { bootDemo, OtherTabError, type DemoRuntime } from "./demo/boot.ts";

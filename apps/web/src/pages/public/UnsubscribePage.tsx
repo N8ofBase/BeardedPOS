@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import type { Kysely } from "kysely";
-import type { DB } from "@pet-pos/db";
+import type { DB } from "@bearded/db";
 import { createDemoPublicApi } from "../../api/client.ts";
 import { errorMessage } from "../../ui/errors.ts";
 

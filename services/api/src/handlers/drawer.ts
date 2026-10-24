@@ -11,9 +11,9 @@ import {
   SHORT_NOTE_CENTS,
   todayIso,
   formatMoney,
-} from "@pet-pos/core";
+} from "@bearded/core";
 import type { Transaction } from "kysely";
-import type { DB } from "@pet-pos/db";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { audit, currentLocationId, requireInt } from "../shared.ts";
 import { moneyTotals, type MoneyTotals } from "./totals.ts";

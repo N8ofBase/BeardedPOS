@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Ctx } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import type { Ctx } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import type { TicketInput } from "../src/handlers/register.ts";
 import { invoke } from "../src/registry.ts";
 
@@ -204,7 +204,7 @@ describe("finishing a sale", () => {
         ].slice(0, 1),
       }),
     );
-    // Rope toy $8.99 − $5.00 → $3.99 + tax; not zero, so still open.
+    // Card sleeves $8.99 − $5.00 → $3.99 + tax; not zero, so still open.
     expect(s.paid).toBe(false);
   });
 });

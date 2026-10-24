@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { formatPhone, validateCustomer, type CustomerInput } from "@pet-pos/core";
-import type { CustomerProfile } from "@pet-pos/api";
+import { formatPhone, validateCustomer, type CustomerInput } from "@bearded/core";
+import type { CustomerProfile } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";

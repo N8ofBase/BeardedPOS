@@ -1,4 +1,4 @@
-import { nonEmptyRows } from "@pet-pos/core";
+import { nonEmptyRows } from "@bearded/core";
 
 export interface Sheet {
   fileName: string;

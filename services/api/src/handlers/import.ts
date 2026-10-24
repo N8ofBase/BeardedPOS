@@ -1,6 +1,6 @@
 import { sql, type Transaction } from "kysely";
-import { AppError, IMPORT_TYPE_KEYS, type ImportType } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import { AppError, IMPORT_TYPE_KEYS, type ImportType } from "@bearded/core";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { runImport, type ImportResult } from "../import/engine.ts";
 import { undoBatch, type UndoResult } from "../import/undo.ts";

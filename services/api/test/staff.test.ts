@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { AppError, type Ctx } from "@pet-pos/core";
-import { listDemoStaff, seedDemo } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import { AppError, type Ctx } from "@bearded/core";
+import { listDemoStaff, seedDemo } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { invoke } from "../src/registry.ts";
 
 let db: Awaited<ReturnType<typeof createTestDb>>["db"];
@@ -21,7 +21,7 @@ describe("me", () => {
   it("returns the staff member, business and location", async () => {
     const res = await invoke(db, owner, "me", undefined);
     expect(res.staff).toMatchObject({ name: "Sample Owner (DEMO)", role: "owner" });
-    expect(res.business.name).toBe("Sample Pet Store (DEMO)");
+    expect(res.business.name).toBe("Sample Game Shop (DEMO)");
     expect(res.business.modules).toEqual({});
     expect(res.location).toMatchObject({ name: "Main store (DEMO)", taxRateMpct: 7000 });
   });

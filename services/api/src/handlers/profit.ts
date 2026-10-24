@@ -2,8 +2,8 @@
 // in core; this only gathers the lines. Register sales only, like the day totals: imported
 // orders were sold in the old system and have no cost we can trust.
 import { sql, type Transaction } from "kysely";
-import { addProfit, AppError, lineProfit, NO_PROFIT, royaltyCents, type Profit } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import { addProfit, AppError, lineProfit, NO_PROFIT, royaltyCents, type Profit } from "@bearded/core";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 
 export interface GameProfitRow extends Profit {

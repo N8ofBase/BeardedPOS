@@ -1,6 +1,6 @@
 import { sql, type Transaction } from "kysely";
-import { AppError, can, isUniqueViolation, type DiscountRule } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import { AppError, can, isUniqueViolation, type DiscountRule } from "@bearded/core";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { audit } from "../shared.ts";
 

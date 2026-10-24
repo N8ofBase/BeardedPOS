@@ -11,4 +11,4 @@ export type DbResponse =
   | { id: number; ok: false; error: { message: string; code?: string } };
 
 /** Where the demo database lives in this browser (IndexedDB). */
-export const DEMO_DATA_DIR = "idb://petpos-demo";
+export const DEMO_DATA_DIR = "idb://bearded-demo";

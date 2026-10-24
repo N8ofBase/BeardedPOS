@@ -1,5 +1,5 @@
 import { sql, type Transaction } from "kysely";
-import type { DB } from "@pet-pos/db";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { audit } from "../shared.ts";
 

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { can, discountValueLabel, ROLE_LABEL } from "@pet-pos/core";
-import type { DiscountRow } from "@pet-pos/api";
+import { can, discountValueLabel, ROLE_LABEL } from "@bearded/core";
+import type { DiscountRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { SlideOver } from "../../ui/SlideOver.tsx";
 import type { TicketDiscountState, TicketLineState } from "./ticket.ts";

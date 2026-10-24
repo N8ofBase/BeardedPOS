@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
-import { formatMoney, formatTaxPercent, todayIso } from "@pet-pos/core";
+import { formatMoney, formatTaxPercent, todayIso } from "@bearded/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 

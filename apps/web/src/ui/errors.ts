@@ -1,4 +1,4 @@
-import { AppError } from "@pet-pos/core";
+import { AppError } from "@bearded/core";
 
 /** A message staff can act on. Unexpected errors get a generic line instead of a stack trace. */
 export function errorMessage(err: unknown): string {

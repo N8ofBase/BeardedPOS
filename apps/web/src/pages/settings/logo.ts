@@ -1,4 +1,4 @@
-import { MAX_LOGO_CHARS } from "@pet-pos/api";
+import { MAX_LOGO_CHARS } from "@bearded/api";
 
 /**
  * Shrinks an uploaded image to fit 256×256 and returns it as a PNG data URL.

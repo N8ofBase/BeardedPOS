@@ -1,5 +1,5 @@
 import { sql } from "kysely";
-import { barcodeVariants, normalizePhone, orderKey, orderLine, parseLooseDate } from "@pet-pos/core";
+import { barcodeVariants, normalizePhone, orderKey, orderLine, parseLooseDate } from "@bearded/core";
 import { currentLocationId } from "../shared.ts";
 import { Skip, text, type Row, type RowCtx, type RowResult } from "./base.ts";
 

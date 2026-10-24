@@ -2,8 +2,8 @@
 // timeline on a profile.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { addDays, cleanTagName, formatDate, KIND_LABEL, todayIso, type CustomerKind } from "@pet-pos/core";
-import type { TagChip, TimelineKind } from "@pet-pos/api";
+import { addDays, cleanTagName, formatDate, KIND_LABEL, todayIso, type CustomerKind } from "@bearded/core";
+import type { TagChip, TimelineKind } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";

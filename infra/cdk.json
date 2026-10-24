@@ -2,7 +2,7 @@
   "app": "npx tsx bin/app.ts",
   "context": {
     "domainName": "prismcortex.net",
-    "demoSubdomain": "petpos-demo",
+    "demoSubdomain": "bearded-pos-demo",
     "mailSubdomain": "mail.bearded.pos",
     "siteDir": "../apps/web/dist",
     "budgetMonthlyUsd": 5

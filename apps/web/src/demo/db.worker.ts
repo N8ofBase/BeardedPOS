@@ -2,7 +2,7 @@
 // Runs PGlite (Postgres in WebAssembly) off the main thread so the register stays responsive.
 // The page sends queries; this worker runs them one at a time against the IndexedDB-backed database.
 import { PGlite } from "@electric-sql/pglite";
-import { PGLITE_OPTIONS } from "@pet-pos/db/parsers";
+import { PGLITE_OPTIONS } from "@bearded/db/parsers";
 import type { DbRequest, DbResponse } from "./protocol.ts";
 
 declare const self: DedicatedWorkerGlobalScope;

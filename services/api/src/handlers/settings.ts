@@ -1,4 +1,4 @@
-import { AppError, isHexColor, parseTaxPercent } from "@pet-pos/core";
+import { AppError, isHexColor, parseTaxPercent } from "@bearded/core";
 import { defineHandler } from "../handler.ts";
 import { audit } from "../shared.ts";
 

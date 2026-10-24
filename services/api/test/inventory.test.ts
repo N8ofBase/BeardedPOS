@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Ctx, ProductInput } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import type { Ctx, ProductInput } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { invoke } from "../src/registry.ts";
 
 let db: Kysely<DB>;
@@ -13,9 +13,9 @@ let cashier: Ctx;
 const product: ProductInput = {
   sku: "B-100",
   barcode: "012345678905",
-  name: "Test Kibble 5 lb",
+  name: "Test Strategy Game",
   brand: "Test Brand",
-  category: "Dog food",
+  category: "Strategy games",
   priceCents: 1999,
   costCents: 1200,
   taxClass: "standard",
@@ -43,13 +43,13 @@ async function auditRows() {
 }
 
 describe("demo seed", () => {
-  it("adds the prototype's sample products, with stock from opening moves", async () => {
+  it("adds the sample games, with stock from opening moves", async () => {
     const rows = await invoke(db, owner, "listProducts", {});
     expect(rows.map((r) => [r.sku, r.onHand])).toEqual([
-      ["0002", 4],
       ["0004", 0],
-      ["0001", 14],
+      ["0002", 4],
       ["0003", 30],
+      ["0001", 14],
     ]);
   });
 
@@ -203,28 +203,28 @@ describe("stock", () => {
 describe("finding products", () => {
   it("finds by SKU in any case or by barcode", async () => {
     await invoke(db, owner, "saveProduct", product);
-    expect((await invoke(db, cashier, "findByCode", { code: "b-100" }))?.name).toBe("Test Kibble 5 lb");
+    expect((await invoke(db, cashier, "findByCode", { code: "b-100" }))?.name).toBe("Test Strategy Game");
     expect((await invoke(db, cashier, "findByCode", { code: " 012345678905 " }))?.sku).toBe("B-100");
     expect(await invoke(db, cashier, "findByCode", { code: "nope" })).toBeNull();
   });
 
   it("filters by text, category and low stock", async () => {
-    expect((await invoke(db, owner, "listProducts", { q: "treat" })).map((p) => p.sku)).toEqual(["0003"]);
-    expect((await invoke(db, owner, "listProducts", { category: "Cat food" })).map((p) => p.sku)).toEqual([
-      "0002",
-    ]);
+    expect((await invoke(db, owner, "listProducts", { q: "card game" })).map((p) => p.sku)).toEqual(["0003"]);
+    expect((await invoke(db, owner, "listProducts", { category: "Family games" })).map((p) => p.sku)).toEqual(
+      ["0002"],
+    );
     expect((await invoke(db, owner, "listProducts", { lowOnly: true })).map((p) => p.sku)).toEqual([
-      "0002",
       "0004",
+      "0002",
     ]);
     expect(await invoke(db, owner, "listProducts", { q: "%" })).toEqual([]);
   });
 
   it("hides archived products unless asked", async () => {
-    const [p] = await invoke(db, owner, "listProducts", { q: "rope" });
+    const [p] = await invoke(db, owner, "listProducts", { q: "sleeves" });
     await invoke(db, owner, "archiveProduct", { id: p!.id, archived: true });
-    expect(await invoke(db, owner, "listProducts", { q: "rope" })).toEqual([]);
-    expect(await invoke(db, owner, "listProducts", { q: "rope", includeArchived: true })).toHaveLength(1);
+    expect(await invoke(db, owner, "listProducts", { q: "sleeves" })).toEqual([]);
+    expect(await invoke(db, owner, "listProducts", { q: "sleeves", includeArchived: true })).toHaveLength(1);
     expect(await invoke(db, owner, "findByCode", { code: "0004" })).toBeNull();
   });
 });

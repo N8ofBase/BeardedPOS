@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { formatPhone } from "@pet-pos/core";
-import type { Receipt, SentReceipt } from "@pet-pos/api";
+import { formatPhone } from "@bearded/core";
+import type { Receipt, SentReceipt } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 

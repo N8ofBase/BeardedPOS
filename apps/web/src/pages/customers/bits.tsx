@@ -1,5 +1,5 @@
 // Small pieces shared by the customer cards and profile.
-import { birthdayTag } from "@pet-pos/core";
+import { birthdayTag } from "@bearded/core";
 
 export function BirthdayTag({ birthday, who }: { birthday: string | null; who?: string }) {
   const tag = birthdayTag(birthday);

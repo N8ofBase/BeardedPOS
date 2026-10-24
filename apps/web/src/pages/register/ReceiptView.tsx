@@ -1,5 +1,5 @@
-import { receiptText } from "@pet-pos/core";
-import type { Receipt } from "@pet-pos/api";
+import { receiptText } from "@bearded/core";
+import type { Receipt } from "@bearded/api";
 
 export function ReceiptView({ receipt }: { receipt: Receipt }) {
   return (

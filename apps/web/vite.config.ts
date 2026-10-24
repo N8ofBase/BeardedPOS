@@ -31,8 +31,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon.svg"],
       manifest: {
-        name: "Pet Store POS",
-        short_name: "Pet POS",
+        name: "Bearded POS",
+        short_name: "Bearded POS",
         description: "Register, inventory and customers for the store.",
         theme_color: "#0f6e5a",
         background_color: "#f3f5f4",

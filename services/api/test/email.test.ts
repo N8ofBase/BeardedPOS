@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import { EVERYONE, type Ctx, type EmailAudience } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import { EVERYONE, type Ctx, type EmailAudience } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { sesSendEmailInput } from "../src/email/mailer.ts";
 import { deliverBatch, queueCampaign, recordSesEvent } from "../src/handlers/email.ts";
 import { invoke } from "../src/registry.ts";
@@ -181,7 +181,7 @@ describe("unsubscribing", () => {
     const pub = (name: "unsubscribeStatus" | "unsubscribe") =>
       invokePublic(db, { businessId, token: null, demo: true }, name, { token: send.unsubscribe_token });
     expect(await pub("unsubscribeStatus")).toEqual({
-      storeName: "Sample Pet Store (DEMO)",
+      storeName: "Sample Game Shop (DEMO)",
       email: "c•••@example.com",
       alreadyOff: false,
     });
@@ -215,7 +215,9 @@ describe("SES", () => {
   it("builds the SendEmail request with one-click unsubscribe headers and tags", async () => {
     const e = await invoke(db, owner, "previewCampaignEmail", draft());
     const req = sesSendEmailInput(e, { businessId, sendId: "s1" }, "bearded-bulk");
-    expect(req.FromEmailAddress).toBe('"Sample Game Store (DEMO)" <news@mail.petpos-demo.prismcortex.net>');
+    expect(req.FromEmailAddress).toBe(
+      '"Sample Game Shop (DEMO)" <news@mail.bearded-pos-demo.prismcortex.net>',
+    );
     expect(req.Content.Simple.Headers).toContainEqual({
       Name: "List-Unsubscribe-Post",
       Value: "List-Unsubscribe=One-Click",

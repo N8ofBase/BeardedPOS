@@ -33,7 +33,7 @@ export function cleanProduct(input: ProductInput): ProductInput {
     barcode: blankToNull(input.barcode),
     name: input.name.trim(),
     brand: blankToNull(input.brand),
-    category: input.category.trim() || "Supplies",
+    category: input.category.trim() || "Other",
     ...(input.royaltyPayee !== undefined ? { royaltyPayee: blankToNull(input.royaltyPayee) } : {}),
   };
 }

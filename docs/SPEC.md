@@ -1,5 +1,7 @@
 # Pet Store POS & Grooming System Spec
 
+> Written for the pet store this repo started as. Grooming, online booking, pets and Astro Loyalty have since been removed for Bearded Board Games; skip those parts.
+
 Oct 15, 2026 · @N8 the Gr8
 
 ## Overview

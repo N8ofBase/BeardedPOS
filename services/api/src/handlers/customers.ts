@@ -9,8 +9,8 @@ import {
   validateCustomer,
   type CustomerInput,
   type CustomerKind,
-} from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+} from "@bearded/core";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { audit, likePattern } from "../shared.ts";
 

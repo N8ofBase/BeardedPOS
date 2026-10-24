@@ -3,7 +3,7 @@
 // mode (Phase 1f) uses an Amazon SES adapter in the queue worker; sesSendEmailInput()
 // builds its request so the worker only adds the AWS client. No AWS credentials or SDK
 // ever reach the browser bundle.
-import type { RenderedEmail } from "@pet-pos/core";
+import type { RenderedEmail } from "@bearded/core";
 
 export interface SendMeta {
   businessId: string;
@@ -34,7 +34,7 @@ export class PreviewMailer implements Mailer {
   readonly siteUrl: string;
   constructor(siteUrl?: string) {
     const here = (globalThis as { location?: { origin?: string } }).location?.origin;
-    this.siteUrl = siteUrl ?? here ?? "https://petpos-demo.prismcortex.net";
+    this.siteUrl = siteUrl ?? here ?? "https://bearded-pos-demo.prismcortex.net";
   }
   async send(): Promise<{ messageId: string }> {
     return { messageId: `preview_${randomHex(9)}` };
