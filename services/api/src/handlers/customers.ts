@@ -2,10 +2,13 @@ import type { Transaction } from "kysely";
 import {
   AppError,
   cleanCustomer,
+  isCustomerKind,
   isUniqueViolation,
+  normalizeEmail,
   normalizePhone,
   validateCustomer,
   type CustomerInput,
+  type CustomerKind,
 } from "@pet-pos/core";
 import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
@@ -21,11 +24,24 @@ export interface CustomerCard {
   state: string | null;
   zip: string | null;
   birthday: string | null;
+  kind: CustomerKind;
+  /** A retailer's store name. */
+  company: string | null;
+  emailOptIn: boolean;
+  followUpOn: string | null;
+  tags: TagChip[];
+}
+
+export interface TagChip {
+  id: string;
+  name: string;
 }
 
 export interface CustomerProfile extends CustomerCard {
   smsOptIn: boolean;
   notes: string | null;
+  wholesaleTerms: string | null;
+  followUpNote: string | null;
 }
 
 export const CUSTOMER_COLUMNS = [
@@ -38,13 +54,64 @@ export const CUSTOMER_COLUMNS = [
   "state",
   "zip",
   "birthday",
+  "kind",
+  "company",
+  "email_opt_in as emailOptIn",
+  "follow_up_on as followUpOn",
 ] as const;
 
-/** Name or email; three or more digits also match anywhere in the phone. */
-export const searchCustomers = defineHandler<{ q: string }, CustomerCard[]>({
+/** Adds tags to customer rows (one query, however many customers). */
+export async function toCards(
+  trx: Transaction<DB>,
+  rows: Omit<CustomerCard, "tags">[],
+): Promise<CustomerCard[]> {
+  if (!rows.length) return [];
+  const ids = rows.map((r) => r.id);
+  const tags = await tagsFor(trx, ids);
+  return rows.map((r) => ({ ...r, tags: tags.get(r.id) ?? [] }));
+}
+
+/** Each customer's tags, by name. */
+export async function tagsFor(trx: Transaction<DB>, customerIds: string[]): Promise<Map<string, TagChip[]>> {
+  const rows = customerIds.length
+    ? await trx
+        .selectFrom("customer_tags as ct")
+        .innerJoin("tags as t", "t.id", "ct.tag_id")
+        .select(["ct.customer_id", "t.id", "t.name"])
+        .where("ct.customer_id", "in", customerIds)
+        .orderBy("t.name")
+        .execute()
+    : [];
+  const map = new Map<string, TagChip[]>();
+  for (const { customer_id, ...tag } of rows) map.set(customer_id, [...(map.get(customer_id) ?? []), tag]);
+  return map;
+}
+
+/**
+ * Name, store name or email; three or more digits also match anywhere in the phone.
+ * Optionally only one customer type, or only customers with a tag.
+ */
+export const searchCustomers = defineHandler<
+  { q: string; kind?: CustomerKind | null; tagId?: string | null },
+  CustomerCard[]
+>({
   action: "customers.view",
-  async run(trx, _ctx, { q }) {
+  async run(trx, _ctx, { q, kind, tagId }) {
     let query = trx.selectFrom("customers as c").select(CUSTOMER_COLUMNS.map((k) => `c.${k}` as const));
+    if (kind) {
+      if (!isCustomerKind(kind)) throw new AppError("invalid", "Pick People or Retailers.");
+      query = query.where("c.kind", "=", kind);
+    }
+    if (tagId)
+      query = query.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom("customer_tags as ct")
+            .select("ct.tag_id")
+            .whereRef("ct.customer_id", "=", "c.id")
+            .where("ct.tag_id", "=", tagId),
+        ),
+      );
     const text = q.trim();
     if (text) {
       const pat = likePattern(text);
@@ -52,12 +119,13 @@ export const searchCustomers = defineHandler<{ q: string }, CustomerCard[]>({
       query = query.where((eb) =>
         eb.or([
           eb("c.name", "ilike", pat),
+          eb("c.company", "ilike", pat),
           eb("c.email", "ilike", pat),
           ...(digits.length >= 3 ? [eb("c.phone", "like", `%${digits}%`)] : []),
         ]),
       );
     }
-    return query.orderBy("c.name").limit(100).execute();
+    return toCards(trx, await query.orderBy("c.name").limit(100).execute());
   },
 });
 
@@ -72,7 +140,7 @@ export const lookupByPhone = defineHandler<{ phone: string }, CustomerCard | nul
       .select(CUSTOMER_COLUMNS)
       .where("phone", "=", digits)
       .executeTakeFirst();
-    return row ?? null;
+    return row ? ((await toCards(trx, [row]))[0] ?? null) : null;
   },
 });
 
@@ -81,12 +149,19 @@ export const getCustomer = defineHandler<{ id: string }, CustomerProfile>({
   async run(trx, _ctx, { id }) {
     const c = await trx
       .selectFrom("customers")
-      .select([...CUSTOMER_COLUMNS, "sms_opt_in", "notes"])
+      .select([...CUSTOMER_COLUMNS, "sms_opt_in", "notes", "wholesale_terms", "follow_up_note"])
       .where("id", "=", id)
       .executeTakeFirst();
     if (!c) throw new AppError("not_found", "That customer doesn't exist. They may have been deleted.");
-    const { sms_opt_in, notes, ...rest } = c;
-    return { ...rest, smsOptIn: sms_opt_in, notes };
+    const { sms_opt_in, notes, wholesale_terms, follow_up_note, ...rest } = c;
+    const [card] = await toCards(trx, [rest]);
+    return {
+      ...card!,
+      smsOptIn: sms_opt_in,
+      notes,
+      wholesaleTerms: wholesale_terms,
+      followUpNote: follow_up_note,
+    };
   },
 });
 
@@ -110,6 +185,11 @@ export const saveCustomer = defineHandler<{ id?: string; customer: CustomerInput
       birthday: c.birthday,
       sms_opt_in: c.smsOptIn,
       notes: c.notes,
+      // Older callers don't send these; leave what's stored alone.
+      ...(input.customer.kind !== undefined
+        ? { kind: c.kind, company: c.company, wholesale_terms: c.wholesaleTerms }
+        : {}),
+      ...(input.customer.emailOptIn !== undefined ? { email_opt_in: c.emailOptIn } : {}),
     };
 
     try {
@@ -127,6 +207,13 @@ export const saveCustomer = defineHandler<{ id?: string; customer: CustomerInput
             .executeTakeFirstOrThrow()
         ).id;
       }
+      // Ticking "email" again means they agreed again: lift an earlier unsubscribe.
+      if (c.emailOptIn && c.email)
+        await trx
+          .deleteFrom("email_suppressions")
+          .where("email", "=", normalizeEmail(c.email))
+          .where("reason", "=", "unsubscribed")
+          .execute();
       return { id };
     } catch (err) {
       if (isUniqueViolation(err, "customers_phone_per_business"))

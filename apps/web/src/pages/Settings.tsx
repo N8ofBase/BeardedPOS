@@ -21,6 +21,7 @@ import { SlideOver } from "../ui/SlideOver.tsx";
 import { StoreMark } from "../ui/StoreMark.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { DiscountsSection } from "./settings/DiscountsSection.tsx";
+import { EmailSection, TagsSection } from "./settings/EmailSection.tsx";
 import { ImportPage } from "./settings/ImportPage.tsx";
 import { resizeLogo } from "./settings/logo.ts";
 
@@ -53,6 +54,10 @@ function Settings() {
       <StaffSection />
 
       {can(me.staff.role, "discounts.manage") && <DiscountsSection />}
+
+      {can(me.staff.role, "email.send") && <EmailSection canEdit={canEdit} />}
+
+      {can(me.staff.role, "tags.manage") && <TagsSection />}
 
       {can(me.staff.role, "import.run") && (
         <section className="panel">

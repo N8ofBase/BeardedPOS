@@ -3,6 +3,7 @@
   "context": {
     "domainName": "prismcortex.net",
     "demoSubdomain": "petpos-demo",
+    "mailSubdomain": "mail.bearded.pos",
     "siteDir": "../apps/web/dist",
     "budgetMonthlyUsd": 5
   }

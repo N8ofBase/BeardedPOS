@@ -1,8 +1,9 @@
 // Net profit per game and the royalty it earns. The math is lineProfit() / royaltyCents()
 // in core; this only gathers the lines. Register sales only, like the day totals: imported
 // orders were sold in the old system and have no cost we can trust.
-import { sql } from "kysely";
+import { sql, type Transaction } from "kysely";
 import { addProfit, AppError, lineProfit, NO_PROFIT, royaltyCents, type Profit } from "@pet-pos/core";
+import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 
 export interface GameProfitRow extends Profit {
@@ -22,6 +23,39 @@ export interface ProfitReport {
 }
 
 /**
+ * Every paid register sale line with what it earned, ready for lineProfit(). Callers add
+ * their own filter (a date range, one customer).
+ */
+export function profitLineQuery(trx: Transaction<DB>) {
+  return trx
+    .selectFrom("sale_lines as l")
+    .innerJoin("sales as s", "s.id", "l.sale_id")
+    .innerJoin("products as p", "p.id", "l.product_id")
+    .select([
+      "p.id as productId",
+      "p.name",
+      "p.sku",
+      "p.royalty_mpct as royaltyMpct",
+      "p.royalty_payee as royaltyPayee",
+      "l.qty",
+      "l.line_total_cents as lineTotalCents",
+      "l.unit_cost_cents as savedCostCents",
+      "p.cost_cents as currentCostCents",
+      sql<number>`coalesce((SELECT sum(rl.amount_cents) FROM refund_lines rl WHERE rl.sale_line_id = l.id), 0)::int`.as(
+        "refundedCents",
+      ),
+      sql<number>`coalesce((SELECT sum(rl.qty) FROM refund_lines rl JOIN refunds r ON r.id = rl.refund_id WHERE rl.sale_line_id = l.id AND r.restock), 0)::int`.as(
+        "restockedQty",
+      ),
+      sql<number>`coalesce((SELECT sum(rl.qty) FROM refund_lines rl JOIN refunds r ON r.id = rl.refund_id WHERE rl.sale_line_id = l.id AND NOT r.restock), 0)::int`.as(
+        "writtenOffQty",
+      ),
+    ])
+    .where("s.source", "=", "register")
+    .where("s.status", "=", "paid");
+}
+
+/**
  * Profit by game for sales rung from `from` up to `to` (ISO times), net of every refund
  * on those sales. Most profitable first.
  */
@@ -33,32 +67,7 @@ export const profitByGame = defineHandler<{ from: string; to: string }, ProfitRe
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end)
       throw new AppError("invalid", "Pick a start date before the end date.");
 
-    const lines = await trx
-      .selectFrom("sale_lines as l")
-      .innerJoin("sales as s", "s.id", "l.sale_id")
-      .innerJoin("products as p", "p.id", "l.product_id")
-      .select([
-        "p.id as productId",
-        "p.name",
-        "p.sku",
-        "p.royalty_mpct as royaltyMpct",
-        "p.royalty_payee as royaltyPayee",
-        "l.qty",
-        "l.line_total_cents as lineTotalCents",
-        "l.unit_cost_cents as savedCostCents",
-        "p.cost_cents as currentCostCents",
-        sql<number>`coalesce((SELECT sum(rl.amount_cents) FROM refund_lines rl WHERE rl.sale_line_id = l.id), 0)::int`.as(
-          "refundedCents",
-        ),
-        sql<number>`coalesce((SELECT sum(rl.qty) FROM refund_lines rl JOIN refunds r ON r.id = rl.refund_id WHERE rl.sale_line_id = l.id AND r.restock), 0)::int`.as(
-          "restockedQty",
-        ),
-        sql<number>`coalesce((SELECT sum(rl.qty) FROM refund_lines rl JOIN refunds r ON r.id = rl.refund_id WHERE rl.sale_line_id = l.id AND NOT r.restock), 0)::int`.as(
-          "writtenOffQty",
-        ),
-      ])
-      .where("s.source", "=", "register")
-      .where("s.status", "=", "paid")
+    const lines = await profitLineQuery(trx)
       .where("s.created_at", ">=", start)
       .where("s.created_at", "<", end)
       .execute();

@@ -832,3 +832,132 @@ button.big {
   min-height: 0;
   cursor: pointer;
 }
+
+/* Customer relationships: tags, the timeline, the email composer. */
+.chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.tag.retailer {
+  background: var(--astro-soft);
+  color: var(--astro);
+}
+.tag-picker {
+  display: grid;
+  gap: 8px;
+}
+.chip-x {
+  border: none;
+  background: none;
+  padding: 0 2px;
+  min-height: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.timeline {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.timeline li {
+  display: grid;
+  gap: 2px;
+  padding-left: 12px;
+  border-left: 3px solid var(--sunk);
+}
+.note-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+}
+ul.plain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+button.link {
+  border: none;
+  background: none;
+  padding: 0;
+  min-height: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.kind-pick {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.kind-pick legend,
+.label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+.tag-rule {
+  border: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.tag-rule legend {
+  font-weight: 600;
+}
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.chip-toggle.on {
+  background: var(--sunk);
+  font-weight: 700;
+}
+.chip-toggle input {
+  margin: 0;
+  width: auto;
+  min-height: 0;
+}
+.chip-toggle {
+  white-space: nowrap;
+}
+.filter-select {
+  width: auto;
+}
+.audience-count {
+  margin-top: 14px;
+}
+.email-preview {
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.tag-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.tag-line input {
+  width: 220px;
+}

@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
-import { Link, Route, Routes } from "react-router";
-import { addressLine, can, formatDate, formatPhone } from "@pet-pos/core";
+import { Link, Route, Routes, useNavigate } from "react-router";
+import { addressLine, can, formatDate, formatPhone, type CustomerKind } from "@pet-pos/core";
 import type { CustomerCard } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { BirthdayTag } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { CustomerProfilePage } from "./CustomerProfile.tsx";
+import { FollowUpsDue, TagChips } from "./crm.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
 
 export function CustomersRoutes() {
@@ -27,12 +28,17 @@ function CustomersPage() {
   const query = useDeferredValue(q);
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [kind, setKind] = useState<CustomerKind | "">("");
+  const [tagId, setTagId] = useState("");
+  const navigate = useNavigate();
 
   const customers = useQuery({
-    queryKey: ["customers", query],
-    queryFn: () => api.call("searchCustomers", { q: query }),
+    queryKey: ["customers", query, kind, tagId],
+    queryFn: () => api.call("searchCustomers", { q: query, kind: kind || null, tagId: tagId || null }),
     placeholderData: (prev) => prev,
   });
+  const tags = useQuery({ queryKey: ["tags"], queryFn: () => api.call("listTags") });
+  const filtered = !!(kind || tagId);
 
   return (
     <>
@@ -47,6 +53,29 @@ function CustomersPage() {
             onChange={(e) => setQ(e.target.value)}
             style={{ width: 220 }}
           />
+          <select
+            className="filter-select"
+            aria-label="Customer type"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as CustomerKind | "")}
+          >
+            <option value="">Everyone</option>
+            <option value="person">People</option>
+            <option value="retailer">Retailers</option>
+          </select>
+          <select
+            className="filter-select"
+            aria-label="Tag"
+            value={tagId}
+            onChange={(e) => setTagId(e.target.value)}
+          >
+            <option value="">Any tag</option>
+            {tags.data?.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} ({t.customers})
+              </option>
+            ))}
+          </select>
           {canEdit && (
             <button type="button" className="primary" onClick={() => setEditing("new")}>
               New customer
@@ -55,6 +84,7 @@ function CustomersPage() {
         </div>
       </div>
 
+      {!query && !filtered && <FollowUpsDue onOpen={(id) => navigate(id)} />}
       {deleting && <DeleteCustomer id={deleting} onDone={() => setDeleting(null)} />}
       {customers.isError && <p className="error-box">{errorMessage(customers.error)}</p>}
 
@@ -70,8 +100,8 @@ function CustomersPage() {
       </div>
       {customers.data?.length === 0 && (
         <p className="muted">
-          {query
-            ? "No customers match. Check the spelling, or search by phone."
+          {query || filtered
+            ? "No customers match. Check the spelling, or clear the filters."
             : "No customers yet. Add one, or import a file in Settings."}
         </p>
       )}
@@ -87,9 +117,11 @@ function Card({ c, onEdit, onDelete }: { c: CustomerCard; onEdit?: () => void; o
   return (
     <div className="ccard">
       <div className="top">
-        <b>{c.name}</b>
+        <b>{c.company ?? c.name}</b>
         <span className="mono muted">{formatPhone(c.phone)}</span>
       </div>
+      {c.company && <span className="small">{c.name}</span>}
+      <TagChips tags={c.tags} kind={c.kind} />
       {c.email && (
         <span className="muted small" style={{ overflowWrap: "anywhere" }}>
           {c.email}

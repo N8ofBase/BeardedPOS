@@ -2,6 +2,7 @@ import type { Kysely } from "kysely";
 import { AppError } from "@pet-pos/core";
 import { withBusiness, type DB } from "@pet-pos/db";
 import { customerForToken, myAccount, requestCode, signOut, storeInfo, verifyCode } from "./account.ts";
+import { unsubscribe, unsubscribeStatus } from "./email.ts";
 import type { PublicHandler } from "./handler.ts";
 
 /** Everything the public pages can call. Nothing from the staff registry is here. */
@@ -11,6 +12,8 @@ export const publicHandlers = {
   verifyCode,
   signOut,
   myAccount,
+  unsubscribeStatus,
+  unsubscribe,
 };
 
 export type PublicHandlers = typeof publicHandlers;

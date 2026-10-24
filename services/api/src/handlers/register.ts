@@ -19,7 +19,7 @@ import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { terminal } from "../payments/terminal.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
-import { CUSTOMER_COLUMNS, type CustomerCard } from "./customers.ts";
+import { CUSTOMER_COLUMNS, toCards, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
 import { moneyTotals } from "./totals.ts";
 
@@ -781,7 +781,7 @@ export const registerCustomer = defineHandler<{ id: string }, RegisterCustomer>(
       .orderBy("paid_at", "desc")
       .executeTakeFirst();
     return {
-      card: row,
+      card: (await toCards(trx, [row]))[0]!,
       usuallyBuys: top
         .map((t) => {
           const p = products.find((x) => x.id === t.product_id);
