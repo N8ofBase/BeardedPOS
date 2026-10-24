@@ -127,15 +127,24 @@ export async function undoBatch(trx: Transaction<DB>, ctx: Ctx, batchId: string)
       const sets = Object.entries(restore).map(([k, v]) => sql`${sql.ref(k)} = ${v}`);
       await sql`UPDATE ${sql.table(table)} SET ${sql.join(sets)} WHERE id = ${c.entity_id}`.execute(trx);
       result.restored++;
-      if (c.entity === "product" && ("price_cents" in restore || "cost_cents" in restore)) {
+      if (
+        c.entity === "product" &&
+        ("price_cents" in restore || "cost_cents" in restore || "wholesale_cents" in restore)
+      ) {
         await audit(trx, ctx, {
           action: "product.price_change",
           entity: "product",
           entityId: c.entity_id,
-          before: { price_cents: current.price_cents, cost_cents: current.cost_cents },
+          before: {
+            price_cents: current.price_cents,
+            cost_cents: current.cost_cents,
+            wholesale_cents: current.wholesale_cents,
+          },
           after: {
             price_cents: restore.price_cents ?? current.price_cents,
             cost_cents: restore.cost_cents ?? current.cost_cents,
+            // A wholesale price can be restored to blank, so null here is a real value.
+            wholesale_cents: "wholesale_cents" in restore ? restore.wholesale_cents : current.wholesale_cents,
             via: "import undo",
           },
         });

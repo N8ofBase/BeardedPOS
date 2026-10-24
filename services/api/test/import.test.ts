@@ -202,10 +202,38 @@ describe("products", () => {
     expect(log).toEqual([
       {
         action: "product.price_change",
-        before: { price_cents: 6499, cost_cents: 4300 },
-        after: { price_cents: 6699, cost_cents: 4300, via: "import" },
+        before: { price_cents: 6499, cost_cents: 4300, wholesale_cents: null },
+        after: { price_cents: 6699, cost_cents: 4300, wholesale_cents: null, via: "import" },
       },
     ]);
+  });
+
+  it("reads wholesale price, our cost and royalty, from the column names stores use", async () => {
+    const { warnings } = await importAll(owner, "products", [
+      {
+        sku: "G-1",
+        name: "Fences",
+        price: "25",
+        wholesale: "12.50",
+        cost: "6",
+        royalty: "10%",
+        royaltyPayee: "Ada",
+      },
+      { sku: "G-2", name: "Locked Out", price: "20", wholesale: "lots", royalty: "120" },
+    ]);
+    expect(warnings.map((w) => w.message)).toEqual([
+      'Wholesale price "lots" isn\'t an amount, left as it was',
+      'Royalty "120" isn\'t a percent from 0 to 100, left as it was',
+    ]);
+    const all = await products();
+    expect(all.find((p) => p.sku === "G-1")).toMatchObject({
+      priceCents: 2500,
+      wholesaleCents: 1250,
+      costCents: 600,
+      royaltyMpct: 10_000,
+      royaltyPayee: "Ada",
+    });
+    expect(all.find((p) => p.sku === "G-2")).toMatchObject({ wholesaleCents: null, royaltyMpct: 0 });
   });
 
   it("matches by barcode without renaming our SKU", async () => {
@@ -336,6 +364,31 @@ describe("undo", () => {
     await expect(invoke(db, manager, "undoImport", { batchId })).rejects.toThrow(/already undone/);
     const list = await invoke(db, owner, "listImports", undefined);
     expect(list.find((b) => b.id === batchId)?.status).toBe("undone");
+  });
+
+  it("puts a blank wholesale price back to blank", async () => {
+    const { batchId } = await importAll(owner, "products", [{ sku: "0001", wholesale: "40", royalty: "5" }]);
+    expect((await products()).find((p) => p.sku === "0001")).toMatchObject({
+      wholesaleCents: 4000,
+      royaltyMpct: 5000,
+    });
+    await invoke(db, manager, "undoImport", { batchId });
+    expect((await products()).find((p) => p.sku === "0001")).toMatchObject({
+      wholesaleCents: null,
+      royaltyMpct: 0,
+    });
+    const log = await withBusiness(db, owner.businessId, (trx) =>
+      trx
+        .selectFrom("audit_log")
+        .select(["action", "after"])
+        .where("action", "=", "product.price_change")
+        .orderBy("created_at")
+        .execute(),
+    );
+    expect(log.map((l) => l.after)).toEqual([
+      { price_cents: 6499, cost_cents: 4300, wholesale_cents: 4000, via: "import" },
+      { price_cents: 6499, cost_cents: 4300, wholesale_cents: null, via: "import undo" },
+    ]);
   });
 
   it("keeps fields edited after the import and says so", async () => {

@@ -258,6 +258,7 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
           astro_program_id: prod?.astroProgramId ?? null,
           earns_punches: pl.earnsPunches,
           tax_cents: taxShares[i]!,
+          unit_cost_cents: prod?.costCents ?? null,
         })
         .returning("id")
         .executeTakeFirstOrThrow();

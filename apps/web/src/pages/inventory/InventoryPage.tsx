@@ -137,7 +137,7 @@ function InventoryPage() {
               <th>SKU</th>
               <th>Product</th>
               <th>Astro</th>
-              <th className="r">Price</th>
+              <th className="r">Sell price</th>
               <th className="r">Margin</th>
               <th className="r">On hand</th>
               {(canEdit || canAdjust) && <th />}
@@ -223,7 +223,10 @@ function ProductTableRow({
         {p.astroProgramName && <span className="tag astro">{p.astroProgramName}</span>}{" "}
         {p.offerCents && <span className="tag astro">{formatMoney(p.offerCents)} offer</span>}
       </td>
-      <td className="r num">{formatMoney(p.priceCents)}</td>
+      <td className="r num">
+        {formatMoney(p.priceCents)}
+        {p.wholesaleCents !== null && <span className="sub">Wholesale {formatMoney(p.wholesaleCents)}</span>}
+      </td>
       <td className="r num">{margin === null ? "—" : `${margin}%`}</td>
       <td className="r">
         <span className={`tag ${status}`}>{stockLabel(p.onHand, p.reorderAt)}</span>
