@@ -76,6 +76,11 @@ export interface ProductsTable {
   category: Generated<string>;
   price_cents: number;
   cost_cents: Generated<number>;
+  /** What a retailer pays per unit; null when not sold wholesale. */
+  wholesale_cents: number | null;
+  /** Royalty on net profit in thousandths of a percent: 7.5% = 7500. */
+  royalty_mpct: Generated<number>;
+  royalty_payee: string | null;
   tax_class: Generated<TaxClass>;
   reorder_at: Generated<number>;
   astro_program_id: string | null;
@@ -242,6 +247,8 @@ export interface SaleLinesTable {
   earns_punches: Generated<number>;
   /** The line's share of the sale's tax; null for sales rung before migration 012. */
   tax_cents: number | null;
+  /** Our cost per unit when rung; null for lines rung before migration 030. */
+  unit_cost_cents: number | null;
   created_at: CreatedAt;
 }
 

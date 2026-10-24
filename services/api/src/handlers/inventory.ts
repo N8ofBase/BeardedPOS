@@ -20,6 +20,11 @@ export interface ProductRow {
   category: string;
   priceCents: number;
   costCents: number;
+  /** What a retailer pays; null when not sold wholesale. */
+  wholesaleCents: number | null;
+  /** Royalty on net profit, thousandths of a percent. */
+  royaltyMpct: number;
+  royaltyPayee: string | null;
   taxClass: TaxClass;
   reorderAt: number;
   onHand: number;
@@ -54,6 +59,9 @@ export function productQuery(trx: Transaction<DB>) {
       "p.category",
       "p.price_cents as priceCents",
       "p.cost_cents as costCents",
+      "p.wholesale_cents as wholesaleCents",
+      "p.royalty_mpct as royaltyMpct",
+      "p.royalty_payee as royaltyPayee",
       "p.tax_class as taxClass",
       "p.reorder_at as reorderAt",
       eb.fn.coalesce("l.on_hand", sql<number>`0`).as("onHand"),
@@ -150,7 +158,7 @@ export interface SaveProductInput extends ProductInput {
   openingOnHand?: number;
 }
 
-/** Create or update a product. A price or cost change is written to the audit log. */
+/** Create or update a product. A change to its price, wholesale price or cost is written to the audit log. */
 export const saveProduct = defineHandler<SaveProductInput, { id: string }>({
   action: "products.edit",
   async run(trx, ctx, input) {
@@ -172,6 +180,9 @@ export const saveProduct = defineHandler<SaveProductInput, { id: string }>({
       astro_program_id: p.astroProgramId,
       astro_offer_label: p.offerLabel,
       astro_offer_cents: p.offerCents,
+      ...(p.wholesaleCents !== undefined ? { wholesale_cents: p.wholesaleCents } : {}),
+      ...(p.royaltyMpct !== undefined ? { royalty_mpct: p.royaltyMpct } : {}),
+      ...(p.royaltyPayee !== undefined ? { royalty_payee: p.royaltyPayee } : {}),
     };
 
     try {
@@ -202,19 +213,28 @@ export const saveProduct = defineHandler<SaveProductInput, { id: string }>({
 
       const before = await trx
         .selectFrom("products")
-        .select(["price_cents", "cost_cents"])
+        .select(["price_cents", "cost_cents", "wholesale_cents"])
         .where("id", "=", input.id)
         .executeTakeFirst();
       if (!before) throw new AppError("not_found", "That product doesn't exist.");
       await trx.updateTable("products").set(values).where("id", "=", input.id).execute();
 
-      if (before.price_cents !== p.priceCents || before.cost_cents !== p.costCents) {
+      const wholesale = p.wholesaleCents === undefined ? before.wholesale_cents : p.wholesaleCents;
+      if (
+        before.price_cents !== p.priceCents ||
+        before.cost_cents !== p.costCents ||
+        before.wholesale_cents !== wholesale
+      ) {
         await audit(trx, ctx, {
           action: "product.price_change",
           entity: "product",
           entityId: input.id,
-          before: { price_cents: before.price_cents, cost_cents: before.cost_cents },
-          after: { price_cents: p.priceCents, cost_cents: p.costCents },
+          before: {
+            price_cents: before.price_cents,
+            cost_cents: before.cost_cents,
+            wholesale_cents: before.wholesale_cents,
+          },
+          after: { price_cents: p.priceCents, cost_cents: p.costCents, wholesale_cents: wholesale },
         });
       }
       return { id: input.id };

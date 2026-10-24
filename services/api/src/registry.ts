@@ -43,6 +43,7 @@ import {
   startCardPayment,
   startCheckout,
 } from "./handlers/register.ts";
+import { profitByGame } from "./handlers/profit.ts";
 import { sendReceipt } from "./handlers/receipts.ts";
 import { refundPreview, refundSale } from "./handlers/refunds.ts";
 import { getSettings, updateSettings } from "./handlers/settings.ts";
@@ -91,6 +92,7 @@ export const handlers = {
   cancelSale,
   getSale,
   listSales,
+  profitByGame,
   refundPreview,
   refundSale,
   sendReceipt,

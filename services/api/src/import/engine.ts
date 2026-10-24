@@ -96,13 +96,11 @@ function rowLabel(r: Row): string {
   return (
     r.name ||
     [r.first, r.last].filter(Boolean).join(" ") ||
-    r.petName ||
     r.item ||
     r.sku ||
     r.program ||
     r.phone ||
     r.email ||
-    r.ownerPhone ||
     "(blank row)"
   );
 }

@@ -1,5 +1,5 @@
 import { sql } from "kysely";
-import { parseCount, parseMoney } from "@pet-pos/core";
+import { parseCount, parseMoney, parseTaxPercent } from "@pet-pos/core";
 import { audit, currentLocationId } from "../shared.ts";
 import { diff, Skip, text, type Row, type RowCtx, type RowResult } from "./base.ts";
 
@@ -56,6 +56,20 @@ export async function productRow(r: Row, rc: RowCtx): Promise<RowResult> {
     if (cost === null) rc.warn(`Cost "${r.cost}" isn't an amount, left as it was`);
     else values.cost_cents = cost;
   }
+  if (text(r.wholesale)) {
+    const wholesale = parseMoney(r.wholesale!);
+    if (wholesale === null) rc.warn(`Wholesale price "${r.wholesale}" isn't an amount, left as it was`);
+    else values.wholesale_cents = wholesale;
+  }
+  if (text(r.royalty)) {
+    // Royalty rates use the same thousandths-of-a-percent form as tax rates.
+    const rate = parseTaxPercent(r.royalty!);
+    if (rate === null) rc.warn(`Royalty "${r.royalty}" isn't a percent from 0 to 100, left as it was`);
+    else values.royalty_mpct = rate;
+  }
+  const payee = text(r.royaltyPayee);
+  if (payee && payee.length > 100) rc.warn("Royalty payee is over 100 characters, left as it was");
+  else if (payee) values.royalty_payee = payee;
   const program = text(r.program);
   if (program) {
     const p = await rc.trx
@@ -77,15 +91,20 @@ export async function productRow(r: Row, rc: RowCtx): Promise<RowResult> {
     if (d) {
       await rc.trx.updateTable("products").set(d.after).where("id", "=", existing.id).execute();
       await rc.changes.add("product", existing.id, "updated", d.before, d.after);
-      if ("price_cents" in d.after || "cost_cents" in d.after) {
+      if ("price_cents" in d.after || "cost_cents" in d.after || "wholesale_cents" in d.after) {
         await audit(rc.trx, rc.ctx, {
           action: "product.price_change",
           entity: "product",
           entityId: existing.id,
-          before: { price_cents: existing.price_cents, cost_cents: existing.cost_cents },
+          before: {
+            price_cents: existing.price_cents,
+            cost_cents: existing.cost_cents,
+            wholesale_cents: existing.wholesale_cents,
+          },
           after: {
             price_cents: (d.after.price_cents as number | undefined) ?? existing.price_cents,
             cost_cents: (d.after.cost_cents as number | undefined) ?? existing.cost_cents,
+            wholesale_cents: (d.after.wholesale_cents as number | undefined) ?? existing.wholesale_cents,
             via: "import",
           },
         });

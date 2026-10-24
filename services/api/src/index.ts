@@ -20,6 +20,7 @@ export type {
   RefundSaleInput,
   RefundableLineView,
 } from "./handlers/refunds.ts";
+export type { GameProfitRow, ProfitReport } from "./handlers/profit.ts";
 export type { SendReceiptInput, SentReceipt } from "./handlers/receipts.ts";
 export type {
   DrawerCountInput,
