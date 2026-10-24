@@ -5,6 +5,7 @@ import { isHexColor, readableOn, ROLE_LABEL } from "@pet-pos/core";
 import type { Me } from "@pet-pos/api";
 import { AstroPage } from "../pages/AstroPage.tsx";
 import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
+import { EmailRoutes } from "../pages/email/EmailPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
 import { RegisterPage } from "../pages/register/RegisterPage.tsx";
 import { SalesRoutes } from "../pages/SalesPage.tsx";
@@ -22,6 +23,7 @@ const PAGES: Record<string, () => React.ReactNode> = {
   "/register": () => <RegisterPage />,
   "/inventory": () => <InventoryRoutes />,
   "/customers": () => <CustomersRoutes />,
+  "/email": () => <EmailRoutes />,
   "/sales": () => <SalesRoutes />,
   "/astro": () => <AstroPage />,
   "/settings": () => <SettingsRoutes />,

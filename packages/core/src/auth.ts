@@ -18,6 +18,10 @@ const PERMISSIONS = {
   "customers.view": ["owner", "manager", "cashier"],
   "customers.edit": ["owner", "manager", "cashier"],
   "customers.delete": ["owner", "manager"],
+  /** Rename and delete tags for everyone. Anyone who edits customers can tag them. */
+  "tags.manage": ["owner", "manager"],
+  /** Write and send bulk email. */
+  "email.send": ["owner", "manager"],
   "sales.view": ["owner", "manager"],
   /** Managers only up to the store's refund limit; above it an owner approves. */
   "sales.refund": ["owner", "manager"],

@@ -43,6 +43,31 @@ import {
   startCardPayment,
   startCheckout,
 } from "./handlers/register.ts";
+import {
+  addCustomerNote,
+  customerProfit,
+  customerTimeline,
+  deleteTag,
+  followUps,
+  listTags,
+  saveTag,
+  setCustomerTags,
+  setFollowUp,
+} from "./handlers/crm.ts";
+import {
+  campaignEmails,
+  deleteCampaign,
+  getCampaign,
+  getEmailSetup,
+  listCampaigns,
+  previewAudience,
+  previewCampaignEmail,
+  releaseDueCampaigns,
+  saveCampaign,
+  saveEmailSetup,
+  sendCampaign,
+  sendTestEmail,
+} from "./handlers/email.ts";
 import { profitByGame } from "./handlers/profit.ts";
 import { sendReceipt } from "./handlers/receipts.ts";
 import { refundPreview, refundSale } from "./handlers/refunds.ts";
@@ -102,6 +127,27 @@ export const handlers = {
   saveDrawerCount,
   listDrawerCounts,
   customerHistory,
+  listTags,
+  saveTag,
+  deleteTag,
+  setCustomerTags,
+  customerTimeline,
+  addCustomerNote,
+  setFollowUp,
+  followUps,
+  customerProfit,
+  getEmailSetup,
+  saveEmailSetup,
+  previewAudience,
+  listCampaigns,
+  getCampaign,
+  saveCampaign,
+  deleteCampaign,
+  sendTestEmail,
+  sendCampaign,
+  releaseDueCampaigns,
+  campaignEmails,
+  previewCampaignEmail,
 };
 
 export type Handlers = typeof handlers;

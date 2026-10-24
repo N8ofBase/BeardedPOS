@@ -30,6 +30,7 @@ export async function ensureDemo(db: Kysely<DB>): Promise<string> {
     await once(trx, businessId, "inventory", "products", seedInventory);
     await once(trx, businessId, "customers", "customers", seedCustomers);
     await once(trx, businessId, "discounts", "discounts", seedDiscounts);
+    await once(trx, businessId, "crm", "tags", seedCrm);
     return businessId;
   });
 }
@@ -42,7 +43,7 @@ async function once(
   trx: Transaction<DB>,
   businessId: string,
   part: string,
-  table: "products" | "customers" | "discounts",
+  table: "products" | "customers" | "discounts" | "tags",
   seed: (trx: Transaction<DB>, businessId: string) => Promise<void>,
 ): Promise<void> {
   const done = await trx
@@ -361,4 +362,96 @@ export async function listDemoStaff(db: Kysely<DB>): Promise<DemoStaff[]> {
 export async function demoBusinessId(db: Kysely<DB>): Promise<string | null> {
   const b = await db.selectFrom("businesses").select("id").where("is_demo", "=", true).executeTakeFirst();
   return b?.id ?? null;
+}
+
+// Tags, a retailer account, a timeline and an email sender, so the CRM and Email pages
+// have something to show. Customers who already have an email are opted in.
+async function seedCrm(trx: Transaction<DB>, businessId: string): Promise<void> {
+  const base = { business_id: businessId, is_demo: true };
+  const tags = await trx
+    .insertInto("tags")
+    .values(
+      ["VIP (DEMO)", "Kickstarter backer (DEMO)", "Game night (DEMO)"].map((name) => ({ ...base, name })),
+    )
+    .returning(["id", "name"])
+    .execute();
+  const tag = (name: string) => tags.find((t) => t.name === name)!.id;
+
+  const retailer = await trx
+    .insertInto("customers")
+    .values({
+      ...base,
+      kind: "retailer",
+      name: "Sample Buyer (DEMO)",
+      company: "Sample Game Shop (DEMO)",
+      email: "buyer.demo@example.com",
+      phone: "3145550110",
+      city: "St. Louis",
+      state: "MO",
+      wholesale_terms: "50% off MSRP, 6-unit minimum per game, net 30.",
+      email_opt_in: true,
+      follow_up_on: addDays(todayIso(), 3),
+      follow_up_note: "Ask about reordering Fences for the holidays",
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
+  const demo = await trx
+    .selectFrom("customers")
+    .select(["id", "name", "email"])
+    .where("business_id", "=", businessId)
+    .where("is_demo", "=", true)
+    .where("kind", "=", "person")
+    .execute();
+  const byName = (n: string) => demo.find((c) => c.name === n)?.id;
+  await trx
+    .updateTable("customers")
+    .set({ email_opt_in: true })
+    .where("business_id", "=", businessId)
+    .where("is_demo", "=", true)
+    .where("email", "is not", null)
+    .execute();
+
+  const links: { customer_id: string | undefined; tag_id: string }[] = [
+    { customer_id: byName("Sample Customer (DEMO)"), tag_id: tag("VIP (DEMO)") },
+    { customer_id: byName("Sample Customer (DEMO)"), tag_id: tag("Kickstarter backer (DEMO)") },
+    { customer_id: byName("Sample Family (DEMO)"), tag_id: tag("Game night (DEMO)") },
+    { customer_id: byName("Sample Family (DEMO)"), tag_id: tag("VIP (DEMO)") },
+  ];
+  const rows = links
+    .filter((l) => l.customer_id)
+    .map((l) => ({ ...base, customer_id: l.customer_id!, tag_id: l.tag_id }));
+  if (rows.length) await trx.insertInto("customer_tags").values(rows).execute();
+
+  const events = [
+    {
+      customer_id: retailer.id,
+      kind: "note" as const,
+      summary: "Met at the Gateway Game Expo. Carries family games.",
+    },
+    ...(byName("Sample Customer (DEMO)")
+      ? [
+          {
+            customer_id: byName("Sample Customer (DEMO)")!,
+            kind: "vip_signup" as const,
+            summary: "Joined the VIP list on the website",
+          },
+        ]
+      : []),
+  ];
+  await trx
+    .insertInto("customer_events")
+    .values(events.map((e) => ({ ...base, ...e })))
+    .execute();
+
+  await trx
+    .updateTable("businesses")
+    .set({
+      email_from_name: "Sample Game Store (DEMO)",
+      email_from_address: "news@mail.petpos-demo.prismcortex.net",
+      mailing_address: "100 Sample St (DEMO), St. Louis, MO 63101",
+    })
+    .where("id", "=", businessId)
+    .where("email_from_address", "is", null)
+    .execute();
 }

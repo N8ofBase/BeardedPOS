@@ -23,7 +23,15 @@ function navLabels(role: Role, path = "/") {
 
 describe("AdminShell", () => {
   it("shows the owner every section", () => {
-    expect(navLabels("owner")).toEqual(["Register", "Inventory", "Customers", "Sales", "Astro", "Settings"]);
+    expect(navLabels("owner")).toEqual([
+      "Register",
+      "Inventory",
+      "Customers",
+      "Email",
+      "Sales",
+      "Astro",
+      "Settings",
+    ]);
   });
 
   it("hides owner-only sections from a cashier", () => {

@@ -203,7 +203,7 @@ describe("remove demo data", () => {
       .execute();
 
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
-      customers: 3,
+      customers: 4,
       products: 4,
       programs: 1,
       punches: 2,
@@ -232,13 +232,13 @@ describe("remove demo data", () => {
     expect((await invoke(db, owner, "me", undefined)).staff.name).toBe("Sample Owner (DEMO)");
     expect(await listDemoStaff(db)).toHaveLength(3);
 
-    expect(await auditActions("customer.delete")).toHaveLength(3);
+    expect(await auditActions("customer.delete")).toHaveLength(4);
     expect(await auditActions("demo.remove")).toEqual([
       {
         action: "demo.remove",
         before: null,
         after: {
-          customers: 3,
+          customers: 4,
           products: 4,
           programs: 1,
           punches: 2,

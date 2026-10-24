@@ -22,6 +22,10 @@ export interface BusinessesTable {
   refund_approval_cents: Generated<number>;
   /** Starting cash left in the drawer each morning. */
   drawer_float_cents: Generated<number>;
+  email_from_name: string | null;
+  email_from_address: string | null;
+  /** Shown in every bulk email's footer (CAN-SPAM). */
+  mailing_address: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -146,9 +150,102 @@ export interface CustomersTable {
   notes: string | null;
   astro_customer_id: string | null;
   import_batch_id: string | null;
+  kind: Generated<CustomerKind>;
+  company: string | null;
+  wholesale_terms: string | null;
+  email_opt_in: Generated<boolean>;
+  follow_up_on: DateString | null;
+  follow_up_note: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+}
+
+export type CustomerKind = "person" | "retailer";
+
+export interface TagsTable {
+  id: Generated<string>;
+  business_id: string;
+  name: string;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface CustomerTagsTable {
+  business_id: string;
+  customer_id: string;
+  tag_id: string;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
+export type CustomerEventKind =
+  "note" | "vip_signup" | "review" | "order" | "email" | "unsubscribed" | "follow_up";
+
+export interface CustomerEventsTable {
+  id: Generated<string>;
+  business_id: string;
+  customer_id: string;
+  kind: CustomerEventKind;
+  summary: string;
+  ref_id: string | null;
+  staff_id: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
+export interface EmailAudienceJson {
+  kinds: CustomerKind[];
+  anyTags: string[];
+  allTags: string[];
+  notTags: string[];
+}
+
+export type CampaignStatus = "draft" | "scheduled" | "sending" | "sent";
+
+export interface EmailCampaignsTable {
+  id: Generated<string>;
+  business_id: string;
+  subject: string;
+  body: string;
+  audience: Json<EmailAudienceJson>;
+  status: Generated<CampaignStatus>;
+  send_at: Date | null;
+  sent_at: Date | null;
+  created_by: string | null;
+  sent_by: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type EmailSendStatus =
+  "queued" | "preview" | "sent" | "delivered" | "bounced" | "complained" | "failed";
+
+export interface EmailSendsTable {
+  id: Generated<string>;
+  business_id: string;
+  campaign_id: string;
+  customer_id: string;
+  to_address: string;
+  unsubscribe_token: string;
+  status: Generated<EmailSendStatus>;
+  ses_message_id: string | null;
+  error: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export type SuppressionReason = "unsubscribed" | "bounced" | "complained";
+
+export interface EmailSuppressionsTable {
+  business_id: string;
+  email: string;
+  reason: SuppressionReason;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
 }
 
 export type PunchKind = "earn" | "redeem" | "opening_balance" | "refund_reversal" | "reward_return";
@@ -471,6 +568,12 @@ export interface DB {
   drawer_counts: DrawerCountsTable;
   customer_login_codes: CustomerLoginCodesTable;
   customer_sessions: CustomerSessionsTable;
+  tags: TagsTable;
+  customer_tags: CustomerTagsTable;
+  customer_events: CustomerEventsTable;
+  email_campaigns: EmailCampaignsTable;
+  email_sends: EmailSendsTable;
+  email_suppressions: EmailSuppressionsTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

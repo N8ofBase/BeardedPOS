@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { addressLine, can, formatDate, formatPhone } from "@pet-pos/core";
+import { addressLine, can, formatDate, formatMoney, formatPhone } from "@pet-pos/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { BirthdayTag, Punches } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
 import { OrderHistory } from "./OrderHistory.tsx";
+import { FollowUpBox, TagChips, Timeline } from "./crm.tsx";
 
 export function CustomerProfilePage() {
   const { id = "" } = useParams();
@@ -18,6 +19,12 @@ export function CustomerProfilePage() {
   const profile = useQuery({ queryKey: ["customer", id], queryFn: () => api.call("getCustomer", { id }) });
   const canEdit = can(me.staff.role, "customers.edit");
   const canDelete = can(me.staff.role, "customers.delete");
+  const canSeeProfit = can(me.staff.role, "sales.view");
+  const profit = useQuery({
+    queryKey: ["customer-profit", id],
+    queryFn: () => api.call("customerProfit", { customerId: id }),
+    enabled: canSeeProfit && profile.data?.kind === "retailer",
+  });
 
   if (profile.isPending) return <p className="muted">Loading…</p>;
   if (profile.isError)
@@ -37,7 +44,8 @@ export function CustomerProfilePage() {
           <Link to=".." className="small">
             ← Customers
           </Link>
-          <h1>{c.name}</h1>
+          <h1>{c.company ?? c.name}</h1>
+          <TagChips tags={c.tags} kind={c.kind} />
         </div>
         <div className="actions">
           {canEdit && (
@@ -62,6 +70,7 @@ export function CustomerProfilePage() {
 
       <section className="panel">
         <h2>Contact</h2>
+        {c.company && <p>{c.name}</p>}
         {c.phone && <p className="mono">{formatPhone(c.phone)}</p>}
         {c.email && <p>{c.email}</p>}
         {address && <p className="muted">{address}</p>}
@@ -70,9 +79,36 @@ export function CustomerProfilePage() {
             Birthday {formatDate(c.birthday)} <BirthdayTag birthday={c.birthday} />
           </p>
         )}
-        <p className="muted small">{c.smsOptIn ? "Text messages OK" : "No text messages"}</p>
+        <p className="muted small">
+          {c.smsOptIn ? "Text messages OK" : "No text messages"} ·{" "}
+          {c.emailOptIn ? "Email OK" : "No marketing email"}
+        </p>
         {c.notes && <p>{c.notes}</p>}
       </section>
+
+      {c.kind === "retailer" && (
+        <section className="panel">
+          <h2>Wholesale</h2>
+          <p style={{ whiteSpace: "pre-wrap" }}>
+            {c.wholesaleTerms ?? <span className="muted">No terms saved yet.</span>}
+          </p>
+          {profit.data && (
+            <p className="muted">
+              {profit.data.orders} {profit.data.orders === 1 ? "order" : "orders"} at the register ·{" "}
+              {formatMoney(profit.data.revenueCents)} in sales · {formatMoney(profit.data.profitCents)} net
+              profit
+            </p>
+          )}
+        </section>
+      )}
+
+      <FollowUpBox
+        key={`${c.followUpOn}-${c.followUpNote}`}
+        customerId={c.id}
+        on={c.followUpOn}
+        note={c.followUpNote}
+        canEdit={canEdit}
+      />
 
       {c.punchCards.length > 0 && (
         <section className="panel">
@@ -82,6 +118,8 @@ export function CustomerProfilePage() {
           ))}
         </section>
       )}
+
+      <Timeline customerId={c.id} canEdit={canEdit} />
 
       <OrderHistory customerId={c.id} />
 

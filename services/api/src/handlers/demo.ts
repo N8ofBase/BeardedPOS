@@ -69,7 +69,11 @@ export const removeDemoData = defineHandler<void, DemoCounts>({
 
     // Children first where a sample row could sit under a user's record.
     await trx.deleteFrom("astro_punches").where("is_demo", "=", true).execute();
+    await trx.deleteFrom("customer_events").where("is_demo", "=", true).execute();
+    await trx.deleteFrom("customer_tags").where("is_demo", "=", true).execute();
     await trx.deleteFrom("customers").where("is_demo", "=", true).execute();
+    // Sample tags go even if a user put one on their own customer.
+    await trx.deleteFrom("tags").where("is_demo", "=", true).execute();
     await trx.deleteFrom("products").where("is_demo", "=", true).execute();
     await trx.deleteFrom("astro_programs").where("is_demo", "=", true).execute();
     // Sample discounts used on sales are archived, like any used discount, so receipts keep their names.
