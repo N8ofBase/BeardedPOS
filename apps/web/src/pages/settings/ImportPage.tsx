@@ -284,8 +284,6 @@ export function ImportPage() {
 
 const ENTITY_WORD: Record<string, [string, string]> = {
   customer: ["customer", "customers"],
-  pet: ["pet", "pets"],
-  vaccination: ["vaccination record", "vaccination records"],
   product: ["product", "products"],
   program: ["program", "programs"],
   punch: ["punch balance", "punch balances"],

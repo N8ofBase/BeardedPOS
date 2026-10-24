@@ -1,7 +1,7 @@
 // What each import file can hold. Aliases come from the prototype's IMP table and the
 // spec's accepted columns; header names are compared after normalizeHeader().
 
-export const IMPORT_TYPE_KEYS = ["customers", "pets", "products", "programs", "punches", "orders"] as const;
+export const IMPORT_TYPE_KEYS = ["customers", "products", "programs", "punches", "orders"] as const;
 export type ImportType = (typeof IMPORT_TYPE_KEYS)[number];
 
 export interface FieldDef {
@@ -29,8 +29,8 @@ const f = (key: string, label: string, sample: string, aliases: string[]): Field
 
 export const IMPORT_TYPES: Record<ImportType, ImportTypeDef> = {
   customers: {
-    label: "Customers and pets",
-    help: "One row per customer. Pets go in a Pets column (Biscuit (beagle), Mo (cat)) or in numbered columns: Pet 1 name, Pet 1 breed, Pet 1 type, Pet 2 name… Existing customers are matched by phone, then email, so importing again updates them.",
+    label: "Customers",
+    help: "One row per customer. Existing customers are matched by phone, then email, so importing again updates them.",
     fields: [
       f("name", "Name", "Pat Lee", ["customer", "customer name", "full name"]),
       f("first", "First name", "", ["first", "firstname", "given name"]),
@@ -57,31 +57,10 @@ export const IMPORT_TYPES: Record<ImportType, ImportTypeDef> = {
         "text messages",
       ]),
       f("notes", "Notes", "", ["note", "comments"]),
-      f("pets", "Pets", "Biscuit (beagle), Mo (cat)", ["pet", "pet names"]),
     ],
     needs: [
       { message: "Pick the column with the customer's name (or first name).", anyOf: ["name", "first"] },
       { message: "Pick the phone or email column, so customers can be matched.", anyOf: ["phone", "email"] },
-    ],
-  },
-  pets: {
-    label: "Pets",
-    help: "One row per pet. Owners must already be here (import customers first); they're matched by phone, then email. A pet with the same name under the same owner is updated.",
-    fields: [
-      f("ownerPhone", "Owner phone", "(212) 555-0199", ["phone", "customer phone", "owner mobile"]),
-      f("ownerEmail", "Owner email", "", ["email", "customer email"]),
-      f("petName", "Pet name", "Biscuit", ["pet", "name"]),
-      f("species", "Species", "Dog", ["type", "animal", "kind"]),
-      f("breed", "Breed", "Beagle", ["breed or notes"]),
-      f("size", "Size", "M", []),
-      f("birthday", "Birthday", "2021-06-01", ["birth date", "dob"]),
-      f("allergies", "Allergies", "", ["allergy"]),
-      f("vet", "Vet", "", ["vet name", "veterinarian"]),
-      f("rabiesExpires", "Rabies expires", "2027-06-01", ["rabies", "rabies expiration", "rabies due"]),
-    ],
-    needs: [
-      { message: "Pick the pet name column.", anyOf: ["petName"] },
-      { message: "Pick the owner phone or owner email column.", anyOf: ["ownerPhone", "ownerEmail"] },
     ],
   },
   products: {

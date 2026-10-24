@@ -54,10 +54,10 @@ CREATE INDEX sales_customer_history ON sales (business_id, customer_id, created_
 
 ALTER TABLE import_batches DROP CONSTRAINT import_batches_type_check;
 ALTER TABLE import_batches ADD CONSTRAINT import_batches_type_check
-  CHECK (type IN ('customers', 'pets', 'products', 'programs', 'punches', 'orders'));
+  CHECK (type IN ('customers', 'products', 'programs', 'punches', 'orders'));
 ALTER TABLE import_changes DROP CONSTRAINT import_changes_entity_check;
 ALTER TABLE import_changes ADD CONSTRAINT import_changes_entity_check
-  CHECK (entity IN ('customer', 'pet', 'vaccination', 'product', 'program', 'punch', 'stock', 'sale'));
+  CHECK (entity IN ('customer', 'product', 'program', 'punch', 'stock', 'sale'));
 
 -- The app role can't delete sales. Undoing an order import may delete only imported
 -- orders, in the current business; their lines go with them.

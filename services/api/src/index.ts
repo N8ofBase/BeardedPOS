@@ -33,17 +33,7 @@ export { MAX_ASTRO_ATTEMPTS, processAstroQueue, type SendSummary } from "./astro
 export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";
 export type { ImportResult, RowOutcome } from "./import/engine.ts";
 export type { UndoResult } from "./import/undo.ts";
-export type {
-  CustomerCard,
-  CustomerProfile,
-  DeletePreview,
-  PetDetail,
-  PetDetailsInput,
-  PetRowInput,
-  PetSummary,
-  PunchCard,
-  Vaccination,
-} from "./handlers/customers.ts";
+export type { CustomerCard, CustomerProfile, DeletePreview, PunchCard } from "./handlers/customers.ts";
 export type { DiscountInput, DiscountRow } from "./handlers/discounts.ts";
 export type {
   CheckoutResult,

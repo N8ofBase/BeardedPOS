@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cleanCustomer, validateCustomer, type CustomerInput, addressLine } from "../src/customer.ts";
 import { addDays, ageText, birthdayTag, daysUntilBirthday, formatDate, isIsoDate } from "../src/dates.ts";
-import { DUPLICATE_PET_MESSAGE, duplicatePetName, rabiesLapsed, vaccineStatus } from "../src/pets.ts";
 
 describe("dates", () => {
   it("checks real calendar dates", () => {
@@ -50,29 +49,6 @@ describe("birthdays", () => {
     expect(ageText("2025-10-15", today)).toBe("1 yr");
     expect(ageText("2023-10-16", today)).toBe("2 yrs");
     expect(ageText("2027-01-01", today)).toBe("");
-  });
-});
-
-describe("pets", () => {
-  it("finds duplicate names in any letter case", () => {
-    expect(duplicatePetName(["Biscuit", "Mo"])).toBeNull();
-    expect(duplicatePetName(["Biscuit", " biscuit "])).toBe(DUPLICATE_PET_MESSAGE);
-    expect(duplicatePetName(["", ""])).toBeNull();
-  });
-
-  it("sorts vaccines into expired, due within 30 days, and ok", () => {
-    const today = "2026-10-15";
-    expect(vaccineStatus("2026-10-14", today)).toBe("expired");
-    expect(vaccineStatus("2026-10-15", today)).toBe("due");
-    expect(vaccineStatus("2026-11-14", today)).toBe("due");
-    expect(vaccineStatus("2026-11-15", today)).toBe("ok");
-  });
-
-  it("knows when rabies has lapsed", () => {
-    const today = "2026-10-15";
-    expect(rabiesLapsed([{ vaccine: "Rabies", expiresOn: "2026-09-01" }], today)).toBe(true);
-    expect(rabiesLapsed([{ vaccine: "rabies", expiresOn: "2027-09-01" }], today)).toBe(false);
-    expect(rabiesLapsed([{ vaccine: "DHPP", expiresOn: "2020-01-01" }], today)).toBe(false);
   });
 });
 

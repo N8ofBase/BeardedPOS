@@ -1,6 +1,6 @@
 # Pet store POS & grooming system
 
-Point of sale, inventory, customers and pets, grooming calendar and online booking, and Astro Loyalty tracking for one independent pet store, built by PrismCortex so it can host several local businesses (and a second location per business) later.
+Point of sale, inventory, customers, and Astro Loyalty tracking for one independent pet store, built by PrismCortex so it can host several local businesses (and a second location per business) later.
 
 - Full spec: `docs/SPEC.md` (export of the "Pet Store POS & Grooming System Spec" doc). Read the section for the feature you are working on before writing code.
 - Working prototype: `docs/prototype.html`. It is the reference for screens, wording and behavior. Match its flows; do not copy its code structure (it is a single-file demo).

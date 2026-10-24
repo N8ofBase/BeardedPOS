@@ -18,7 +18,6 @@ const card: CustomerCard = {
   state: "IL",
   zip: null,
   birthday: null,
-  pets: [{ id: "p1", name: "Biscuit", species: "dog", breed: "Beagle", birthday: null }],
   punchCards: [
     {
       programId: "a1",
@@ -51,11 +50,10 @@ describe("ConfirmTyped", () => {
 });
 
 describe("Customers", () => {
-  it("shows the card: formatted phone, pet chip and punch card", async () => {
+  it("shows the card: formatted phone and punch card", async () => {
     renderAs("cashier", <CustomersRoutes />, { searchCustomers: [card] });
     expect(await screen.findByText("Sample Customer (DEMO)")).toBeTruthy();
     expect(screen.getByText("(212) 555-0100")).toBeTruthy();
-    expect(screen.getByText("Biscuit")).toBeTruthy();
     expect(screen.getByText("11/12")).toBeTruthy();
     expect(screen.getByRole("button", { name: "New customer" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
@@ -69,25 +67,12 @@ describe("Customers", () => {
 });
 
 describe("customer form", () => {
-  it("changes the breed hint with the pet type", () => {
-    renderAs("cashier", <CustomerForm id={null} onClose={vi.fn()} />);
-    const breed = () => screen.getByPlaceholderText(/e\.g\. (beagle|Maine coon|rabbit)/) as HTMLInputElement;
-    expect(breed().placeholder).toBe("e.g. beagle");
-    fireEvent.click(screen.getByLabelText("Cat"));
-    expect(breed().placeholder).toBe("e.g. Maine coon");
-    fireEvent.click(screen.getByLabelText("Other"));
-    expect(breed().placeholder).toBe("e.g. rabbit, ferret, bird");
-  });
-
-  it("explains duplicate pet names before saving", () => {
+  it("explains a bad phone before saving", () => {
     const { call } = renderAs("cashier", <CustomerForm id={null} onClose={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Pat" } });
-    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "2125550199" } });
-    fireEvent.change(screen.getByLabelText("Pet name"), { target: { value: "Max" } });
-    fireEvent.click(screen.getByRole("button", { name: "+ Add another pet" }));
-    fireEvent.change(screen.getAllByLabelText("Pet name")[1]!, { target: { value: "max" } });
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555-0100" } });
     fireEvent.click(screen.getByRole("button", { name: "Add customer" }));
-    expect(screen.getByText(/Two pets have the same name/)).toBeTruthy();
+    expect(screen.getByText("Enter a 10-digit phone number.")).toBeTruthy();
     expect(call).not.toHaveBeenCalledWith("saveCustomer", expect.anything());
   });
 });

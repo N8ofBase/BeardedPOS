@@ -17,7 +17,6 @@ export function DeleteCustomer({ id, onDone }: { id: string; onDone: (deleted: b
   if (preview.isPending) return <p className="muted">Checking what this removes…</p>;
   if (preview.isError) return <p className="error-box">{errorMessage(preview.error)}</p>;
   const p = preview.data;
-  const pets = p.petNames.length ? ` and their pets (${p.petNames.join(", ")})` : "";
   const cards = p.punchCards ? `, ${p.punchCards} Astro punch card${p.punchCards > 1 ? "s" : ""}` : "";
 
   return (
@@ -38,9 +37,7 @@ export function DeleteCustomer({ id, onDone }: { id: string; onDone: (deleted: b
       }}
     >
       <p>
-        This permanently removes {p.name}
-        {pets}, their contact details{cards}
-        {p.vaccinations ? " and vaccination records" : ""}. It can't be undone.
+        This permanently removes {p.name}, their contact details{cards}. It can't be undone.
       </p>
       <p className="muted">
         Past sales stay in Sales, without a customer attached. Punch balances held in Astro itself aren't

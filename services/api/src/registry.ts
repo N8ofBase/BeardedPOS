@@ -18,8 +18,6 @@ import {
   getCustomer,
   lookupByPhone,
   saveCustomer,
-  savePetDetails,
-  saveVaccinations,
   searchCustomers,
 } from "./handlers/customers.ts";
 import {
@@ -73,8 +71,6 @@ export const handlers = {
   lookupByPhone,
   getCustomer,
   saveCustomer,
-  savePetDetails,
-  saveVaccinations,
   deletePreview,
   deleteCustomer,
   previewImport,

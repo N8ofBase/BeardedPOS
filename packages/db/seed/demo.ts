@@ -207,7 +207,7 @@ async function seedInventory(trx: Transaction<DB>, businessId: string): Promise<
 }
 
 // Phone numbers are in the fictional 555-01xx range. Dates are relative to the
-// day the demo is set up, so the birthday tag and the expired-rabies warning always show.
+// day the demo is set up, so the birthday tag always shows.
 async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<void> {
   const today = todayIso();
   // The same calendar day n years back (Feb 29 becomes Feb 28 in a non-leap year).
@@ -235,21 +235,6 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
       birthday: null,
       sms_opt_in: true,
       punches: 11,
-      pets: [
-        {
-          name: "Biscuit",
-          species: "dog" as const,
-          breed: "Beagle",
-          size: "M" as const,
-          birthday: yearsAgo(4, 40),
-          weight_lb: 24.5,
-          temperament: "Friendly; nervous with dryers",
-          vaccines: [
-            { vaccine: "Rabies", expires_on: addDays(today, 300) },
-            { vaccine: "DHPP", expires_on: addDays(today, 20) },
-          ],
-        },
-      ],
     },
     {
       name: "Sample Cat Parent (DEMO)",
@@ -262,18 +247,6 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
       birthday: yearsAgo(38, 3),
       sms_opt_in: false,
       punches: 0,
-      pets: [
-        {
-          name: "Mo",
-          species: "cat" as const,
-          breed: "Domestic shorthair",
-          size: "S" as const,
-          birthday: yearsAgo(9, 120),
-          weight_lb: 11,
-          temperament: null,
-          vaccines: [{ vaccine: "Rabies", expires_on: addDays(today, -30) }],
-        },
-      ],
     },
     {
       name: "Sample Family (DEMO)",
@@ -286,59 +259,15 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
       birthday: null,
       sms_opt_in: true,
       punches: 4,
-      pets: [
-        {
-          name: "Rex",
-          species: "dog" as const,
-          breed: "Labrador",
-          size: "L" as const,
-          birthday: yearsAgo(2, 200),
-          weight_lb: 68,
-          temperament: null,
-          vaccines: [],
-        },
-        {
-          name: "Juno",
-          species: "dog" as const,
-          breed: "Shih tzu",
-          size: "S" as const,
-          birthday: null,
-          weight_lb: null,
-          temperament: null,
-          vaccines: [],
-        },
-        {
-          name: "Clover",
-          species: "other" as const,
-          breed: "Rabbit",
-          size: null,
-          birthday: yearsAgo(1, 5),
-          weight_lb: null,
-          temperament: null,
-          vaccines: [],
-        },
-      ],
     },
   ];
 
-  for (const { pets, punches, ...c } of customers) {
+  for (const { punches, ...c } of customers) {
     const row = await trx
       .insertInto("customers")
       .values({ ...c, business_id: businessId, is_demo: true })
       .returning("id")
       .executeTakeFirstOrThrow();
-    for (const { vaccines, ...p } of pets) {
-      const pet = await trx
-        .insertInto("pets")
-        .values({ ...p, business_id: businessId, customer_id: row.id, is_demo: true })
-        .returning("id")
-        .executeTakeFirstOrThrow();
-      if (vaccines.length)
-        await trx
-          .insertInto("vaccinations")
-          .values(vaccines.map((v) => ({ ...v, business_id: businessId, pet_id: pet.id, is_demo: true })))
-          .execute();
-    }
     if (program && punches > 0)
       await trx
         .insertInto("astro_punches")

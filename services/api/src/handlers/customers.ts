@@ -2,28 +2,14 @@ import type { Transaction } from "kysely";
 import {
   AppError,
   cleanCustomer,
-  duplicatePetName,
-  DUPLICATE_PET_MESSAGE,
-  isIsoDate,
   isUniqueViolation,
   normalizePhone,
-  todayIso,
   validateCustomer,
   type CustomerInput,
-  type PetSize,
-  type Species,
 } from "@pet-pos/core";
 import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { audit, likePattern } from "../shared.ts";
-
-export interface PetSummary {
-  id: string;
-  name: string;
-  species: Species;
-  breed: string | null;
-  birthday: string | null;
-}
 
 export interface PunchCard {
   programId: string;
@@ -43,30 +29,12 @@ export interface CustomerCard {
   state: string | null;
   zip: string | null;
   birthday: string | null;
-  pets: PetSummary[];
   punchCards: PunchCard[];
 }
 
-export interface Vaccination {
-  id: string;
-  vaccine: string;
-  expiresOn: string;
-}
-
-export interface PetDetail extends PetSummary {
-  size: PetSize | null;
-  coat: string | null;
-  weightLb: number | null;
-  temperament: string | null;
-  allergies: string | null;
-  vetName: string | null;
-  vaccinations: Vaccination[];
-}
-
-export interface CustomerProfile extends Omit<CustomerCard, "pets"> {
+export interface CustomerProfile extends CustomerCard {
   smsOptIn: boolean;
   notes: string | null;
-  pets: PetDetail[];
 }
 
 export const CUSTOMER_COLUMNS = [
@@ -81,28 +49,17 @@ export const CUSTOMER_COLUMNS = [
   "birthday",
 ] as const;
 
-/** Adds pets and punch cards to customer rows (two queries, however many customers). */
+/** Adds punch cards to customer rows (one query, however many customers). */
 export async function toCards(
   trx: Transaction<DB>,
-  rows: Omit<CustomerCard, "pets" | "punchCards">[],
+  rows: Omit<CustomerCard, "punchCards">[],
 ): Promise<CustomerCard[]> {
   if (!rows.length) return [];
-  const ids = rows.map((r) => r.id);
-  const pets = await trx
-    .selectFrom("pets")
-    .select(["id", "customer_id", "name", "species", "breed", "birthday"])
-    .where("customer_id", "in", ids)
-    .orderBy("created_at")
-    .orderBy("name")
-    .execute();
-  const cards = await punchCards(trx, ids);
-  return rows.map((r) => ({
-    ...r,
-    pets: pets
-      .filter((p) => p.customer_id === r.id)
-      .map((p) => ({ id: p.id, name: p.name, species: p.species, breed: p.breed, birthday: p.birthday })),
-    punchCards: cards.get(r.id) ?? [],
-  }));
+  const cards = await punchCards(
+    trx,
+    rows.map((r) => r.id),
+  );
+  return rows.map((r) => ({ ...r, punchCards: cards.get(r.id) ?? [] }));
 }
 
 async function punchCards(trx: Transaction<DB>, customerIds: string[]): Promise<Map<string, PunchCard[]>> {
@@ -126,7 +83,7 @@ async function punchCards(trx: Transaction<DB>, customerIds: string[]): Promise<
   return map;
 }
 
-/** Name, email or pet name; three or more digits also match anywhere in the phone. */
+/** Name or email; three or more digits also match anywhere in the phone. */
 export const searchCustomers = defineHandler<{ q: string }, CustomerCard[]>({
   action: "customers.view",
   async run(trx, _ctx, { q }) {
@@ -139,13 +96,6 @@ export const searchCustomers = defineHandler<{ q: string }, CustomerCard[]>({
         eb.or([
           eb("c.name", "ilike", pat),
           eb("c.email", "ilike", pat),
-          eb.exists(
-            eb
-              .selectFrom("pets as p")
-              .select("p.id")
-              .whereRef("p.customer_id", "=", "c.id")
-              .where("p.name", "ilike", pat),
-          ),
           ...(digits.length >= 3 ? [eb("c.phone", "like", `%${digits}%`)] : []),
         ]),
       );
@@ -179,25 +129,6 @@ export const getCustomer = defineHandler<{ id: string }, CustomerProfile>({
       .where("id", "=", id)
       .executeTakeFirst();
     if (!c) throw new AppError("not_found", "That customer doesn't exist. They may have been deleted.");
-    const pets = await trx
-      .selectFrom("pets")
-      .selectAll()
-      .where("customer_id", "=", id)
-      .orderBy("created_at")
-      .orderBy("name")
-      .execute();
-    const vacc = pets.length
-      ? await trx
-          .selectFrom("vaccinations")
-          .select(["id", "pet_id", "vaccine", "expires_on"])
-          .where(
-            "pet_id",
-            "in",
-            pets.map((p) => p.id),
-          )
-          .orderBy("vaccine")
-          .execute()
-      : [];
     const cards = await punchCards(trx, [id]);
     const { sms_opt_in, notes, ...rest } = c;
     return {
@@ -205,64 +136,17 @@ export const getCustomer = defineHandler<{ id: string }, CustomerProfile>({
       smsOptIn: sms_opt_in,
       notes,
       punchCards: cards.get(id) ?? [],
-      pets: pets.map((p) => ({
-        id: p.id,
-        name: p.name,
-        species: p.species,
-        breed: p.breed,
-        birthday: p.birthday,
-        size: p.size,
-        coat: p.coat,
-        weightLb: p.weight_lb,
-        temperament: p.temperament,
-        allergies: p.allergies,
-        vetName: p.vet_name,
-        vaccinations: vacc
-          .filter((v) => v.pet_id === p.id)
-          .map((v) => ({ id: v.id, vaccine: v.vaccine, expiresOn: v.expires_on })),
-      })),
     };
   },
 });
 
-export interface PetRowInput {
-  id?: string;
-  name: string;
-  species: Species;
-  breed: string;
-  birthday: string;
-}
-
-/**
- * Saves a customer and their pet rows together, as the form does. Rows with an id
- * update that pet, rows without one are added, and the customer's other pets are removed.
- */
-export const saveCustomer = defineHandler<
-  { id?: string; customer: CustomerInput; pets: PetRowInput[] },
-  { id: string }
->({
+/** Adds a customer, or updates one when an id is given. */
+export const saveCustomer = defineHandler<{ id?: string; customer: CustomerInput }, { id: string }>({
   action: "customers.edit",
   async run(trx, ctx, input) {
     const errors = validateCustomer(input.customer);
     const first = Object.values(errors)[0];
     if (first) throw new AppError("invalid", first, errors as Record<string, string>);
-
-    const pets = input.pets
-      .map((p) => ({
-        ...p,
-        name: p.name.trim(),
-        breed: p.breed.trim() || null,
-        birthday: p.birthday.trim() || null,
-      }))
-      .filter((p) => p.name);
-    const dup = duplicatePetName(pets.map((p) => p.name));
-    if (dup) throw new AppError("invalid", dup, { pets: dup });
-    for (const p of pets) {
-      if (!["dog", "cat", "other"].includes(p.species))
-        throw new AppError("invalid", `Pick Dog, Cat or Other for ${p.name}.`);
-      if (p.birthday && (!isIsoDate(p.birthday) || p.birthday > todayIso()))
-        throw new AppError("invalid", `${p.name}'s birthday isn't a real past date.`);
-    }
 
     const c = cleanCustomer(input.customer);
     const values = {
@@ -293,24 +177,6 @@ export const saveCustomer = defineHandler<
             .executeTakeFirstOrThrow()
         ).id;
       }
-
-      const existing = await trx.selectFrom("pets").select("id").where("customer_id", "=", id).execute();
-      const keep = new Set(pets.filter((p) => p.id).map((p) => p.id!));
-      for (const p of pets.filter((p) => p.id)) {
-        if (!existing.some((e) => e.id === p.id))
-          throw new AppError("invalid", `${p.name} isn't this customer's pet.`);
-      }
-      const removed = existing.filter((e) => !keep.has(e.id)).map((e) => e.id);
-      if (removed.length) await trx.deleteFrom("pets").where("id", "in", removed).execute();
-      for (const p of pets) {
-        const pv = { name: p.name, species: p.species, breed: p.breed, birthday: p.birthday };
-        if (p.id) await trx.updateTable("pets").set(pv).where("id", "=", p.id).execute();
-        else
-          await trx
-            .insertInto("pets")
-            .values({ ...pv, business_id: ctx.businessId, customer_id: id })
-            .execute();
-      }
       return { id };
     } catch (err) {
       if (isUniqueViolation(err, "customers_phone_per_business"))
@@ -321,118 +187,23 @@ export const saveCustomer = defineHandler<
         throw new AppError("conflict", "Another customer already has that email.", {
           email: "Another customer already has that email.",
         });
-      if (isUniqueViolation(err, "pets_name_per_customer"))
-        throw new AppError("conflict", DUPLICATE_PET_MESSAGE, { pets: DUPLICATE_PET_MESSAGE });
       throw err;
     }
   },
 });
 
-export interface PetDetailsInput {
-  petId: string;
-  size: PetSize | null;
-  coat: string;
-  weightLb: number | null;
-  temperament: string;
-  allergies: string;
-  vetName: string;
-}
-
-export const savePetDetails = defineHandler<PetDetailsInput, void>({
-  action: "customers.edit",
-  async run(trx, _ctx, p) {
-    if (p.size && !["S", "M", "L", "XL"].includes(p.size))
-      throw new AppError("invalid", "Pick a size: S, M, L or XL.");
-    if (p.weightLb !== null && (!Number.isFinite(p.weightLb) || p.weightLb <= 0 || p.weightLb > 999))
-      throw new AppError("invalid", "Weight must be between 0 and 999 lb.");
-    const t = (s: string) => s.trim() || null;
-    const res = await trx
-      .updateTable("pets")
-      .set({
-        size: p.size,
-        coat: t(p.coat),
-        weight_lb: p.weightLb === null ? null : Math.round(p.weightLb * 10) / 10,
-        temperament: t(p.temperament),
-        allergies: t(p.allergies),
-        vet_name: t(p.vetName),
-      })
-      .where("id", "=", p.petId)
-      .executeTakeFirst();
-    if (res.numUpdatedRows === 0n) throw new AppError("not_found", "That pet doesn't exist anymore.");
-  },
-});
-
-/** Replaces a pet's vaccination list: one current expiry date per vaccine. */
-export const saveVaccinations = defineHandler<
-  { petId: string; rows: { vaccine: string; expiresOn: string }[] },
-  void
->({
-  action: "customers.edit",
-  async run(trx, ctx, { petId, rows }) {
-    const pet = await trx.selectFrom("pets").select("id").where("id", "=", petId).executeTakeFirst();
-    if (!pet) throw new AppError("not_found", "That pet doesn't exist anymore.");
-    const clean = rows
-      .map((r) => ({ vaccine: r.vaccine.trim(), expiresOn: r.expiresOn.trim() }))
-      .filter((r) => r.vaccine || r.expiresOn);
-    const seen = new Set<string>();
-    for (const r of clean) {
-      if (!r.vaccine) throw new AppError("invalid", "Each row needs a vaccine name.");
-      if (!isIsoDate(r.expiresOn)) throw new AppError("invalid", `Enter the date ${r.vaccine} expires.`);
-      const k = r.vaccine.toLowerCase();
-      if (seen.has(k))
-        throw new AppError("invalid", `${r.vaccine} is listed twice. Keep the latest expiry only.`);
-      seen.add(k);
-    }
-    await trx.deleteFrom("vaccinations").where("pet_id", "=", petId).execute();
-    if (clean.length)
-      await trx
-        .insertInto("vaccinations")
-        .values(
-          clean.map((r) => ({
-            business_id: ctx.businessId,
-            pet_id: petId,
-            vaccine: r.vaccine,
-            expires_on: r.expiresOn,
-          })),
-        )
-        .execute();
-  },
-});
-
 export interface DeletePreview {
   name: string;
-  petNames: string[];
   punchCards: number;
-  vaccinations: number;
 }
 
 async function preview(trx: Transaction<DB>, id: string): Promise<DeletePreview> {
   const c = await trx.selectFrom("customers").select("name").where("id", "=", id).executeTakeFirst();
   if (!c) throw new AppError("not_found", "That customer doesn't exist. They may have been deleted.");
-  const pets = await trx
-    .selectFrom("pets")
-    .select(["id", "name"])
-    .where("customer_id", "=", id)
-    .orderBy("created_at")
-    .orderBy("name")
-    .execute();
-  const vaccinations = pets.length
-    ? await trx
-        .selectFrom("vaccinations")
-        .select("id")
-        .where(
-          "pet_id",
-          "in",
-          pets.map((p) => p.id),
-        )
-        .execute()
-    : [];
   const cards = await punchCards(trx, [id]);
   return {
     name: c.name,
-    petNames: pets.map((p) => p.name),
     punchCards: cards.get(id)?.length ?? 0,
-    vaccinations: vaccinations.length,
   };
 }
 
@@ -445,7 +216,7 @@ export const deletePreview = defineHandler<{ id: string }, DeletePreview>({
 });
 
 /**
- * Deletes the customer, their pets, vaccinations and punch cards. The audit entry
+ * Deletes the customer and their punch cards. The audit entry
  * keeps the name and counts only, never contact details.
  */
 export const deleteCustomer = defineHandler<{ id: string }, void>({
@@ -459,9 +230,7 @@ export const deleteCustomer = defineHandler<{ id: string }, void>({
       entityId: id,
       before: {
         name: p.name,
-        pets: p.petNames.length,
         punch_cards: p.punchCards,
-        vaccinations: p.vaccinations,
       },
     });
   },

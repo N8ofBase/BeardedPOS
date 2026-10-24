@@ -1,6 +1,6 @@
 // How PGlite turns Postgres values into JavaScript. Dates stay "YYYY-MM-DD" strings:
 // a JS Date would carry a time zone and could show a birthday a day early.
-// numeric is only used for non-money values (pet weight), so a number is fine.
+// numeric is never used for money (money is integer cents), so a number is fine.
 // Pass these to every PGlite instance (the browser worker and tests).
 const DATE_OID = 1082;
 const NUMERIC_OID = 1700;

@@ -51,37 +51,9 @@ describe("customers", () => {
   });
 });
 
-describe("pets", () => {
-  it("keeps pet names unique per customer, ignoring case", async () => {
-    const pat = await customer(a);
-    const sam = await customer(a, { name: "Sam", phone: "2125550101" });
-    await db.insertInto("pets").values({ business_id: a, customer_id: pat.id, name: "Biscuit" }).execute();
-    await expect(
-      db.insertInto("pets").values({ business_id: a, customer_id: pat.id, name: "biscuit" }).execute(),
-    ).rejects.toThrow(/pets_name_per_customer/);
-    await db.insertInto("pets").values({ business_id: a, customer_id: sam.id, name: "Biscuit" }).execute();
-  });
-
-  it("can't belong to another business's customer", async () => {
-    const pat = await customer(a);
-    await expect(
-      db.insertInto("pets").values({ business_id: b, customer_id: pat.id, name: "Stray" }).execute(),
-    ).rejects.toThrow(/foreign key/);
-  });
-});
-
 describe("deleting a customer", () => {
-  it("removes pets, vaccinations and punches with them", async () => {
+  it("removes their punches with them", async () => {
     const pat = await customer(a);
-    const pet = await db
-      .insertInto("pets")
-      .values({ business_id: a, customer_id: pat.id, name: "Biscuit" })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-    await db
-      .insertInto("vaccinations")
-      .values({ business_id: a, pet_id: pet.id, vaccine: "Rabies", expires_on: "2027-01-01" })
-      .execute();
     const program = await db
       .insertInto("astro_programs")
       .values({ business_id: a, name: "Club", buy_count: 12 })
@@ -94,9 +66,7 @@ describe("deleting a customer", () => {
 
     await withBusiness(db, a, (trx) => trx.deleteFrom("customers").where("id", "=", pat.id).execute());
 
-    for (const t of ["pets", "vaccinations", "astro_punches"] as const) {
-      expect(await db.selectFrom(t).select("id").execute()).toEqual([]);
-    }
+    expect(await db.selectFrom("astro_punches").select("id").execute()).toEqual([]);
   });
 });
 

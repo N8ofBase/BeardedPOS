@@ -190,7 +190,6 @@ describe("remove demo data", () => {
         smsOptIn: false,
         notes: "",
       },
-      pets: [{ name: "Mine", species: "dog", breed: "", birthday: "" }],
     });
     await db
       .insertInto("astro_punches")
@@ -205,7 +204,6 @@ describe("remove demo data", () => {
 
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
       customers: 3,
-      pets: 5,
       products: 4,
       programs: 1,
       punches: 2,
@@ -214,7 +212,6 @@ describe("remove demo data", () => {
     await invoke(db, owner, "removeDemoData", undefined);
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
       customers: 0,
-      pets: 0,
       products: 0,
       programs: 0,
       punches: 0,
@@ -242,7 +239,6 @@ describe("remove demo data", () => {
         before: null,
         after: {
           customers: 3,
-          pets: 5,
           products: 4,
           programs: 1,
           punches: 2,
