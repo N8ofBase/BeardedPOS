@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { addressLine, can, formatDate, formatMoney, formatPhone } from "@bearded/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
+import { BeardBucks } from "./BeardBucks.tsx";
 import { BirthdayTag } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
@@ -101,6 +102,8 @@ export function CustomerProfilePage() {
           )}
         </section>
       )}
+
+      <BeardBucks customerId={c.id} />
 
       <FollowUpBox
         key={`${c.followUpOn}-${c.followUpNote}`}

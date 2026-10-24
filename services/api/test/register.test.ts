@@ -336,7 +336,7 @@ describe("store discounts", () => {
     );
     expect(rows).toEqual([
       {
-        name: "Damaged bag (DEMO)",
+        name: "Damaged box (DEMO)",
         applied_by: cashier.staffId,
         approved_by: manager.staffId,
         amount_cents: 500,

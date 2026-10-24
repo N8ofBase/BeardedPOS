@@ -18,6 +18,7 @@ import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { terminal } from "../payments/terminal.ts";
 import { audit, currentLocationId } from "../shared.ts";
+import { applyRefundBucks, planRefundBucks } from "./loyalty.ts";
 
 type Trx = Transaction<DB>;
 
@@ -58,13 +59,27 @@ export interface RefundPlan {
   /** A manager is over the store's refund limit: an owner must approve. */
   needsApproval: boolean;
   limitCents: number;
+  customerId: string | null;
+  /** Beard Bucks the refund takes back, and a reward it gives back (whole sale refunded). */
+  bucks: { takeBack: number; giveBack: number };
 }
 
 /** Works out a refund without saving anything. */
 async function planRefund(trx: Trx, ctx: Ctx, input: RefundInput, lock: boolean): Promise<RefundPlan> {
   let saleQuery = trx
     .selectFrom("sales")
-    .select(["id", "status", "source", "receipt_number", "tax_cents", "total_cents", "refunded_cents"])
+    .select([
+      "id",
+      "status",
+      "source",
+      "receipt_number",
+      "customer_id",
+      "subtotal_cents",
+      "discount_cents",
+      "tax_cents",
+      "total_cents",
+      "refunded_cents",
+    ])
     .where("id", "=", input.saleId);
   if (lock) saleQuery = saleQuery.forUpdate();
   const sale = await saleQuery.executeTakeFirst();
@@ -172,6 +187,10 @@ async function planRefund(trx: Trx, ctx: Ctx, input: RefundInput, lock: boolean)
     restock: input.restock,
     needsApproval: ctx.role !== "owner" && totalCents > biz.refund_approval_cents,
     limitCents: biz.refund_approval_cents,
+    customerId: sale.customer_id,
+    bucks: amountCents
+      ? await planRefundBucks(trx, sale, rows.reduce((s, r) => s + r.refunded_cents, 0) + amountCents)
+      : { takeBack: 0, giveBack: 0 },
   };
 }
 
@@ -283,6 +302,8 @@ export const refundSale = defineHandler<RefundSaleInput, RefundResult>({
       .where("id", "=", plan.saleId)
       .execute();
 
+    await applyRefundBucks(trx, ctx, plan.saleId, plan.customerId, plan.bucks);
+
     if (input.restock) {
       const locationId = await currentLocationId(trx);
       for (const l of plan.lines) {
@@ -323,6 +344,8 @@ export const refundSale = defineHandler<RefundSaleInput, RefundResult>({
         reason: input.reason,
         note,
         restock: input.restock,
+        bucks_taken_back: plan.bucks.takeBack,
+        bucks_given_back: plan.bucks.giveBack,
         refunded_by: ctx.staffId,
         approved_by: approvedBy,
       },

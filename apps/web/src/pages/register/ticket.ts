@@ -1,4 +1,4 @@
-// The ticket being rung up: lines, customer and discounts. Priced in the
+// The ticket being rung up: lines, customer, discounts and Beard Bucks rewards. Priced in the
 // browser with the same priceSale() the server reruns at checkout, and kept in this
 // browser so a reload doesn't lose a sale in progress.
 import { priceSale, type PricedSale, type TicketLine } from "@bearded/core";
@@ -22,9 +22,11 @@ export interface Ticket {
   lines: TicketLineState[];
   customer: RegisterCustomer | null;
   discounts: TicketDiscountState[];
+  /** Beard Bucks rewards used, $5 off each. */
+  rewards: number;
 }
 
-export const EMPTY_TICKET: Ticket = { lines: [], customer: null, discounts: [] };
+export const EMPTY_TICKET: Ticket = { lines: [], customer: null, discounts: [], rewards: 0 };
 
 /** True when nothing is on the ticket to pay for. */
 export function isEmpty(t: Ticket): boolean {
@@ -75,6 +77,7 @@ export function toInput(t: Ticket): TicketInput {
       note: d.note ?? undefined,
       approvedBy: d.approvedBy,
     })),
+    rewards: t.rewards,
   };
 }
 
@@ -105,6 +108,7 @@ export function priceTicket(t: Ticket, taxRateMpct: number): TicketPrice {
         lineKey: d.discount.scope === "line" ? d.lineKey : null,
       })),
       taxRateMpct,
+      rewards: t.rewards,
     });
     return { priced, problem: null };
   } catch (err) {
@@ -127,7 +131,7 @@ export function loadTicket(staffId: string): Ticket {
 
 export function saveTicket(staffId: string, t: Ticket): void {
   try {
-    if (isEmpty(t) && !t.customer && !t.discounts.length) localStorage.removeItem(KEY(staffId));
+    if (isEmpty(t) && !t.customer && !t.discounts.length && !t.rewards) localStorage.removeItem(KEY(staffId));
     else localStorage.setItem(KEY(staffId), JSON.stringify(t));
   } catch {
     // Private mode: the ticket just won't survive a reload.

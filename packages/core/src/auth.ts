@@ -22,6 +22,8 @@ const PERMISSIONS = {
   "tags.manage": ["owner", "manager"],
   /** Write and send bulk email. */
   "email.send": ["owner", "manager"],
+  /** Add or take away Beard Bucks by hand, with a note. */
+  "loyalty.adjust": ["owner", "manager"],
   "sales.view": ["owner", "manager"],
   /** Managers only up to the store's refund limit; above it an owner approves. */
   "sales.refund": ["owner", "manager"],

@@ -21,7 +21,7 @@ const preview =
       saleId: "s1",
       receiptNumber: 1001,
       refundable: [
-        { saleLineId: "a", name: "Chew toy", qty: 3, refundedQty: 1, lineTotalCents: 3000 },
+        { saleLineId: "a", name: "Card sleeves", qty: 3, refundedQty: 1, lineTotalCents: 3000 },
         { saleLineId: "b", name: "Strategy game", qty: 6, refundedQty: 0, lineTotalCents: 6000 },
       ],
       lines: [],
@@ -33,6 +33,8 @@ const preview =
       restock: input.restock,
       needsApproval: role === "manager" && total > 5000,
       limitCents: 5000,
+      customerId: null,
+      bucks: { takeBack: 0, giveBack: 0 },
     };
   };
 
@@ -44,11 +46,11 @@ const staff = [
 describe("refund panel", () => {
   it("steps up to what's left on each line, and shows the breakdown", async () => {
     renderAs("owner", <RefundPanel saleId="s1" onDone={() => {}} />, { refundPreview: preview("owner") });
-    const more = await screen.findByRole("button", { name: "Refund more Chew toy" });
-    expect(screen.getByLabelText("Chew toy to refund").textContent).toBe("0 of 2");
+    const more = await screen.findByRole("button", { name: "Refund more Card sleeves" });
+    expect(screen.getByLabelText("Card sleeves to refund").textContent).toBe("0 of 2");
     fireEvent.click(more);
     fireEvent.click(more);
-    expect(screen.getByLabelText("Chew toy to refund").textContent).toBe("2 of 2");
+    expect(screen.getByLabelText("Card sleeves to refund").textContent).toBe("2 of 2");
     expect((more as HTMLButtonElement).disabled).toBe(true);
     await waitFor(() => expect(screen.getByLabelText("Refund breakdown").textContent).toContain("$21.40"));
     expect(screen.getByText("Hand back $21.40 cash")).toBeTruthy();

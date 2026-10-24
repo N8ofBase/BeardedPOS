@@ -24,6 +24,8 @@ export interface BusinessesTable {
   email_from_address: string | null;
   /** Shown in every bulk email's footer (CAN-SPAM). */
   mailing_address: string | null;
+  /** Beard Buddy loyalty is on for this store. */
+  loyalty_enabled: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -170,6 +172,22 @@ export interface CustomerEventsTable {
   kind: CustomerEventKind;
   summary: string;
   ref_id: string | null;
+  staff_id: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
+export type LoyaltyKind = "earn" | "birthday" | "redeem" | "take_back" | "give_back" | "adjust";
+
+/** Beard Bucks in and out; a customer's balance is the sum. Append-only. */
+export interface LoyaltyLedgerTable {
+  id: Generated<string>;
+  business_id: string;
+  customer_id: string;
+  sale_id: string | null;
+  kind: LoyaltyKind;
+  bucks: number;
+  note: string | null;
   staff_id: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
@@ -505,6 +523,7 @@ export interface DB {
   email_campaigns: EmailCampaignsTable;
   email_sends: EmailSendsTable;
   email_suppressions: EmailSuppressionsTable;
+  loyalty_ledger: LoyaltyLedgerTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

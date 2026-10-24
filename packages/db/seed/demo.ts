@@ -31,6 +31,7 @@ export async function ensureDemo(db: Kysely<DB>): Promise<string> {
     await once(trx, businessId, "customers", "customers", seedCustomers);
     await once(trx, businessId, "discounts", "discounts", seedDiscounts);
     await once(trx, businessId, "crm", "tags", seedCrm);
+    await once(trx, businessId, "loyalty", "loyalty_ledger", seedLoyalty);
     return businessId;
   });
 }
@@ -43,7 +44,7 @@ async function once(
   trx: Transaction<DB>,
   businessId: string,
   part: string,
-  table: "products" | "customers" | "discounts" | "tags",
+  table: "products" | "customers" | "discounts" | "tags" | "loyalty_ledger",
   seed: (trx: Transaction<DB>, businessId: string) => Promise<void>,
 ): Promise<void> {
   const done = await trx
@@ -205,7 +206,7 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
       sms_opt_in: true,
     },
     {
-      name: "Sample Cat Parent (DEMO)",
+      name: "Sample Game Night Regular (DEMO)",
       phone: "2125550101",
       email: null,
       street: null,
@@ -231,6 +232,32 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
   await trx
     .insertInto("customers")
     .values(customers.map((c) => ({ ...c, business_id: businessId, is_demo: true })))
+    .execute();
+}
+
+// Starting Beard Bucks, so the register can show a reward right away.
+async function seedLoyalty(trx: Transaction<DB>, businessId: string): Promise<void> {
+  const opening: Record<string, number> = { "2125550100": 240, "2125550101": 65, "2125550102": 120 };
+  const rows = await trx
+    .selectFrom("customers")
+    .select(["id", "phone"])
+    .where("business_id", "=", businessId)
+    .where("is_demo", "=", true)
+    .where("phone", "in", Object.keys(opening))
+    .execute();
+  if (!rows.length) return;
+  await trx
+    .insertInto("loyalty_ledger")
+    .values(
+      rows.map((c) => ({
+        business_id: businessId,
+        customer_id: c.id,
+        kind: "adjust" as const,
+        bucks: opening[c.phone!]!,
+        note: "Opening balance (DEMO)",
+        is_demo: true,
+      })),
+    )
     .execute();
 }
 
@@ -268,7 +295,7 @@ async function seedDiscounts(trx: Transaction<DB>, businessId: string): Promise<
       },
       {
         ...base,
-        name: "Damaged bag (DEMO)",
+        name: "Damaged box (DEMO)",
         code: "DMG",
         kind: "fixed",
         amount_cents: 500,

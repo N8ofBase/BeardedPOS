@@ -367,9 +367,12 @@ function TicketView({
     <>
       <CustomerBox
         customer={ticket.customer}
-        onAttach={(c) => onTicket({ ...ticket, customer: c })}
-        onDrop={() => onTicket({ ...ticket, customer: null })}
+        onAttach={(c) => onTicket({ ...ticket, customer: c, rewards: 0 })}
+        onDrop={() => onTicket({ ...ticket, customer: null, rewards: 0 })}
         onAddProduct={(prod) => onTicket(addProduct(ticket, prod))}
+        rewards={ticket.rewards}
+        netCents={p ? p.subtotalCents - p.discountCents : 0}
+        onUseReward={() => onTicket({ ...ticket, rewards: ticket.rewards + 1 })}
       />
 
       <div className="lines">
@@ -430,8 +433,21 @@ function TicketView({
             <div key={i} className="store-disc">
               <span>
                 {d.name}
-                {d.lineKey === null && (
+                {d.lineKey === null && d.discountId !== null && (
                   <TicketDiscountExtras ticket={ticket} discountId={d.discountId} onTicket={onTicket} />
+                )}
+                {d.discountId === null && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="link"
+                      aria-label="Remove a Beard Bucks reward"
+                      onClick={() => onTicket({ ...ticket, rewards: Math.max(0, ticket.rewards - 1) })}
+                    >
+                      ×
+                    </button>
+                  </>
                 )}
               </span>
               <span className="num">−{formatMoney(d.amountCents)}</span>

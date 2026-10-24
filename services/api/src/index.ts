@@ -60,6 +60,7 @@ export {
 } from "./handlers/email.ts";
 export { mailer, PreviewMailer, sesSendEmailInput, type Mailer } from "./email/mailer.ts";
 export type { DiscountInput, DiscountRow } from "./handlers/discounts.ts";
+export type { CustomerBucks, LedgerRow, LoyaltyCard } from "./handlers/loyalty.ts";
 export type {
   CheckoutResult,
   PaymentResult,
