@@ -1,31 +1,8 @@
-import type { CSSProperties } from "react";
-import { formatCents, stockLabel, type Product } from "../catalog/catalog.ts";
-import { useProducts } from "../api/store.ts";
-import { games } from "../content/site.ts";
+import { Link } from "react-router";
+import { useProducts } from "../api/data.tsx";
+import { ProductCard } from "../components/ProductCard.tsx";
 
-const gameFor = (p: Product) => games.find((g) => g.slug === p.game);
-
-function ProductCard({ product }: { product: Product }) {
-  const game = gameFor(product);
-  const label = stockLabel(product);
-  const art = product.imageUrl ?? game?.art;
-  return (
-    <article className={`product ${product.stockStatus === "sold-out" ? "out" : ""}`}>
-      <div className="art" style={{ "--c": game?.color ?? "#14614F" } as CSSProperties}>
-        {art ? <img src={art} alt="" loading="lazy" /> : <span className="art-fallback">{product.name}</span>}
-      </div>
-      <div className="body">
-        {game && <span className="tag">{game.name}</span>}
-        <h3>{product.name}</h3>
-        <p className="price">
-          {formatCents(product.priceCents)}
-          {label && <span className={`stock ${product.stockStatus}`}>{label}</span>}
-        </p>
-      </div>
-    </article>
-  );
-}
-
+/** The home page's shop band: the games themselves, with a link to everything. */
 export function Shop() {
   const products = useProducts();
   return (
@@ -41,11 +18,18 @@ export function Shop() {
         )}
         {products.state === "ready" && (
           <div className="grid">
-            {products.value.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+            {products.value
+              .filter((p) => p.kind === "game" || p.kind === "preorder")
+              .map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
           </div>
         )}
+        <p className="more">
+          <Link className="btn" to="/shop">
+            See expansions, print and play, and merch
+          </Link>
+        </p>
       </div>
     </section>
   );

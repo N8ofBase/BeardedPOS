@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import meeple from "../assets/meeple.webp";
 import { brand } from "../content/site.ts";
-import { roll, type Link, type RollResult } from "../roll.ts";
+import { roll, type Link as RollTarget, type RollResult } from "../roll.ts";
 
 const COLORS = ["#F6B820", "#FFD25E", "#E8463A", "#E6F2EE", "#7BAE4E", "#3B5BA9", "#FFFFFF", "#8E5BC2"];
 
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-function RollLink({ link }: { link: Link }) {
+function RollLink({ link }: { link: RollTarget }) {
   return link.external ? (
     <a href={link.href} target="_blank" rel="noopener">
       {link.label}
     </a>
   ) : (
-    <a href={link.href}>{link.label}</a>
+    <Link to={link.href}>{link.label}</Link>
   );
 }
 

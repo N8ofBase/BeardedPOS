@@ -1,19 +1,30 @@
+import { Link } from "react-router";
 import meeple from "../assets/meeple.webp";
+import { useCart } from "../cart/CartProvider.tsx";
 import { brand } from "../content/site.ts";
 
 export function Header() {
+  const cart = useCart();
+  const count = cart.summary?.count ?? cart.lines.reduce((n, l) => n + l.qty, 0);
   return (
     <header className="site-head">
       <div className="wrap">
-        <a className="brand" href="/">
+        <Link className="brand" to="/">
           <img src={meeple} alt="" width="40" height="39" />
           <span>{brand.name}</span>
-        </a>
+        </Link>
         <nav aria-label="Main">
-          <a href="/#games">Games</a>
-          <a href="/#shop">Shop</a>
-          <a href="/#vip">VIP list</a>
-          <a href="/#wholesale">Wholesale</a>
+          <Link to="/#games">Games</Link>
+          <Link to="/shop">Shop</Link>
+          <Link to="/reviews">Reviews</Link>
+          <Link to="/#vip">VIP list</Link>
+          <Link to="/wholesale">Wholesale</Link>
+          <button type="button" className="cart-btn" onClick={cart.open}>
+            Cart
+            <span className="count" aria-label={`${count} item${count === 1 ? "" : "s"}`}>
+              {count}
+            </span>
+          </button>
         </nav>
       </div>
     </header>

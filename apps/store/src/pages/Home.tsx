@@ -4,12 +4,14 @@ import { Retailers } from "../sections/Retailers.tsx";
 import { Shelf } from "../sections/Shelf.tsx";
 import { Shop } from "../sections/Shop.tsx";
 import { VipBand } from "../sections/VipBand.tsx";
+import { WhatPlayersSay } from "../sections/WhatPlayersSay.tsx";
 
 export function Home() {
   return (
     <>
       <Hero />
       <Shelf />
+      <WhatPlayersSay />
       <Shop />
       <VipBand />
       <Beards />

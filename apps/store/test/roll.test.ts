@@ -23,17 +23,17 @@ describe("d20 roller", () => {
     expect(r.kind).toBe("crit");
     if (r.kind !== "crit") return;
     expect(r.links.map((l) => l.label)).toEqual(games.map((g) => g.name));
-    expect(r.links.every((l) => l.href.startsWith("#game-"))).toBe(true);
+    expect(r.links.every((l) => l.href.startsWith("/games/"))).toBe(true);
   });
 
-  it("an ordinary roll lands on a game shown on the shelf, linked to its card", () => {
+  it("an ordinary roll lands on a game shown on the shelf, linked to its page", () => {
     for (let i = 0; i < games.length; i++) {
       const r = roll(seq(face(7), SOCIAL_CHANCE, (i + 0.5) / games.length, 0));
       expect(r.kind).toBe("game");
       if (r.kind !== "game") return;
       const game = games.find((g) => g.name === r.name)!;
       expect(game).toBeDefined();
-      expect(r.link.href).toBe(`#game-${game.slug}`);
+      expect(r.link.href).toBe(`/games/${game.slug}`);
       expect(r.text).toContain(`You rolled ${game.name}`);
     }
   });

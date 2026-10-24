@@ -1,4 +1,6 @@
 import { useState, type CSSProperties } from "react";
+import { Link } from "react-router";
+import { gamePath } from "../roll.ts";
 import { games, statusLabel, type Game, type GameStatus } from "../content/site.ts";
 
 type Filter = "all" | GameStatus;
@@ -37,7 +39,9 @@ function GameCard({ game }: { game: Game }) {
           {game.status !== "available" && <span className="tag soon">{statusLabel[game.status]}</span>}
           {game.badge && <span className="tag hot">{game.badge}</span>}
         </div>
-        <h3>{game.name}</h3>
+        <h3>
+          <Link to={gamePath(game.slug)}>{game.name}</Link>
+        </h3>
         <p>{game.tagline}</p>
         {game.facts.length > 0 && (
           <ul className="facts">
@@ -50,6 +54,9 @@ function GameCard({ game }: { game: Game }) {
           <summary>How it plays</summary>
           <p>{game.blurb}</p>
           {game.designer && <p className="by">Designed by {game.designer}</p>}
+          <p className="links">
+            <Link to={gamePath(game.slug)}>See {game.name} and its reviews</Link>
+          </p>
           {links.length > 0 && (
             <p className="links">
               {links.map((l, i) => (

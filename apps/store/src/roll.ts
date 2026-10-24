@@ -103,7 +103,7 @@ export type RollResult =
 
 const pick = <T>(list: T[], random: Random): T => list[Math.floor(random() * list.length)]!;
 
-export const gameAnchor = (slug: string) => `#game-${slug}`;
+export const gamePath = (slug: string) => `/games/${slug}`;
 
 /** Rolls the die. `last` is the name the previous roll landed on, so the same game doesn't come up twice running. */
 export function roll(random: Random = Math.random, last?: string): RollResult {
@@ -114,7 +114,7 @@ export function roll(random: Random = Math.random, last?: string): RollResult {
       kind: "crit",
       face,
       text: pick(CRIT, random),
-      links: games.map((g) => ({ label: g.name, href: gameAnchor(g.slug) })),
+      links: games.map((g) => ({ label: g.name, href: gamePath(g.slug) })),
     };
   }
   if (random() < SOCIAL_CHANCE) {
@@ -135,6 +135,6 @@ export function roll(random: Random = Math.random, last?: string): RollResult {
     face,
     name: g.name,
     text: pick(GAME_ROLLS[g.slug] ?? [`You rolled ${g.name}.`], random),
-    link: { label: `Meet ${g.name}`, href: gameAnchor(g.slug) },
+    link: { label: `Meet ${g.name}`, href: gamePath(g.slug) },
   };
 }

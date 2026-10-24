@@ -8,6 +8,7 @@ import { brand, games } from "../src/content/site.ts";
 afterEach(cleanup);
 
 function renderHome(store: StoreApi = offlineStore, path = "/") {
+  localStorage.clear();
   return render(
     <StoreContext.Provider value={store}>
       <MemoryRouter initialEntries={[path]}>
@@ -45,14 +46,14 @@ describe("home page", () => {
     expect(shelfNames()).toHaveLength(games.length);
   });
 
-  it("lists shop products with prices from Square", async () => {
+  it("lists the games for sale with prices from Square", async () => {
     renderHome();
     const shop = document.getElementById("shop")!;
-    await within(shop).findByText("Fences: The Ranch");
+    await within(shop).findByText("Soccer Blocker Version Zero (Limited)");
     expect(within(shop).getByText("Mine & Find (Pre-order)")).toBeTruthy();
     expect(within(shop).queryByText("Math Force 5")).toBeNull();
-    const ranch = within(shop).getByText("Fences: The Ranch").closest("article")!;
-    expect(within(ranch).getByText("$25")).toBeTruthy();
+    const sb = within(shop).getByText("Soccer Blocker Version Zero (Limited)").closest("article")!;
+    expect(within(sb).getByText("$30")).toBeTruthy();
   });
 
   it("says so when the shop can't load", async () => {
