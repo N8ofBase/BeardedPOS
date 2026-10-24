@@ -12,6 +12,8 @@ export interface SquareStore {
     lines: { productId: string; qty: number }[];
     redirectUrl: string;
   }): Promise<{ url: string; squareOrderId: string | null; paymentLinkId: string | null }>;
+  /** Whether Square's order for a checkout has been paid. */
+  orderPaid(squareOrderId: string): Promise<boolean>;
   /** Adds the email to Square Customers (no-op when it's already there). */
   upsertCustomer(email: string): Promise<void>;
   /** True when this email paid for a Square order: shown as "Bought from us" on reviews. */

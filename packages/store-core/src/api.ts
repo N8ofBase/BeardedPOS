@@ -20,6 +20,11 @@ export interface OrderLine {
   priceCents: number;
 }
 
+/** What the thank-you page may know about an order: no lines, no amounts. */
+export interface OrderStatus {
+  status: "open" | "paid" | "cancelled";
+}
+
 export interface OrderView {
   id: string;
   status: "open" | "paid" | "cancelled";

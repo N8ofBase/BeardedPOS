@@ -4,6 +4,7 @@ import {
   storeProducts,
   type CheckoutResponse,
   type OrderLine,
+  type OrderStatus,
   type OrderView,
   type Product,
 } from "@bearded/store-core";
@@ -99,6 +100,34 @@ export async function markPaid(sql: Sql, id: string): Promise<boolean> {
     [id],
   );
   return rows.length > 0;
+}
+
+/**
+ * The thank-you page asks this when Square sends the shopper back. An open order is checked with
+ * Square and marked paid once Square says so. Square's webhook (when hosted) does the same.
+ */
+export async function getOrderStatus(ctx: StoreCtx, id: string): Promise<ApiResponse> {
+  if (!UUID.test(id)) throw new HttpError(404, "We couldn’t find that order.");
+  const { businessId } = ctx.config;
+  const order = await withBusiness(ctx.db, businessId, async (sql) => {
+    const { rows } = await sql.query<{ status: OrderStatus["status"]; square_order_id: string | null }>(
+      "SELECT status, square_order_id FROM store_orders WHERE id = $1",
+      [id],
+    );
+    return rows[0];
+  });
+  if (!order) throw new HttpError(404, "We couldn’t find that order.");
+  if (order.status !== "open" || !order.square_order_id)
+    return ok({ status: order.status } satisfies OrderStatus);
+  let paid = false;
+  try {
+    paid = await ctx.square.orderPaid(order.square_order_id);
+  } catch (e) {
+    // Square being slow or down isn't the shopper's problem: the page says payment is being confirmed.
+    console.error("square order check failed", e);
+  }
+  if (paid) await withBusiness(ctx.db, businessId, (sql) => markPaid(sql, id));
+  return ok({ status: paid ? "paid" : "open" } satisfies OrderStatus);
 }
 
 function offlineOnly(ctx: StoreCtx) {

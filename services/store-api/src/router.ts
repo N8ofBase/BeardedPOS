@@ -3,7 +3,7 @@ import type { StoreCtx } from "./context.ts";
 import { HttpError, type ApiRequest, type ApiResponse } from "./http.ts";
 import { logEvents } from "./handlers/events.ts";
 import { joinVip, listReviews, submitReview } from "./handlers/people.ts";
-import { checkout, getCatalog, getPreviewOrder, payPreviewOrder } from "./handlers/shop.ts";
+import { checkout, getCatalog, getOrderStatus, getPreviewOrder, payPreviewOrder } from "./handlers/shop.ts";
 import { me, moderateReview, requestCode, signIn, signOut, staffReviews } from "./handlers/staff.ts";
 import { getStats } from "./handlers/stats.ts";
 
@@ -16,6 +16,7 @@ type Route = [
 const ROUTES: Route[] = [
   ["GET", /^\/api\/catalog$/, getCatalog],
   ["POST", /^\/api\/checkout$/, checkout],
+  ["GET", /^\/api\/orders\/([^/]+)$/, (ctx, _req, id) => getOrderStatus(ctx, id)],
   ["GET", /^\/api\/checkout-preview\/([^/]+)$/, (ctx, _req, id) => getPreviewOrder(ctx, id)],
   ["POST", /^\/api\/checkout-preview\/([^/]+)\/pay$/, (ctx, _req, id) => payPreviewOrder(ctx, id)],
   ["POST", /^\/api\/vip$/, joinVip],

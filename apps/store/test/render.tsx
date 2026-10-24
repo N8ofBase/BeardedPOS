@@ -15,6 +15,7 @@ export function fakeStore(over: Partial<StoreApi> = {}): StoreApi {
     reviews: async () => [],
     submitReview: async () => {},
     track: async () => {},
+    orderStatus: async () => ({ status: "paid" }),
     previewOrder: () => Promise.reject(new Error("no server")),
     payPreviewOrder: () => Promise.reject(new Error("no server")),
     staff: {

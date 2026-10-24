@@ -1,10 +1,13 @@
 // The site against the real store server (in-memory database, offline Square), through fetch.
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withBusiness } from "@bearded/store-api";
 import { ApiError } from "../src/api/store.ts";
 import { CART_KEY } from "../src/cart/CartProvider.tsx";
 import { BUSINESS, realServer, renderStore } from "./render.tsx";
+
+// Each test starts a database, which can take a few seconds on a busy machine.
+vi.setConfig({ testTimeout: 20_000 });
 
 beforeEach(() => {
   localStorage.clear();

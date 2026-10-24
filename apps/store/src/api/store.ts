@@ -6,6 +6,7 @@ import type {
   CheckoutResponse,
   CodeResponse,
   EventBatch,
+  OrderStatus,
   OrderView,
   Review,
   ReviewAction,
@@ -42,6 +43,8 @@ export interface StoreApi {
   /** Store stats: anonymous page views, clicks and cart activity. */
   track(batch: EventBatch): Promise<void>;
   /** Offline only: the order behind the checkout preview page, and paying it. */
+  /** Whether an order is paid yet: the thank-you page asks after Square sends the shopper back. */
+  orderStatus(id: string): Promise<OrderStatus>;
   previewOrder(id: string): Promise<OrderView>;
   payPreviewOrder(id: string): Promise<OrderView>;
   staff: StaffApi;
@@ -89,6 +92,7 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
     reviews: () => call("GET", "/reviews"),
     submitReview: async (input) => void (await call("POST", "/reviews", input)),
     track: async (batch) => void (await call("POST", "/events", batch, true)),
+    orderStatus: (orderId) => call("GET", `/orders/${id(orderId)}`),
     previewOrder: (orderId) => call("GET", `/checkout-preview/${id(orderId)}`),
     payPreviewOrder: (orderId) => call("POST", `/checkout-preview/${id(orderId)}/pay`, {}),
     staff: {

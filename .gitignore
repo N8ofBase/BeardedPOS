@@ -20,3 +20,5 @@ infra/.site/
 *.log
 # store api development database
 services/store-api/.data/
+# store api secrets (see services/store-api/.env.example)
+services/store-api/.env
