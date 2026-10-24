@@ -27,6 +27,11 @@ export class SnapshotStore implements SquareStore {
     return { url: `/checkout-preview/${order.id}`, squareOrderId: null, paymentLinkId: null };
   }
 
+  // Offline orders are paid on the preview page, never in Square.
+  async orderPaid() {
+    return false;
+  }
+
   async upsertCustomer() {}
 
   async hasPaidOrder() {

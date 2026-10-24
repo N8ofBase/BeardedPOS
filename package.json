@@ -25,6 +25,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "build:demo": "npm run build -w apps/web",
     "build:store": "npm run build -w apps/store",
+    "seed:sandbox": "npm run seed:sandbox -w services/store-api --",
     "deploy:demo": "npm run build:demo && npm run deploy:demo -w infra",
     "deploy:prototype": "npm run deploy:prototype -w infra"
   },

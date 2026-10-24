@@ -1,5 +1,6 @@
-// Runs the store api inside a Node http server (the Vite dev server for now). Development settings
-// only: an offline Square, a database saved under services/store-api/.data, and mail to the console.
+// Runs the store api inside a Node http server (the Vite dev server for now). Development settings:
+// a database saved under services/store-api/.data, mail to the console, and Square offline unless
+// SQUARE_ENV=sandbox and SQUARE_SANDBOX_ACCESS_TOKEN are set (services/store-api/.env).
 import { mkdirSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
@@ -9,18 +10,33 @@ import { openPglite } from "./db.ts";
 import { parseCookies, type ApiRequest } from "./http.ts";
 import { logMailer } from "./mailer.ts";
 import { handle } from "./router.ts";
+import { SquareApiStore } from "./square/live.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
+import type { SquareStore } from "./square/types.ts";
 
 /** The business id the store uses before it's tied to the POS's businesses table. */
 export const DEV_BUSINESS_ID = "b0a7dbbb-0000-4000-8000-000000000001";
 const MAX_BODY = 64 * 1024;
+
+/**
+ * Offline by default. The Sandbox needs SQUARE_ENV=sandbox plus its token. Development never talks
+ * to the real Square account: that is a hosting decision (step 5), made only when N8 says so.
+ */
+export function squareFromEnv(env: NodeJS.ProcessEnv): SquareStore {
+  const mode = env.SQUARE_ENV ?? "offline";
+  if (mode === "offline") return new SnapshotStore();
+  if (mode !== "sandbox") throw new Error(`SQUARE_ENV must be "offline" or "sandbox" here, not "${mode}".`);
+  const token = env.SQUARE_SANDBOX_ACCESS_TOKEN;
+  if (!token) throw new Error("SQUARE_ENV=sandbox needs SQUARE_SANDBOX_ACCESS_TOKEN.");
+  return new SquareApiStore({ mode: "sandbox", token, locationId: env.SQUARE_LOCATION_ID || undefined });
+}
 
 export async function devContext(): Promise<StoreCtx> {
   const dir = join(fileURLToPath(import.meta.url), "../../.data/dev");
   mkdirSync(dir, { recursive: true });
   return {
     db: await openPglite(dir),
-    square: new SnapshotStore(),
+    square: squareFromEnv(process.env),
     mailer: logMailer(),
     config: {
       businessId: DEV_BUSINESS_ID,
