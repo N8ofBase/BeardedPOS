@@ -43,9 +43,6 @@ export function DeleteCustomer({ id, onDone }: { id: string; onDone: (deleted: b
         {p.vaccinations ? " and vaccination records" : ""}. It can't be undone.
       </p>
       <p className="muted">
-        {p.appointments
-          ? `${p.appointments} upcoming grooming appointment${p.appointments > 1 ? "s" : ""} will be canceled. `
-          : ""}
         Past sales stay in Sales, without a customer attached. Punch balances held in Astro itself aren't
         affected.
       </p>

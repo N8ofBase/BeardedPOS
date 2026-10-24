@@ -3,9 +3,8 @@ import type { DemoStaff } from "@pet-pos/db";
 
 const WHAT: Record<Role, string> = {
   owner: "Everything: prices, staff, settings, reports and refunds.",
-  manager: "Inventory, schedules and refunds up to a limit.",
-  cashier: "Ring sales, look up and add customers, check in grooms.",
-  groomer: "Own schedule, grooming notes and photos.",
+  manager: "Inventory, discounts and refunds up to a limit.",
+  cashier: "Ring sales, look up and add customers.",
 };
 
 /** Demo sign-in: pick who's using the register. Hosted mode replaces this with Cognito sign-in. */

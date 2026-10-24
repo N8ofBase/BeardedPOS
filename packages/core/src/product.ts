@@ -13,10 +13,6 @@ export interface ProductInput {
   astroProgramId: string | null;
   offerLabel: string | null;
   offerCents: number | null;
-  /** Used in grooming, not sold. Left out: unchanged. */
-  backBar?: boolean;
-  /** "oz", "each". Left out: unchanged. */
-  unit?: string | null;
 }
 
 export type FieldErrors<T> = Partial<Record<keyof T, string>>;

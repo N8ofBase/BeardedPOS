@@ -22,18 +22,6 @@ export interface BusinessesTable {
   refund_approval_cents: Generated<number>;
   /** Starting cash left in the drawer each morning. */
   drawer_float_cents: Generated<number>;
-  /** Charge sales tax on grooming. */
-  grooming_taxable: Generated<boolean>;
-  /** Text the customer when their pet is ready for pickup. */
-  text_when_ready: Generated<boolean>;
-  booking_enabled: Generated<boolean>;
-  booking_days_ahead: Generated<number>;
-  booking_notice_minutes: Generated<number>;
-  booking_cutoff_hours: Generated<number>;
-  booking_step_minutes: Generated<number>;
-  booking_message: string | null;
-  /** 10 digits, shown to customers. */
-  public_phone: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -59,10 +47,6 @@ export interface StaffTable {
   role: Role;
   cognito_sub: string | null;
   active: Generated<boolean>;
-  /** Shows on the grooming calendar. True for the Groomer role. */
-  grooms: Generated<boolean>;
-  /** Takes online bookings. */
-  books_online: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -97,10 +81,6 @@ export interface ProductsTable {
   astro_program_id: string | null;
   astro_offer_label: string | null;
   astro_offer_cents: number | null;
-  /** Used in grooming, not sold: hidden from the register. */
-  back_bar: Generated<boolean>;
-  /** "oz", "each"; null means each. */
-  unit: string | null;
   active: Generated<boolean>;
   import_batch_id: string | null;
   is_demo: Generated<boolean>;
@@ -113,7 +93,6 @@ export interface InventoryLevelsTable {
   product_id: string;
   location_id: string;
   on_hand: Generated<number>;
-  back_bar_on_hand: Generated<number>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -286,7 +265,6 @@ export interface SaleLinesTable {
   sale_id: string;
   position: number;
   product_id: string | null;
-  appointment_id: string | null;
   name: string;
   sku: string | null;
   barcode: string | null;
@@ -412,130 +390,6 @@ export type ImportType = "customers" | "pets" | "products" | "programs" | "punch
 export type ImportEntity =
   "customer" | "pet" | "vaccination" | "product" | "program" | "punch" | "stock" | "sale";
 
-export type AppointmentStatus =
-  "booked" | "checked_in" | "in_progress" | "ready" | "done" | "no_show" | "canceled";
-
-export interface ServicesTable {
-  id: Generated<string>;
-  business_id: string;
-  name: string;
-  kind: "main" | "addon";
-  description: string | null;
-  price_s_cents: number;
-  price_m_cents: number;
-  price_l_cents: number;
-  price_xl_cents: number;
-  minutes_s: number;
-  minutes_m: number;
-  minutes_l: number;
-  minutes_xl: number;
-  buffer_minutes: Generated<number>;
-  deposit_cents: Generated<number>;
-  online: Generated<boolean>;
-  active: Generated<boolean>;
-  archived_at: Date | null;
-  position: Generated<number>;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
-export interface GroomerHoursTable {
-  id: Generated<string>;
-  business_id: string;
-  staff_id: string;
-  weekday: number;
-  /** "09:00:00" */
-  start_time: string;
-  end_time: string;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
-export interface TimeOffTable {
-  id: Generated<string>;
-  business_id: string;
-  staff_id: string;
-  starts_at: Date;
-  ends_at: Date;
-  note: string | null;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
-export interface AppointmentsTable {
-  id: Generated<string>;
-  business_id: string;
-  location_id: string;
-  customer_id: string | null;
-  pet_id: string | null;
-  staff_id: string;
-  service_id: string;
-  service_name: string;
-  pet_name: string;
-  size: PetSize;
-  starts_at: Date;
-  ends_at: Date;
-  block_ends_at: Date;
-  status: Generated<AppointmentStatus>;
-  price_cents: number;
-  notes: string | null;
-  created_by: string | null;
-  checked_in_at: Date | null;
-  started_at: Date | null;
-  ready_at: Date | null;
-  done_at: Date | null;
-  canceled_at: Date | null;
-  sale_id: string | null;
-  deposit_payment_id: string | null;
-  supplies_used_at: Date | null;
-  source: Generated<"staff" | "online">;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
-export interface ServiceSuppliesTable {
-  id: Generated<string>;
-  business_id: string;
-  service_id: string;
-  product_id: string;
-  qty_s: number;
-  qty_m: number;
-  qty_l: number;
-  qty_xl: number;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
-export interface GroomingNotesTable {
-  id: Generated<string>;
-  business_id: string;
-  pet_id: string;
-  appointment_id: string | null;
-  staff_id: string | null;
-  note: string;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-}
-
-export interface GroomingPhotosTable {
-  id: Generated<string>;
-  business_id: string;
-  note_id: string;
-  kind: "before" | "after";
-  image_data: string | null;
-  storage_key: string | null;
-  width: number;
-  height: number;
-  bytes: number;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-}
-
 export interface CustomerLoginCodesTable {
   id: Generated<string>;
   business_id: string;
@@ -554,32 +408,6 @@ export interface CustomerSessionsTable {
   token_hash: string;
   expires_at: Date;
   last_seen_at: Generated<Date>;
-  created_at: CreatedAt;
-}
-
-export interface AppointmentMessagesTable {
-  id: Generated<string>;
-  business_id: string;
-  appointment_id: string;
-  kind: "ready" | "moved" | "canceled";
-  channel: Generated<"sms">;
-  to_address: string;
-  body: string;
-  status: Generated<"preview" | "queued" | "sent" | "failed">;
-  created_by: string | null;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-}
-
-export interface AppointmentAddonsTable {
-  id: Generated<string>;
-  business_id: string;
-  appointment_id: string;
-  service_id: string;
-  name: string;
-  price_cents: number;
-  minutes: number;
-  is_demo: Generated<boolean>;
   created_at: CreatedAt;
 }
 
@@ -641,7 +469,7 @@ export interface DemoSeedPartsTable {
 }
 
 export type TaxClass = "standard" | "exempt";
-export type MoveReason = "sale" | "receive" | "adjust" | "consume" | "return";
+export type MoveReason = "sale" | "receive" | "adjust" | "return";
 
 export interface DB {
   businesses: BusinessesTable;
@@ -672,15 +500,6 @@ export interface DB {
   refund_payments: RefundPaymentsTable;
   receipt_outbox: ReceiptOutboxTable;
   drawer_counts: DrawerCountsTable;
-  services: ServicesTable;
-  groomer_hours: GroomerHoursTable;
-  time_off: TimeOffTable;
-  appointments: AppointmentsTable;
-  appointment_addons: AppointmentAddonsTable;
-  service_supplies: ServiceSuppliesTable;
-  grooming_notes: GroomingNotesTable;
-  grooming_photos: GroomingPhotosTable;
-  appointment_messages: AppointmentMessagesTable;
   customer_login_codes: CustomerLoginCodesTable;
   customer_sessions: CustomerSessionsTable;
 }

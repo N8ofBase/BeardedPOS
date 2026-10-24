@@ -9,7 +9,6 @@ export interface NavItem {
 /** Sidebar order follows the prototype's tabs. Items a role can't use are hidden, not disabled. */
 export const NAV: NavItem[] = [
   { path: "/register", label: "Register", action: "register.use" },
-  { path: "/grooming", label: "Grooming", action: "grooming.view" },
   { path: "/inventory", label: "Inventory", action: "products.view" },
   { path: "/customers", label: "Customers", action: "customers.view" },
   { path: "/sales", label: "Sales", action: "sales.view" },

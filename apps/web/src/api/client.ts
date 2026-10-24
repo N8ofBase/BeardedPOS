@@ -28,7 +28,7 @@ export function createDemoApi(db: Kysely<DB>, ctx: Ctx): Api {
   };
 }
 
-/** The public booking page's back end: only the public handlers, as a signed-in customer or nobody. */
+/** The public pages' back end: only the public handlers, as a signed-in customer or nobody. */
 export interface PublicApi {
   call<N extends PublicName>(
     name: N,

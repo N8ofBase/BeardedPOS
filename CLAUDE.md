@@ -8,14 +8,14 @@ Point of sale, inventory, customers and pets, grooming calendar and online booki
 
 ## Stack
 
-- Front end: React + TypeScript (Vite), one app with staff routes and public booking routes. PWA for the counter tablet.
+- Front end: React + TypeScript (Vite), one app with staff routes and, later, public customer routes. PWA for the counter tablet.
 - Two run modes, same code:
   - **Demo mode (now):** handlers run in a Web Worker against PGlite (Postgres in the browser, saved to IndexedDB). Role picker instead of sign-in. Static site at `https://petpos-demo.prismcortex.net`.
   - **Hosted mode (Phase 1f, on hold):** API Gateway HTTP API + Lambda (Node.js 24) running the same handlers against RDS Postgres.
 - Handlers are plain functions `(ctx, input)` in `services/api/src/handlers`, sharing a data layer in `packages/core`. `ctx` carries business id, staff id and role.
 - Database: Postgres (PGlite in demo and tests, RDS in hosted). Migrations live in `packages/db/migrations`. Kysely for queries, no ORM.
-- Auth (hosted): Cognito user pool with groups `owner`, `manager`, `cashier`, `groomer` and a `business_id` claim. Customers sign in with a one-time code.
-- Payments: Square Terminal API (server-driven, Square Terminal device) at the counter, Square Payment Links (Checkout API) for booking deposits, Square webhooks into Lambda (verify the signature). Square Reader does not work from a web app; don't use it. Test in the Square Sandbox. Each business connects its own Square account via OAuth.
+- Auth (hosted): Cognito user pool with groups `owner`, `manager`, `cashier` and a `business_id` claim. Customers sign in with a one-time code.
+- Payments: Square Terminal API (server-driven, Square Terminal device) at the counter, Square Payment Links (Checkout API) for online orders, Square webhooks into Lambda (verify the signature). Square Reader does not work from a web app; don't use it. Test in the Square Sandbox. Each business connects its own Square account via OAuth.
 - Background work: EventBridge Scheduler (reminders), SQS (Astro sends, webhooks).
 - Infrastructure: AWS CDK in TypeScript, region `us-east-1`. Stacks: `DemoSite` (S3 + CloudFront + Route 53 record), later `PetPos-dev` and `PetPos-prod`. Never deploy to `prod` unless asked.
 - DNS: the `prismcortex.net` hosted zone already serves the PrismCortex website. Only add records; never change or delete existing ones. Clients will live at `<client>.pos.prismcortex.net`.
@@ -27,7 +27,6 @@ Point of sale, inventory, customers and pets, grooming calendar and online booki
 - Money is always integer cents. Never use floats for money.
 - Never store card numbers or card data. Square holds them; we store Square ids and amounts.
 - Phone numbers are stored normalized to 10 digits; format only for display. Customers match on phone, then email.
-- Appointments use a Postgres exclusion constraint on `(staff_id, tstzrange(starts_at, ends_at + buffer))` so a groomer can't be double-booked.
 - Every refund, void, price change and customer delete writes to `audit_log`. A customer-delete entry keeps id, name and counts only, no contact details.
 - Destructive actions (delete customer, remove demo data) need a typed "delete" confirmation in the UI.
 - Sample data is marked "(DEMO)" in names and has `is_demo = true`; the remove-demo-data action deletes only those rows.
@@ -37,7 +36,7 @@ Point of sale, inventory, customers and pets, grooming calendar and online booki
 ## Working style
 
 - One feature per session. Plan first (files, tables, endpoints), wait for approval, then build with tests.
-- Write tests for money math, tax, Astro punch logic, booking overlap, import matching and separation between businesses.
+- Write tests for money math, tax, Astro punch logic, import matching and separation between businesses.
 - Keep UI copy plain and specific, as in the prototype.
 
 ## Commands
@@ -66,10 +65,7 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - Refund amounts come only from `refundLine()` in `packages/core/src/refund.ts` (running totals of what was paid per line, paid units first). `refundPreview` and `refundSale` share `planRefund()`, so the screen shows exactly what happens.
 - The receipt text (printed, on screen, emailed, texted) is built once in `packages/core/src/receipt.ts`.
 - Day totals (Sales KPIs and end of day) come only from `moneyTotals()` in `services/api/src/handlers/totals.ts`. Imported orders (`sales.source = 'import'`) have no receipt number or payments and never count there; register queries filter `source = 'register'`.
-- Grooming prices and minutes come only from `quoteAppointment()` in `packages/core/src/grooming.ts`; `bookAppointment` reprices on the server. Status steps and who may take them are `nextSteps()` / `canStep()` there.
-- A groom on the register is a ticket line with `appointmentId` (no product). The server prices it from the appointment and marks the appointment done when the sale is paid. Back-bar supplies come off stock through `useSupplies()` / `returnSupplies()` in `services/api/src/handlers/supplies.ts`, once per groom.
-- Booking, moving and the call-out all check a slot with `checkSlot()` in `services/api/src/handlers/grooming.ts` (hours, time off and rabies are warnings; another booking is a clash). Texts to customers go to `appointment_messages` (preview in the demo); their wording is `appointmentText` in core.
-- Every PGlite instance takes `PGLITE_OPTIONS` (parsers plus the `btree_gist` extension the appointments exclusion constraint needs). A new `new PGlite()` without it can't run migration 014.
+- Every PGlite instance takes `PGLITE_OPTIONS` (the parsers). Use it for any new `new PGlite()`.
 - Shell edits: template backticks inside `node -e "..."` break in bash and PowerShell. Use the editor tools or a script file in the scratchpad.
-- Customer-facing calls go through `invokePublic` and the `publicHandlers` registry in `services/api/src/public/`, never `invoke`: the customer id comes from the session token, not the input. Open times come only from `openTimes()` / `pickGroomer()` in `packages/core/src/booking.ts`, and online bookings still go through `checkSlot()` and the exclusion constraint.
+- Customer-facing calls go through `invokePublic` and the `publicHandlers` registry in `services/api/src/public/`, never `invoke`: the customer id comes from the session token, not the input. Sign-in codes and sessions are in `public/account.ts`; the code rules are in `packages/core/src/signin.ts`.
 - New demo data: add a part to `ensureDemo` in `packages/db/seed/demo.ts` through `once(...)`, so existing demo browsers get it once.

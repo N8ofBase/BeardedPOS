@@ -217,7 +217,6 @@ function ProductTableRow({
       <td>
         <b>{p.name}</b>
         {!p.active && <span className="tag muted"> Archived</span>}
-        {p.backBar && <span className="tag muted"> Back-bar</span>}
         <span className="sub">{[p.brand, p.category].filter(Boolean).join(" · ")}</span>
       </td>
       <td>
@@ -228,7 +227,6 @@ function ProductTableRow({
       <td className="r num">{margin === null ? "—" : `${margin}%`}</td>
       <td className="r">
         <span className={`tag ${status}`}>{stockLabel(p.onHand, p.reorderAt)}</span>
-        {p.unit && p.unit !== "each" && <span className="muted small"> {p.unit}</span>}
       </td>
       {(canEdit || canAdjust) && (
         <td style={{ whiteSpace: "nowrap" }}>

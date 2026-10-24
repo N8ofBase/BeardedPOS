@@ -21,7 +21,6 @@ import { SlideOver } from "../ui/SlideOver.tsx";
 import { StoreMark } from "../ui/StoreMark.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { DiscountsSection } from "./settings/DiscountsSection.tsx";
-import { OnlineBookingSection } from "./settings/OnlineBookingSection.tsx";
 import { ImportPage } from "./settings/ImportPage.tsx";
 import { resizeLogo } from "./settings/logo.ts";
 
@@ -52,14 +51,6 @@ function Settings() {
       {settings.data && <StoreForm key={JSON.stringify(settings.data)} s={settings.data} canEdit={canEdit} />}
 
       <StaffSection />
-
-      {settings.data && (
-        <OnlineBookingSection
-          key={JSON.stringify(settings.data.booking)}
-          s={settings.data}
-          canEdit={canEdit}
-        />
-      )}
 
       {can(me.staff.role, "discounts.manage") && <DiscountsSection />}
 
@@ -99,8 +90,6 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     astroDiscountsBeforeTax: s.astroDiscountsBeforeTax,
     refundLimit: centsToInput(s.refundApprovalCents),
     drawerFloat: centsToInput(s.drawerFloatCents),
-    groomingTaxable: s.groomingTaxable,
-    textWhenReady: s.textWhenReady,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -246,25 +235,6 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
             Check the store's Astro agreement. When this is off, tax is charged on the price before the Astro
             discount.
           </p>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={f.groomingTaxable}
-              onChange={(e) => setF({ ...f, groomingTaxable: e.target.checked })}
-            />
-            Charge sales tax on grooming
-          </label>
-          <p className="muted small" style={{ margin: 0 }}>
-            Many states don't tax pet grooming; some do. Check your state's rules.
-          </p>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={f.textWhenReady}
-              onChange={(e) => setF({ ...f, textWhenReady: e.target.checked })}
-            />
-            Text customers when their pet is ready for pickup
-          </label>
         </fieldset>
 
         <div>
@@ -465,8 +435,6 @@ export function demoSummary(c: DemoCounts): string {
     c.programs ? plural(c.programs, "Astro program", "Astro programs") : "",
     c.punches ? plural(c.punches, "punch balance", "punch balances") : "",
     c.discounts ? plural(c.discounts, "discount", "discounts") : "",
-    c.services ? plural(c.services, "grooming service", "grooming services") : "",
-    c.appointments ? plural(c.appointments, "appointment", "appointments") : "",
   ].filter(Boolean);
   return new Intl.ListFormat("en-US").format(parts);
 }
@@ -478,12 +446,7 @@ export function DemoData() {
   const [confirming, setConfirming] = useState(false);
   const counts = useQuery({ queryKey: ["demo-counts"], queryFn: () => api.call("demoDataPreview") });
   const total = counts.data
-    ? counts.data.customers +
-      counts.data.products +
-      counts.data.programs +
-      counts.data.discounts +
-      counts.data.services +
-      counts.data.appointments
+    ? counts.data.customers + counts.data.products + counts.data.programs + counts.data.discounts
     : 0;
 
   return (

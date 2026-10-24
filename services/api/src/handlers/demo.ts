@@ -10,8 +10,6 @@ export interface DemoCounts {
   programs: number;
   punches: number;
   discounts: number;
-  services: number;
-  appointments: number;
 }
 
 async function counts(trx: Transaction<DB>): Promise<DemoCounts> {
@@ -35,21 +33,6 @@ async function counts(trx: Transaction<DB>): Promise<DemoCounts> {
         .select(sql<number>`count(*)::int`.as("n"))
         .where("is_demo", "=", true)
         .where("archived_at", "is", null)
-        .executeTakeFirstOrThrow()
-    ).n,
-    services: (
-      await trx
-        .selectFrom("services")
-        .select(sql<number>`count(*)::int`.as("n"))
-        .where("is_demo", "=", true)
-        .where("archived_at", "is", null)
-        .executeTakeFirstOrThrow()
-    ).n,
-    appointments: (
-      await trx
-        .selectFrom("appointments")
-        .select(sql<number>`count(*)::int`.as("n"))
-        .where("is_demo", "=", true)
         .executeTakeFirstOrThrow()
     ).n,
   };
@@ -90,8 +73,6 @@ export const removeDemoData = defineHandler<void, DemoCounts>({
         before: { name: c.name, pets: c.pets, via: "remove demo data" },
       });
 
-    // Sample appointments, services and groomer hours (the app role can't delete those directly).
-    await sql`SELECT remove_demo_grooming()`.execute(trx);
     // Children first where a sample row could sit under a user's record.
     await trx.deleteFrom("astro_punches").where("is_demo", "=", true).execute();
     await trx.deleteFrom("vaccinations").where("is_demo", "=", true).execute();

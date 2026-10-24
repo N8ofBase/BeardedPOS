@@ -23,8 +23,6 @@ interface Form {
   astroProgramId: string;
   offerLabel: string;
   offerAmount: string;
-  backBar: boolean;
-  unit: string;
 }
 
 const EMPTY: Form = {
@@ -41,8 +39,6 @@ const EMPTY: Form = {
   astroProgramId: "",
   offerLabel: "",
   offerAmount: "",
-  backBar: false,
-  unit: "",
 };
 
 function toForm(p: ProductRow): Form {
@@ -60,8 +56,6 @@ function toForm(p: ProductRow): Form {
     astroProgramId: p.astroProgramId ?? "",
     offerLabel: p.offerLabel ?? "",
     offerAmount: p.offerCents ? centsToInput(p.offerCents) : "",
-    backBar: p.backBar,
-    unit: p.unit ?? "",
   };
 }
 
@@ -90,8 +84,6 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
       astroProgramId: f.astroProgramId || null,
       offerLabel: f.offerLabel,
       offerCents: offer,
-      backBar: f.backBar,
-      unit: f.unit.trim() || null,
     },
   };
 }
@@ -302,20 +294,6 @@ function ProductForm({
             </select>
           </label>
         </div>
-        <div className="form" style={{ alignItems: "end" }}>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={f.backBar}
-              onChange={(e) => setF({ ...f, backBar: e.target.checked })}
-            />
-            Back-bar supply (used in grooming, not sold)
-          </label>
-          <label>
-            Counted in
-            <input value={f.unit} onChange={set("unit")} placeholder="each, oz, bottle" maxLength={12} />
-          </label>
-        </div>
         {product && (
           <p className="muted" style={{ fontSize: ".88rem" }}>
             On hand: {product.onHand}. Change stock with Receive or Count stock, so every change is recorded.
@@ -415,6 +393,5 @@ const REASON: Record<MoveRow["reason"], string> = {
   sale: "Sold",
   receive: "Received",
   adjust: "Adjusted",
-  consume: "Used in grooming",
   return: "Returned",
 };

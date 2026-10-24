@@ -9,7 +9,6 @@ let db: Kysely<DB>;
 let owner: Ctx;
 let manager: Ctx;
 let cashier: Ctx;
-let groomer: Ctx;
 
 const pat: CustomerInput = {
   name: "Pat Lee",
@@ -36,7 +35,6 @@ beforeEach(async () => {
   owner = ctx("owner");
   manager = ctx("manager");
   cashier = ctx("cashier");
-  groomer = ctx("groomer");
 });
 
 describe("demo seed", () => {
@@ -73,7 +71,7 @@ describe("demo seed after deletes", () => {
     await db.deleteFrom("demo_seed_parts").execute();
     await ensureDemo(db);
     expect(await invoke(db, owner, "searchCustomers", { q: "" })).toHaveLength(3);
-    expect(await invoke(db, owner, "listProducts", {})).toHaveLength(7);
+    expect(await invoke(db, owner, "listProducts", {})).toHaveLength(4);
   });
 });
 
@@ -83,7 +81,7 @@ describe("saveCustomer", () => {
       customer: pat,
       pets: [{ name: "Daisy", species: "dog", breed: "Corgi", birthday: "" }],
     });
-    const p = await invoke(db, groomer, "getCustomer", { id });
+    const p = await invoke(db, cashier, "getCustomer", { id });
     expect(p).toMatchObject({ phone: "2125550199", state: "IL", smsOptIn: true });
     expect(p.pets).toMatchObject([{ name: "Daisy", species: "dog", breed: "Corgi", birthday: null }]);
   });
@@ -156,12 +154,6 @@ describe("saveCustomer", () => {
         pets: [{ id: biscuit.id, name: "Biscuit", species: "dog", breed: "", birthday: "" }],
       }),
     ).rejects.toThrow(/isn't this customer's pet/);
-  });
-
-  it("is view-only for groomers", async () => {
-    await expect(invoke(db, groomer, "saveCustomer", { customer: pat, pets: [] })).rejects.toThrow(
-      /permission/,
-    );
   });
 });
 
@@ -237,7 +229,6 @@ describe("deleteCustomer", () => {
       petNames: ["Biscuit"],
       punchCards: 1,
       vaccinations: 2,
-      appointments: 1,
     });
 
     await invoke(db, manager, "deleteCustomer", { id: sample!.id });
@@ -255,7 +246,6 @@ describe("deleteCustomer", () => {
           pets: 1,
           punch_cards: 1,
           vaccinations: 2,
-          appointments_canceled: 1,
         },
         after: null,
         staff_id: manager.staffId,

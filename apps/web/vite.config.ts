@@ -33,7 +33,7 @@ export default defineConfig({
       manifest: {
         name: "Pet Store POS",
         short_name: "Pet POS",
-        description: "Register, inventory, customers and grooming for the store.",
+        description: "Register, inventory and customers for the store.",
         theme_color: "#0f6e5a",
         background_color: "#f3f5f4",
         display: "standalone",

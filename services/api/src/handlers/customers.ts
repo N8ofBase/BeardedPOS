@@ -16,7 +16,6 @@ import {
 import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { audit, likePattern } from "../shared.ts";
-import { cancelUpcomingFor, countUpcomingFor } from "./grooming.ts";
 
 export interface PetSummary {
   id: string;
@@ -405,8 +404,6 @@ export interface DeletePreview {
   petNames: string[];
   punchCards: number;
   vaccinations: number;
-  /** Upcoming appointments that deleting will cancel. */
-  appointments: number;
 }
 
 async function preview(trx: Transaction<DB>, id: string): Promise<DeletePreview> {
@@ -436,7 +433,6 @@ async function preview(trx: Transaction<DB>, id: string): Promise<DeletePreview>
     petNames: pets.map((p) => p.name),
     punchCards: cards.get(id)?.length ?? 0,
     vaccinations: vaccinations.length,
-    appointments: await countUpcomingFor(trx, id),
   };
 }
 
@@ -456,7 +452,6 @@ export const deleteCustomer = defineHandler<{ id: string }, void>({
   action: "customers.delete",
   async run(trx, ctx, { id }) {
     const p = await preview(trx, id);
-    await cancelUpcomingFor(trx, id);
     await trx.deleteFrom("customers").where("id", "=", id).execute();
     await audit(trx, ctx, {
       action: "customer.delete",
@@ -467,7 +462,6 @@ export const deleteCustomer = defineHandler<{ id: string }, void>({
         pets: p.petNames.length,
         punch_cards: p.punchCards,
         vaccinations: p.vaccinations,
-        appointments_canceled: p.appointments,
       },
     });
   },

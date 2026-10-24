@@ -12,10 +12,6 @@ export interface Me {
     logo: string | null;
     modules: Record<string, boolean>;
     astroDiscountsBeforeTax: boolean;
-    /** Charge sales tax on grooming. */
-    groomingTaxable: boolean;
-    /** Text customers when their pet is ready. */
-    textWhenReady: boolean;
   };
   /** taxRateMpct: thousandths of a percent (8.875% = 8875). */
   location: { id: string; name: string; taxRateMpct: number } | null;
@@ -36,16 +32,7 @@ export const me = defineHandler<void, Me>({
 
     const business = await trx
       .selectFrom("businesses")
-      .select([
-        "id",
-        "name",
-        "brand_color",
-        "logo_data",
-        "modules",
-        "astro_discounts_before_tax",
-        "grooming_taxable",
-        "text_when_ready",
-      ])
+      .select(["id", "name", "brand_color", "logo_data", "modules", "astro_discounts_before_tax"])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
     const location = await trx
@@ -63,8 +50,6 @@ export const me = defineHandler<void, Me>({
         logo: business.logo_data,
         modules: business.modules,
         astroDiscountsBeforeTax: business.astro_discounts_before_tax,
-        groomingTaxable: business.grooming_taxable,
-        textWhenReady: business.text_when_ready,
       },
       location: location
         ? { id: location.id, name: location.name, taxRateMpct: location.tax_rate_mpct }
@@ -138,7 +123,7 @@ export const addStaff = defineHandler<StaffInput, { id: string }>({
     try {
       const row = await trx
         .insertInto("staff")
-        .values({ ...values, business_id: ctx.businessId, grooms: values.role === "groomer" })
+        .values({ ...values, business_id: ctx.businessId })
         .returning("id")
         .executeTakeFirstOrThrow();
       return { id: row.id };

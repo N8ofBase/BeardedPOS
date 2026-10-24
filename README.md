@@ -13,15 +13,9 @@ Status: **Phases 1, 2 (except 2d, real Square) and 3 are done** in demo mode.
 
 - Phase 2c: end of day (drawer count by denomination, card total, over/short and deposit), past orders imported from the old system, and order history on the customer profile.
 
-- Phase 3a, grooming: the service menu by pet size, groomer hours and time off, a day calendar per groomer, booking with a quote and warnings (outside hours, time off, lapsed rabies), double-booking refused by the database, the status flow to ready for pickup, and a phone-friendly My day for groomers.
+- Customer sign-in with a one-time code (kept from Phase 4a, the pet store's online booking) for the coming online store.
 
-- Phase 3b: checking out a groom at the register next to retail items (grooming tax as a store setting), grooming notes with before/after photos and a grooming history per pet, and back-bar supplies used per service.
-
-- Phase 3c: a week view, drag to reschedule with Undo, moving a groomer's day when they call out, the ready-for-pickup text (previewed in the demo), and grooming revenue by groomer on the Sales page.
-
-- Phase 4a: an online booking page at `/book` (sign-in with a one-time code, pick a pet, service, groomer and open time, see, cancel or reschedule up to a cutoff), online bookings tagged on the staff calendar, and Online booking settings.
-
-The demo is live at https://petpos-demo.prismcortex.net (booking page: https://petpos-demo.prismcortex.net/book). Next: Phase 4b (deposits) and 4c (confirmations, reminders and rebook nudges).
+Grooming, online booking and the groomer role came from the pet store this started as and have been removed for the board game shop. They're in the git history before this change if they're ever needed.
 
 ## Run it
 

@@ -62,14 +62,6 @@ describe("Customers", () => {
     expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
   });
 
-  it("is view-only for a groomer", async () => {
-    renderAs("groomer", <CustomersRoutes />, { searchCustomers: [card] });
-    expect(await screen.findByText("Sample Customer (DEMO)")).toBeTruthy();
-    for (const name of ["New customer", "Edit", "Delete"])
-      expect(screen.queryByRole("button", { name })).toBeNull();
-    expect(screen.getByRole("link", { name: "Profile" })).toBeTruthy();
-  });
-
   it("lets a manager delete", async () => {
     renderAs("manager", <CustomersRoutes />, { searchCustomers: [card] });
     expect(await screen.findByRole("button", { name: "Delete" })).toBeTruthy();

@@ -42,8 +42,6 @@ CREATE TABLE inventory_levels (
   product_id       uuid NOT NULL,
   location_id      uuid NOT NULL,
   on_hand          integer NOT NULL DEFAULT 0,
-  -- Grooming supplies moved to the back bar (used, not sold). Phase 3 uses it.
-  back_bar_on_hand integer NOT NULL DEFAULT 0,
   created_at       timestamptz NOT NULL DEFAULT now(),
   updated_at       timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (product_id, location_id),
@@ -64,7 +62,7 @@ CREATE TABLE inventory_moves (
   product_id  uuid NOT NULL,
   location_id uuid NOT NULL,
   qty_change  integer NOT NULL CHECK (qty_change <> 0),
-  reason      text NOT NULL CHECK (reason IN ('sale', 'receive', 'adjust', 'consume', 'return')),
+  reason      text NOT NULL CHECK (reason IN ('sale', 'receive', 'adjust', 'return')),
   ref_id      uuid,
   staff_id    uuid REFERENCES staff (id) ON DELETE SET NULL,
   note        text,
