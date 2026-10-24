@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router";
 import { can, formatMoney, REFUND_REASON_LABEL, todayIso } from "@pet-pos/core";
-import type { GroomerTotals, SaleListRow } from "@pet-pos/api";
+import type { SaleListRow } from "@pet-pos/api";
 import { useSession } from "../session.tsx";
 import { errorMessage } from "../ui/errors.ts";
 import { SlideOver } from "../ui/SlideOver.tsx";
@@ -117,7 +117,6 @@ export function SalesPage() {
           <Kpi label="Astro discounts" value={formatMoney(list.data.astroDiscountCents)} />
         </div>
       )}
-      {list.data && <GroomingTable grooming={list.data.grooming} noShows={list.data.noShows} />}
       <div className="tablewrap">
         <table className="wide">
           <thead>
@@ -238,64 +237,5 @@ function Kpi({ label, value }: { label: string; value: string }) {
       <span className="muted">{label}</span>
       <b className="num">{value}</b>
     </div>
-  );
-}
-
-/** Grooming sales by groomer for the day: part of the total above, broken down. */
-export function GroomingTable({ grooming, noShows }: { grooming: GroomerTotals[]; noShows: number }) {
-  if (!grooming.length && !noShows) return null;
-  const total = grooming.reduce(
-    (s, g) => ({
-      grooms: s.grooms + g.grooms,
-      sales: s.sales + g.salesCents,
-      refunds: s.refunds + g.refundCents,
-    }),
-    { grooms: 0, sales: 0, refunds: 0 },
-  );
-  return (
-    <section style={{ display: "grid", gap: 6 }} aria-label="Grooming by groomer">
-      <h2 style={{ margin: 0 }}>Grooming</h2>
-      <div className="tablewrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Groomer</th>
-              <th className="r">Grooms paid</th>
-              <th className="r">Grooming sales</th>
-              <th className="r">Average groom</th>
-              <th className="r">Refunds</th>
-            </tr>
-          </thead>
-          <tbody>
-            {grooming.map((g) => (
-              <tr key={g.staffId}>
-                <td>{g.name}</td>
-                <td className="r num">{g.grooms}</td>
-                <td className="r num">{formatMoney(g.salesCents)}</td>
-                <td className="r num">{g.grooms ? formatMoney(Math.round(g.salesCents / g.grooms)) : "—"}</td>
-                <td className="r num">{g.refundCents ? `−${formatMoney(g.refundCents)}` : "—"}</td>
-              </tr>
-            ))}
-            {grooming.length > 1 && (
-              <tr>
-                <td>
-                  <b>Total</b>
-                </td>
-                <td className="r num">{total.grooms}</td>
-                <td className="r num">{formatMoney(total.sales)}</td>
-                <td className="r num">
-                  {total.grooms ? formatMoney(Math.round(total.sales / total.grooms)) : "—"}
-                </td>
-                <td className="r num">{total.refunds ? `−${formatMoney(total.refunds)}` : "—"}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      <p className="muted small" style={{ margin: 0 }}>
-        Grooming sales are after discounts, before tax, and already part of the day's total.
-        {noShows ? ` ${noShows} no-show${noShows === 1 ? "" : "s"} on this day.` : ""}
-      </p>
-    </section>
   );
 }

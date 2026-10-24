@@ -10,7 +10,6 @@ let db: Kysely<DB>;
 let owner: Ctx;
 let manager: Ctx;
 let cashier: Ctx;
-let groomer: Ctx;
 let sku: Record<string, { id: string; onHand: number; priceCents: number }>;
 let sampleCustomer: string;
 let club: string;
@@ -27,7 +26,6 @@ beforeEach(async () => {
   owner = ctx("owner");
   manager = ctx("manager");
   cashier = ctx("cashier");
-  groomer = ctx("groomer");
   const products = await invoke(db, owner, "listProducts", {});
   sku = Object.fromEntries(products.map((p) => [p.sku, p]));
   sampleCustomer = (await invoke(db, owner, "lookupByPhone", { phone: "2125550100" }))!.id;
@@ -96,10 +94,6 @@ describe("startCheckout", () => {
     await expect(
       invoke(db, cashier, "startCheckout", ticket({ customerId: sampleCustomer, rewards: [club] })),
     ).rejects.toThrow(/card isn't full yet \(11 of 12\)/);
-  });
-
-  it("isn't for groomers", async () => {
-    await expect(invoke(db, groomer, "startCheckout", ticket())).rejects.toThrow(/permission/);
   });
 });
 

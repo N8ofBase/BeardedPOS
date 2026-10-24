@@ -23,12 +23,8 @@ describe("demo data", () => {
         programs: 1,
         punches: 2,
         discounts: 0,
-        services: 3,
-        appointments: 1,
       }),
-    ).toBe(
-      "3 customers (5 pets), 4 products, 1 Astro program, 2 punch balances, 3 grooming services, and 1 appointment",
-    );
+    ).toBe("3 customers (5 pets), 4 products, 1 Astro program, and 2 punch balances");
     expect(
       demoSummary({
         customers: 1,
@@ -37,8 +33,6 @@ describe("demo data", () => {
         programs: 0,
         punches: 0,
         discounts: 0,
-        services: 0,
-        appointments: 0,
       }),
     ).toBe("1 customer");
   });
@@ -62,8 +56,6 @@ describe("demo data", () => {
         programs: 1,
         punches: 2,
         discounts: 0,
-        services: 3,
-        appointments: 3,
       },
     });
     expect(await screen.findByText(/3 customers \(5 pets\)/)).toBeTruthy();

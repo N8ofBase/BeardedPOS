@@ -24,8 +24,6 @@ const food: ProductRow = {
   offerLabel: "$5 off 24 lb bag",
   offerCents: 500,
   active: true,
-  backBar: false,
-  unit: null,
 };
 
 describe("Inventory", () => {

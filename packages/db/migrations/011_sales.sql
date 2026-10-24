@@ -99,7 +99,6 @@ CREATE TABLE sale_lines (
   sale_id           uuid NOT NULL,
   position          integer NOT NULL,
   product_id        uuid,
-  appointment_id    uuid,
   name              text NOT NULL,
   sku               text,
   barcode           text,

@@ -41,7 +41,7 @@ export function vaccineStatus(expiresOn: string, today: string = todayIso()): Va
   return "ok";
 }
 
-/** The spec blocks booking once rabies has lapsed (Phase 3); screens warn about it now. */
+/** True when the pet's rabies vaccination has lapsed; screens warn about it. */
 export function rabiesLapsed(
   vaccinations: { vaccine: string; expiresOn: string }[],
   today: string = todayIso(),

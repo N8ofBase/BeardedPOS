@@ -9,7 +9,6 @@ let db: Kysely<DB>;
 let owner: Ctx;
 let manager: Ctx;
 let cashier: Ctx;
-let groomer: Ctx;
 
 const product: ProductInput = {
   sku: "B-100",
@@ -38,7 +37,6 @@ beforeEach(async () => {
   owner = ctx("owner");
   manager = ctx("manager");
   cashier = ctx("cashier");
-  groomer = ctx("groomer");
 });
 
 async function auditRows() {
@@ -54,10 +52,7 @@ describe("demo seed", () => {
       ["0002", 4],
       ["0004", 0],
       ["0001", 14],
-      ["BB-03", 4],
-      ["BB-02", 64],
       ["0003", 30],
-      ["BB-01", 128],
     ]);
     expect(rows.find((r) => r.sku === "0001")).toMatchObject({
       astroProgramName: "Sample dry food club (DEMO)",
@@ -68,7 +63,7 @@ describe("demo seed", () => {
 
   it("is safe to run again", async () => {
     await ensureDemo(db);
-    expect(await invoke(db, owner, "listProducts", {})).toHaveLength(7);
+    expect(await invoke(db, owner, "listProducts", {})).toHaveLength(4);
   });
 });
 
@@ -117,9 +112,8 @@ describe("saveProduct", () => {
     });
   });
 
-  it("isn't allowed for cashiers or groomers", async () => {
+  it("isn't allowed for cashiers", async () => {
     await expect(invoke(db, cashier, "saveProduct", product)).rejects.toThrow(/permission/);
-    await expect(invoke(db, groomer, "listProducts", {})).rejects.toThrow(/permission/);
   });
 });
 

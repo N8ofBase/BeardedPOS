@@ -1,4 +1,4 @@
-// Handlers the public booking page can reach. They're a separate, small set: the
+// Handlers the public pages can reach. They're a separate, small set: the
 // staff registry is never reachable from here, and every handler that needs a
 // customer gets one only from a valid session token.
 import type { Transaction } from "kysely";

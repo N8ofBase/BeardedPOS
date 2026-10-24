@@ -20,8 +20,6 @@ export function meFor(role: Role): Me {
       logo: null,
       modules: {},
       astroDiscountsBeforeTax: true,
-      groomingTaxable: false,
-      textWhenReady: true,
     },
     location: { id: "l1", name: "Main store (DEMO)", taxRateMpct: 7000 },
   };

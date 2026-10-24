@@ -11,15 +11,6 @@ export interface TicketLineState {
   applyOffer: boolean;
 }
 
-/** A groom on the ticket: the appointment's booked price, quantity 1. */
-export interface GroomLineState {
-  key: string;
-  appointmentId: string;
-  /** "Full groom + Teeth brushing · Biscuit" */
-  name: string;
-  priceCents: number;
-}
-
 export interface TicketDiscountState {
   discount: DiscountRow;
   lineKey: string | null;
@@ -29,18 +20,17 @@ export interface TicketDiscountState {
 }
 
 export interface Ticket {
-  grooms: GroomLineState[];
   lines: TicketLineState[];
   customer: RegisterCustomer | null;
   rewards: string[];
   discounts: TicketDiscountState[];
 }
 
-export const EMPTY_TICKET: Ticket = { grooms: [], lines: [], customer: null, rewards: [], discounts: [] };
+export const EMPTY_TICKET: Ticket = { lines: [], customer: null, rewards: [], discounts: [] };
 
 /** True when nothing is on the ticket to pay for. */
 export function isEmpty(t: Ticket): boolean {
-  return !t.lines.length && !t.grooms.length;
+  return !t.lines.length;
 }
 
 let seq = 0;
@@ -55,20 +45,6 @@ export function addProduct(t: Ticket, product: ProductRow, qty = 1): Ticket {
       lines: t.lines.map((l) => (l === existing ? { ...l, qty: Math.min(9999, l.qty + qty), product } : l)),
     };
   return { ...t, lines: [...t.lines, { key: newKey(), product, qty, applyOffer: false }] };
-}
-
-/** Adds a groom once. */
-export function addGroom(t: Ticket, g: Omit<GroomLineState, "key">): Ticket {
-  if (t.grooms.some((x) => x.appointmentId === g.appointmentId)) return t;
-  return { ...t, grooms: [...t.grooms, { ...g, key: `groom-${g.appointmentId}` }] };
-}
-
-export function removeGroom(t: Ticket, key: string): Ticket {
-  return {
-    ...t,
-    grooms: t.grooms.filter((g) => g.key !== key),
-    discounts: t.discounts.filter((d) => d.lineKey !== key),
-  };
 }
 
 export function setQty(t: Ticket, key: string, qty: number): Ticket {
@@ -109,15 +85,12 @@ export function removeDiscount(t: Ticket, index: number): Ticket {
 export function toInput(t: Ticket): TicketInput {
   return {
     customerId: t.customer?.card.id ?? null,
-    lines: [
-      ...t.grooms.map((g) => ({ key: g.key, appointmentId: g.appointmentId, qty: 1, applyOffer: false })),
-      ...t.lines.map((l) => ({
-        key: l.key,
-        productId: l.product.id,
-        qty: l.qty,
-        applyOffer: l.applyOffer,
-      })),
-    ],
+    lines: t.lines.map((l) => ({
+      key: l.key,
+      productId: l.product.id,
+      qty: l.qty,
+      applyOffer: l.applyOffer,
+    })),
     rewards: t.rewards,
     discounts: t.discounts.map((d) => ({
       discountId: d.discount.id,
@@ -128,35 +101,21 @@ export function toInput(t: Ticket): TicketInput {
   };
 }
 
-function ticketLines(t: Ticket, groomingTaxable: boolean): TicketLine[] {
-  const grooms: TicketLine[] = t.grooms.map((g) => ({
-    key: g.key,
-    productId: null,
-    name: g.name,
-    unitPriceCents: g.priceCents,
-    qty: 1,
-    taxClass: groomingTaxable ? "standard" : "exempt",
-    astroProgramId: null,
-    offer: null,
-    applyOffer: false,
+function ticketLines(t: Ticket): TicketLine[] {
+  return t.lines.map((l): TicketLine => ({
+    key: l.key,
+    productId: l.product.id,
+    name: l.product.name,
+    unitPriceCents: l.product.priceCents,
+    qty: l.qty,
+    taxClass: l.product.taxClass,
+    astroProgramId: l.product.astroProgramId,
+    offer:
+      l.product.offerLabel && l.product.offerCents
+        ? { label: l.product.offerLabel, cents: l.product.offerCents }
+        : null,
+    applyOffer: l.applyOffer && !!l.product.offerCents,
   }));
-  return [
-    ...grooms,
-    ...t.lines.map((l): TicketLine => ({
-      key: l.key,
-      productId: l.product.id,
-      name: l.product.name,
-      unitPriceCents: l.product.priceCents,
-      qty: l.qty,
-      taxClass: l.product.taxClass,
-      astroProgramId: l.product.astroProgramId,
-      offer:
-        l.product.offerLabel && l.product.offerCents
-          ? { label: l.product.offerLabel, cents: l.product.offerCents }
-          : null,
-      applyOffer: l.applyOffer && !!l.product.offerCents,
-    })),
-  ];
 }
 
 export interface TicketPrice {
@@ -166,16 +125,11 @@ export interface TicketPrice {
 }
 
 /** Prices the ticket for the screen. Program names come from the customer's punch cards. */
-export function priceTicket(
-  t: Ticket,
-  taxRateMpct: number,
-  astroBeforeTax: boolean,
-  groomingTaxable = false,
-): TicketPrice {
+export function priceTicket(t: Ticket, taxRateMpct: number, astroBeforeTax: boolean): TicketPrice {
   try {
     const cards = t.customer?.card.punchCards ?? [];
     const priced = priceSale({
-      lines: ticketLines(t, groomingTaxable),
+      lines: ticketLines(t),
       storeDiscounts: t.discounts.map((d) => ({
         rule: d.discount,
         lineKey: d.discount.scope === "line" ? d.lineKey : null,

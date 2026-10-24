@@ -1,4 +1,4 @@
-import { AppError, isHexColor, normalizePhone, parseTaxPercent } from "@pet-pos/core";
+import { AppError, isHexColor, parseTaxPercent } from "@pet-pos/core";
 import { defineHandler } from "../handler.ts";
 import { audit } from "../shared.ts";
 
@@ -15,23 +15,6 @@ export interface StoreSettings {
   refundApprovalCents: number;
   /** Starting cash left in the drawer each morning. */
   drawerFloatCents: number;
-  /** Charge sales tax on grooming. */
-  groomingTaxable: boolean;
-  /** Text customers when their pet is ready for pickup. */
-  textWhenReady: boolean;
-  booking: BookingSettings;
-}
-
-/** Online booking (Phase 4a). */
-export interface BookingSettings {
-  enabled: boolean;
-  daysAhead: number;
-  noticeMinutes: number;
-  cutoffHours: number;
-  stepMinutes: 15 | 30 | 60;
-  message: string | null;
-  /** 10 digits, shown to customers. */
-  phone: string | null;
 }
 
 /** Largest logo data URL accepted (the browser resizes to 256 px first). */
@@ -49,15 +32,6 @@ export const getSettings = defineHandler<void, StoreSettings>({
         "astro_discounts_before_tax",
         "refund_approval_cents",
         "drawer_float_cents",
-        "grooming_taxable",
-        "text_when_ready",
-        "booking_enabled",
-        "booking_days_ahead",
-        "booking_notice_minutes",
-        "booking_cutoff_hours",
-        "booking_step_minutes",
-        "booking_message",
-        "public_phone",
       ])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
@@ -77,17 +51,6 @@ export const getSettings = defineHandler<void, StoreSettings>({
       astroDiscountsBeforeTax: b.astro_discounts_before_tax,
       refundApprovalCents: b.refund_approval_cents,
       drawerFloatCents: b.drawer_float_cents,
-      groomingTaxable: b.grooming_taxable,
-      textWhenReady: b.text_when_ready,
-      booking: {
-        enabled: b.booking_enabled,
-        daysAhead: b.booking_days_ahead,
-        noticeMinutes: b.booking_notice_minutes,
-        cutoffHours: b.booking_cutoff_hours,
-        stepMinutes: b.booking_step_minutes as 15 | 30 | 60,
-        message: b.booking_message,
-        phone: b.public_phone,
-      },
     };
   },
 });
@@ -105,12 +68,6 @@ export interface SettingsInput {
   refundApprovalCents?: number;
   /** Left out: unchanged. */
   drawerFloatCents?: number;
-  /** Left out: unchanged. */
-  groomingTaxable?: boolean;
-  /** Left out: unchanged. */
-  textWhenReady?: boolean;
-  /** Left out: unchanged. The phone can be typed in any format. */
-  booking?: Omit<BookingSettings, "phone"> & { phone: string | null };
 }
 
 export const updateSettings = defineHandler<SettingsInput, void>({
@@ -136,23 +93,6 @@ export const updateSettings = defineHandler<SettingsInput, void>({
     const float = input.drawerFloatCents;
     if (float !== undefined && (!Number.isSafeInteger(float) || float < 0 || float > 10_000_000))
       errors.drawerFloatCents = "Enter the starting cash in dollars, like 100.00.";
-    const bk = input.booking;
-    let phone: string | null = null;
-    if (bk) {
-      const n = (v: unknown, lo: number, hi: number) =>
-        typeof v === "number" && Number.isInteger(v) && v >= lo && v <= hi;
-      if (!n(bk.daysAhead, 1, 180)) errors.bookingDaysAhead = "Booking ahead must be 1 to 180 days.";
-      if (!n(bk.noticeMinutes, 0, 10080)) errors.bookingNotice = "Minimum notice must be 0 to 168 hours.";
-      if (!n(bk.cutoffHours, 0, 336)) errors.bookingCutoff = "The cancel cutoff must be 0 to 336 hours.";
-      if (![15, 30, 60].includes(bk.stepMinutes))
-        errors.bookingStep = "Offer times every 15, 30 or 60 minutes.";
-      if (bk.message && bk.message.length > 500)
-        errors.bookingMessage = "Keep the welcome message under 500 characters.";
-      if (bk.phone?.trim()) {
-        phone = normalizePhone(bk.phone);
-        if (!phone) errors.publicPhone = "Enter the store's 10-digit phone number.";
-      }
-    }
     const first = Object.values(errors)[0];
     if (first) throw new AppError("invalid", first, errors);
 
@@ -166,19 +106,6 @@ export const updateSettings = defineHandler<SettingsInput, void>({
       .set({
         ...(limit !== undefined ? { refund_approval_cents: limit } : {}),
         ...(float !== undefined ? { drawer_float_cents: float } : {}),
-        ...(input.groomingTaxable !== undefined ? { grooming_taxable: input.groomingTaxable } : {}),
-        ...(input.textWhenReady !== undefined ? { text_when_ready: input.textWhenReady } : {}),
-        ...(bk
-          ? {
-              booking_enabled: bk.enabled,
-              booking_days_ahead: bk.daysAhead,
-              booking_notice_minutes: bk.noticeMinutes,
-              booking_cutoff_hours: bk.cutoffHours,
-              booking_step_minutes: bk.stepMinutes,
-              booking_message: bk.message?.trim() || null,
-              public_phone: phone,
-            }
-          : {}),
         name,
         brand_color: input.brandColor,
         logo_data: input.logo,

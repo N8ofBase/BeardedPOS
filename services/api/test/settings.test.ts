@@ -113,8 +113,6 @@ describe("staff", () => {
       "Sample Owner (DEMO)",
       "Sample Manager (DEMO)",
       "Sample Cashier (DEMO)",
-      "Sample Groomer (DEMO)",
-      "Sample Groomer B (DEMO)",
       "Pat Lee",
     ]);
   });
@@ -208,12 +206,10 @@ describe("remove demo data", () => {
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
       customers: 3,
       pets: 5,
-      products: 7,
+      products: 4,
       programs: 1,
       punches: 2,
       discounts: 4,
-      services: 3,
-      appointments: 4,
     });
     await invoke(db, owner, "removeDemoData", undefined);
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
@@ -223,8 +219,6 @@ describe("remove demo data", () => {
       programs: 0,
       punches: 0,
       discounts: 0,
-      services: 0,
-      appointments: 0,
     });
 
     expect(
@@ -239,7 +233,7 @@ describe("remove demo data", () => {
     await ensureDemo(db);
     expect(await invoke(db, owner, "searchCustomers", { q: "" })).toHaveLength(1);
     expect((await invoke(db, owner, "me", undefined)).staff.name).toBe("Sample Owner (DEMO)");
-    expect(await listDemoStaff(db)).toHaveLength(5);
+    expect(await listDemoStaff(db)).toHaveLength(3);
 
     expect(await auditActions("customer.delete")).toHaveLength(3);
     expect(await auditActions("demo.remove")).toEqual([
@@ -249,12 +243,10 @@ describe("remove demo data", () => {
         after: {
           customers: 3,
           pets: 5,
-          products: 7,
+          products: 4,
           programs: 1,
           punches: 2,
           discounts: 4,
-          services: 3,
-          appointments: 4,
         },
       },
     ]);

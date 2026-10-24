@@ -6,7 +6,7 @@ CREATE TABLE staff (
   business_id uuid NOT NULL REFERENCES businesses (id) ON DELETE CASCADE,
   name        text NOT NULL CHECK (length(trim(name)) > 0),
   email       text,
-  role        text NOT NULL CHECK (role IN ('owner', 'manager', 'cashier', 'groomer')),
+  role        text NOT NULL CHECK (role IN ('owner', 'manager', 'cashier')),
   cognito_sub text UNIQUE,
   active      boolean NOT NULL DEFAULT true,
   is_demo     boolean NOT NULL DEFAULT false,

@@ -33,37 +33,6 @@ import {
 } from "./handlers/import.ts";
 import { demoDataPreview, removeDemoData } from "./handlers/demo.ts";
 import { drawerSummary, listDrawerCounts, saveDrawerCount } from "./handlers/drawer.ts";
-import {
-  addTimeOff,
-  archiveService,
-  bookAppointment,
-  cancelAppointment,
-  checkAppointment,
-  customerAppointments,
-  groomingDay,
-  listGroomers,
-  listServices,
-  removeTimeOff,
-  saveGroomer,
-  saveService,
-  setAppointmentStatus,
-  updateAppointment,
-  appointmentMessages,
-  applyCallout,
-  calloutPreview,
-  groomingWeek,
-  moveAppointment,
-  textAppointment,
-} from "./handlers/grooming.ts";
-import {
-  addGroomingNote,
-  appointmentNotes,
-  deleteGroomingNote,
-  groomsToCheckOut,
-  listServiceSupplies,
-  petGroomingHistory,
-  saveServiceSupplies,
-} from "./handlers/groomingHistory.ts";
 import { customerHistory } from "./handlers/history.ts";
 import { deleteDiscount, listDiscounts, saveDiscount } from "./handlers/discounts.ts";
 import {
@@ -135,33 +104,6 @@ export const handlers = {
   saveDrawerCount,
   listDrawerCounts,
   customerHistory,
-  listServices,
-  saveService,
-  archiveService,
-  listGroomers,
-  saveGroomer,
-  addTimeOff,
-  removeTimeOff,
-  groomingDay,
-  checkAppointment,
-  bookAppointment,
-  updateAppointment,
-  setAppointmentStatus,
-  cancelAppointment,
-  customerAppointments,
-  addGroomingNote,
-  deleteGroomingNote,
-  appointmentNotes,
-  petGroomingHistory,
-  listServiceSupplies,
-  saveServiceSupplies,
-  groomsToCheckOut,
-  groomingWeek,
-  moveAppointment,
-  textAppointment,
-  appointmentMessages,
-  calloutPreview,
-  applyCallout,
 };
 
 export type Handlers = typeof handlers;

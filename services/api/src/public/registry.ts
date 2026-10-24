@@ -1,33 +1,16 @@
 import type { Kysely } from "kysely";
 import { AppError } from "@pet-pos/core";
 import { withBusiness, type DB } from "@pet-pos/db";
-import {
-  bookingPage,
-  bookOnline,
-  cancelMine,
-  customerForToken,
-  myAccount,
-  openTimesFor,
-  requestCode,
-  rescheduleMine,
-  savePet,
-  signOut,
-  verifyCode,
-} from "./booking.ts";
+import { customerForToken, myAccount, requestCode, signOut, storeInfo, verifyCode } from "./account.ts";
 import type { PublicHandler } from "./handler.ts";
 
-/** Everything the public booking page can call. Nothing from the staff registry is here. */
+/** Everything the public pages can call. Nothing from the staff registry is here. */
 export const publicHandlers = {
-  bookingPage,
+  storeInfo,
   requestCode,
   verifyCode,
   signOut,
   myAccount,
-  savePet,
-  openTimes: openTimesFor,
-  bookOnline,
-  cancelMine,
-  rescheduleMine,
 };
 
 export type PublicHandlers = typeof publicHandlers;

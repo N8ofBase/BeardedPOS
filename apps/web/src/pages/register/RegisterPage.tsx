@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import {
   can,
   CATEGORIES,
@@ -21,11 +21,9 @@ import { PaymentPanel, type PayMode } from "./PaymentPanel.tsx";
 import { ReceiptSend } from "../sales/ReceiptSend.tsx";
 import { ReceiptView } from "./ReceiptView.tsx";
 import {
-  addGroom,
   addProduct,
   EMPTY_TICKET,
   isEmpty,
-  removeGroom,
   loadTicket,
   priceTicket,
   removeDiscount,
@@ -60,47 +58,9 @@ export function RegisterPage() {
 
   useEffect(() => saveTicket(me.staff.id, ticket), [ticket, me.staff.id]);
 
-  // "Check out at register" on an appointment: attach the customer and put the groom on the ticket.
-  const location = useLocation();
-  const incoming = (location.state as { groom?: { appointmentId: string; customerId: string } } | null)
-    ?.groom;
-  useEffect(() => {
-    if (!incoming) return;
-    navigate(".", { replace: true, state: null });
-    void (async () => {
-      try {
-        const current = loadTicket(me.staff.id);
-        if (current.customer && current.customer.card.id !== incoming.customerId && !isEmpty(current))
-          return toast("The register has another customer's ticket open. Finish or clear it first.");
-        const [customer, grooms] = await Promise.all([
-          api.call("registerCustomer", { id: incoming.customerId }),
-          api.call("groomsToCheckOut", { customerId: incoming.customerId }),
-        ]);
-        const g = grooms.find((x) => x.appointmentId === incoming.appointmentId);
-        if (!g) return toast("That groom is already paid or isn't today's.");
-        const base =
-          current.customer?.card.id === incoming.customerId
-            ? current
-            : { ...current, rewards: [], grooms: [] };
-        setTicket(
-          addGroom(
-            { ...base, customer },
-            { appointmentId: g.appointmentId, name: `${g.label} · ${g.petName}`, priceCents: g.priceCents },
-          ),
-        );
-        toast("Groom added to the ticket. Add any retail items, then take payment.");
-      } catch (err) {
-        toast(errorMessage(err));
-      }
-    })();
-    // Runs once per hand-off from the grooming screen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incoming?.appointmentId]);
-
   const products = useQuery({
     queryKey: ["products", "register", q.trim(), category],
-    queryFn: () =>
-      api.call("listProducts", { q: q.trim() || undefined, category: category || undefined, forSale: true }),
+    queryFn: () => api.call("listProducts", { q: q.trim() || undefined, category: category || undefined }),
     placeholderData: (prev) => prev,
   });
   const discounts = useQuery({
@@ -109,14 +69,8 @@ export function RegisterPage() {
   });
 
   const price = useMemo(
-    () =>
-      priceTicket(
-        ticket,
-        me.location?.taxRateMpct ?? 0,
-        me.business.astroDiscountsBeforeTax,
-        me.business.groomingTaxable,
-      ),
-    [ticket, me.location?.taxRateMpct, me.business.astroDiscountsBeforeTax, me.business.groomingTaxable],
+    () => priceTicket(ticket, me.location?.taxRateMpct ?? 0, me.business.astroDiscountsBeforeTax),
+    [ticket, me.location?.taxRateMpct, me.business.astroDiscountsBeforeTax],
   );
 
   /** Applies a change only if the ticket can still be priced; otherwise says why. */
@@ -148,7 +102,7 @@ export function RegisterPage() {
     const c = code.trim();
     if (!c) return;
     try {
-      const p = await api.call("findByCode", { code: c, forSale: true });
+      const p = await api.call("findByCode", { code: c });
       if (p) {
         add(p);
         setQ("");
@@ -208,15 +162,7 @@ export function RegisterPage() {
   function finish(saleId: string, changeCents: number) {
     setTicket(EMPTY_TICKET);
     setStage({ kind: "done", saleId, changeCents });
-    for (const key of [
-      "products",
-      "product",
-      "customers",
-      "customer",
-      "sales",
-      "groomingDay",
-      "groomsToCheckOut",
-    ])
+    for (const key of ["products", "product", "customers", "customer", "sales"])
       void qc.invalidateQueries({ queryKey: [key] });
   }
 
@@ -389,7 +335,6 @@ export function RegisterPage() {
                     next,
                     me.location?.taxRateMpct ?? 0,
                     me.business.astroDiscountsBeforeTax,
-                    me.business.groomingTaxable,
                   );
                   if (p.problem) return toast(p.problem);
                   setTicket(next);
@@ -444,36 +389,12 @@ function TicketView({
     <>
       <CustomerBox
         customer={ticket.customer}
-        onAttach={(c) => onTicket({ ...ticket, customer: c, rewards: [], grooms: [] })}
-        onDrop={() => onTicket({ ...ticket, customer: null, rewards: [], grooms: [] })}
+        onAttach={(c) => onTicket({ ...ticket, customer: c, rewards: [] })}
+        onDrop={() => onTicket({ ...ticket, customer: null, rewards: [] })}
         onAddProduct={(prod) => onTicket(addProduct(ticket, prod))}
-        groomsOnTicket={ticket.grooms.map((g) => g.appointmentId)}
-        onAddGroom={(g) => onTicket(addGroom(ticket, g))}
       />
 
       <div className="lines">
-        {ticket.grooms.map((g) => {
-          const pl = p?.lines.find((x) => x.key === g.key);
-          return (
-            <div className="line" key={g.key}>
-              <span>
-                <b>{g.name}</b>
-                <span className="sub">Grooming</span>
-                {lineDiscounts(g.key).map((d, i) => (
-                  <span key={i} className={`sub ${d.source === "store" ? "store-disc" : "disc"}`}>
-                    {d.name} −{formatMoney(d.amountCents)}
-                  </span>
-                ))}
-              </span>
-              <span style={{ display: "grid", justifyItems: "end", gap: 4 }}>
-                <b className="num">{formatMoney(pl?.grossCents ?? g.priceCents)}</b>
-                <button type="button" className="link" onClick={() => onTicket(removeGroom(ticket, g.key))}>
-                  Remove
-                </button>
-              </span>
-            </div>
-          );
-        })}
         {ticket.lines.map((l) => {
           const pl = p?.lines.find((x) => x.key === l.key);
           return (

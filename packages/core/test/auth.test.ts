@@ -21,9 +21,7 @@ describe("permissions", () => {
     expect(can("cashier", "customers.edit")).toBe(true);
     expect(can("cashier", "products.edit")).toBe(false);
     expect(can("cashier", "customers.delete")).toBe(false);
-    expect(can("groomer", "grooming.view")).toBe(true);
-    expect(can("groomer", "register.use")).toBe(false);
-    expect(can("groomer", "products.view")).toBe(false);
+    expect(can("cashier", "sales.refund")).toBe(false);
   });
 
   it("throws a plain forbidden error", () => {
@@ -34,6 +32,7 @@ describe("permissions", () => {
   it("recognizes roles", () => {
     for (const r of ROLES) expect(isRole(r)).toBe(true);
     expect(isRole("admin")).toBe(false);
+    expect(isRole("groomer")).toBe(false);
     expect(isRole(undefined)).toBe(false);
   });
 });
