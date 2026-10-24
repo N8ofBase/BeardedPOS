@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  astroEntryLines,
   receiptEmail,
   receiptSms,
   receiptText,
@@ -18,7 +17,6 @@ const line = (over: Partial<RefundableLine> = {}): RefundableLine => ({
   qty: 3,
   lineTotalCents: 1000,
   taxCents: 89,
-  rewardUnits: 0,
   refundedQty: 0,
   refundedCents: 0,
   refundedTaxCents: 0,
@@ -58,21 +56,7 @@ describe("refundLine", () => {
   });
 
   it("refunds everything at once", () => {
-    expect(refundLine(line(), 3)).toMatchObject({ amountCents: 1000, taxCents: 89, paidUnits: 3 });
-  });
-
-  it("refunds paid units first, then the free reward unit for $0", () => {
-    const l = line({ qty: 2, lineTotalCents: 3899, taxCents: 346, rewardUnits: 1 });
-    const [paid, free] = inGoes(l, [1, 1]);
-    expect(paid).toMatchObject({ amountCents: 3899, taxCents: 346, paidUnits: 1, rewardUnits: 0 });
-    expect(free).toMatchObject({ amountCents: 0, taxCents: 0, paidUnits: 0, rewardUnits: 1 });
-  });
-
-  it("refunds a fully free line for $0", () => {
-    expect(refundLine(line({ qty: 1, lineTotalCents: 0, taxCents: 0, rewardUnits: 1 }), 1)).toMatchObject({
-      amountCents: 0,
-      rewardUnits: 1,
-    });
+    expect(refundLine(line(), 3)).toMatchObject({ amountCents: 1000, taxCents: 89 });
   });
 
   it("refuses more than is left", () => {
@@ -165,7 +149,6 @@ const receipt: ReceiptData = {
       payments: [{ method: "card", amountCents: 1089 }],
     },
   ],
-  earned: [],
 };
 
 describe("receipt text", () => {
@@ -184,43 +167,5 @@ describe("receipt text", () => {
     expect(receiptSms(receipt)).toBe(
       "Sample Pet Shop: receipt #1001, total $32.66, refunded $10.89 (net $21.77). Thank you!",
     );
-  });
-});
-
-describe("astroEntryLines", () => {
-  const customer = { name: "Ana", phone: null, email: null, astroCustomerId: null };
-  it("writes out a sale", () => {
-    expect(
-      astroEntryLines("sale", {
-        saleId: "s",
-        receiptNumber: 1,
-        soldAt: "",
-        customer,
-        items: [],
-        earned: [{ programId: "p", programName: "Sample dry food club", punches: 2 }],
-        rewards: [{ programId: "p", programName: "x", label: "Next bag free", amountCents: 3899 }],
-        offers: [{ label: "$5 off 24 lb bag", amountCents: 500, sku: null }],
-      }),
-    ).toEqual(["+2 Sample dry food club", "Redeemed: Next bag free (−$38.99)", "Offer: $5 off 24 lb bag"]);
-  });
-
-  it("writes out a refund, including punches already spent", () => {
-    expect(
-      astroEntryLines("refund", {
-        refundId: "r",
-        saleId: "s",
-        receiptNumber: 1,
-        refundedAt: "",
-        customer,
-        items: [],
-        amountCents: 1000,
-        reversed: [{ programId: "p", programName: "Dry food club", punches: 1, short: 1 }],
-        returned: [{ programId: "p", programName: "Dry food club", punches: 12 }],
-      }),
-    ).toEqual([
-      "Refund: −1 punch Dry food club",
-      "Refund: 1 punch Dry food club already spent, not taken back",
-      "Reward returned: +12 punches Dry food club",
-    ]);
   });
 });

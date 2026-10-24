@@ -1,6 +1,6 @@
 # Pet store POS & grooming system
 
-Point of sale, inventory, customers, and Astro Loyalty tracking for one independent pet store, built by PrismCortex so it can host several local businesses (and a second location per business) later.
+Point of sale, inventory and customers for one independent pet store, built by PrismCortex so it can host several local businesses (and a second location per business) later.
 
 - Full spec: `docs/SPEC.md` (export of the "Pet Store POS & Grooming System Spec" doc). Read the section for the feature you are working on before writing code.
 - Working prototype: `docs/prototype.html`. It is the reference for screens, wording and behavior. Match its flows; do not copy its code structure (it is a single-file demo).
@@ -16,7 +16,7 @@ Point of sale, inventory, customers, and Astro Loyalty tracking for one independ
 - Database: Postgres (PGlite in demo and tests, RDS in hosted). Migrations live in `packages/db/migrations`. Kysely for queries, no ORM.
 - Auth (hosted): Cognito user pool with groups `owner`, `manager`, `cashier` and a `business_id` claim. Customers sign in with a one-time code.
 - Payments: Square Terminal API (server-driven, Square Terminal device) at the counter, Square Payment Links (Checkout API) for online orders, Square webhooks into Lambda (verify the signature). Square Reader does not work from a web app; don't use it. Test in the Square Sandbox. Each business connects its own Square account via OAuth.
-- Background work: EventBridge Scheduler (reminders), SQS (Astro sends, webhooks).
+- Background work: EventBridge Scheduler (reminders), SQS (webhooks).
 - Infrastructure: AWS CDK in TypeScript, region `us-east-1`. Stacks: `DemoSite` (S3 + CloudFront + Route 53 record), later `PetPos-dev` and `PetPos-prod`. Never deploy to `prod` unless asked.
 - DNS: the `prismcortex.net` hosted zone already serves the PrismCortex website. Only add records; never change or delete existing ones. Clients will live at `<client>.pos.prismcortex.net`.
 - Node 24 LTS locally. npm workspaces, Vitest.
@@ -30,13 +30,12 @@ Point of sale, inventory, customers, and Astro Loyalty tracking for one independ
 - Every refund, void, price change and customer delete writes to `audit_log`. A customer-delete entry keeps id, name and counts only, no contact details.
 - Destructive actions (delete customer, remove demo data) need a typed "delete" confirmation in the UI.
 - Sample data is marked "(DEMO)" in names and has `is_demo = true`; the remove-demo-data action deletes only those rows.
-- Astro: all calls go through `AstroClient` in `packages/core/astro`. Until credentials exist, sales with Astro activity go to the `astro_queue` table for manual entry. Credentials live in Secrets Manager only. Astro is an optional module per business.
 - Secrets never go in code, the browser bundle or the repo. The demo build contains no secrets at all.
 
 ## Working style
 
 - One feature per session. Plan first (files, tables, endpoints), wait for approval, then build with tests.
-- Write tests for money math, tax, Astro punch logic, import matching and separation between businesses.
+- Write tests for money math, tax, import matching and separation between businesses.
 - Keep UI copy plain and specific, as in the prototype.
 
 ## Commands
@@ -62,7 +61,7 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - Camera scanning: `barcode-detector` and `zxing-wasm` must be the same build (`apps/web/test/scannerVersions.test.ts` checks it). Upgrade both together.
 - Card payments go through `PaymentTerminal` (`services/api/src/payments/terminal.ts`). Demo mode uses `SimulatedTerminal`; never put a Square access token in the browser.
 - Prices and totals come only from `priceSale()` in `packages/core/src/sale.ts`. The server reruns it at checkout; never trust totals from the browser.
-- Refund amounts come only from `refundLine()` in `packages/core/src/refund.ts` (running totals of what was paid per line, paid units first). `refundPreview` and `refundSale` share `planRefund()`, so the screen shows exactly what happens.
+- Refund amounts come only from `refundLine()` in `packages/core/src/refund.ts` (running totals of what was paid per line). `refundPreview` and `refundSale` share `planRefund()`, so the screen shows exactly what happens.
 - The receipt text (printed, on screen, emailed, texted) is built once in `packages/core/src/receipt.ts`.
 - Day totals (Sales KPIs and end of day) come only from `moneyTotals()` in `services/api/src/handlers/totals.ts`. Imported orders (`sales.source = 'import'`) have no receipt number or payments and never count there; register queries filter `source = 'register'`.
 - Every PGlite instance takes `PGLITE_OPTIONS` (the parsers). Use it for any new `new PGlite()`.

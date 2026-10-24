@@ -106,42 +106,6 @@ describe("products", () => {
       .values({ business_id: b, sku: "0001", name: "B food", price_cents: 1 })
       .execute();
   });
-
-  it("can't link to another business's Astro program", async () => {
-    const programB = await db
-      .insertInto("astro_programs")
-      .values({ business_id: b, name: "B club", buy_count: 10 })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-    await expect(
-      db.updateTable("products").set({ astro_program_id: programB.id }).where("id", "=", productA).execute(),
-    ).rejects.toThrow(/products_astro_program/);
-  });
-
-  it("clears the link, not the product, when a program is deleted", async () => {
-    const program = await db
-      .insertInto("astro_programs")
-      .values({ business_id: a, name: "A club", buy_count: 10 })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-    await db
-      .updateTable("products")
-      .set({ astro_program_id: program.id })
-      .where("id", "=", productA)
-      .execute();
-    await db.deleteFrom("astro_programs").where("id", "=", program.id).execute();
-    const p = await db
-      .selectFrom("products")
-      .select(["business_id", "astro_program_id"])
-      .executeTakeFirstOrThrow();
-    expect(p).toEqual({ business_id: a, astro_program_id: null });
-  });
-
-  it("needs both halves of an Astro offer", async () => {
-    await expect(
-      db.updateTable("products").set({ astro_offer_label: "$5 off" }).where("id", "=", productA).execute(),
-    ).rejects.toThrow(/products_offer_complete/);
-  });
 });
 
 describe("audit log", () => {

@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { formatMoney, REFUND_REASON_LABEL, REFUND_REASONS, type RefundReasonCode } from "@pet-pos/core";
-import type { AstroEffect, RefundPlan } from "@pet-pos/api";
+import type { RefundPlan } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";
@@ -10,16 +10,6 @@ import { TwoTapButton } from "../../ui/TwoTapButton.tsx";
 /** Units left to refund on each line, keyed by sale line id. */
 export function leftToRefund(plan: Pick<RefundPlan, "refundable">): Record<string, number> {
   return Object.fromEntries(plan.refundable.map((l) => [l.saleLineId, l.qty - l.refundedQty]));
-}
-
-/** "−1 punch Dry food club", "+12 punches … (reward given back)", for the breakdown. */
-export function astroEffectText(a: AstroEffect): string[] {
-  const p = (n: number) => `${n} punch${n === 1 ? "" : "es"}`;
-  const out: string[] = [];
-  if (a.reversed) out.push(`−${p(a.reversed)} ${a.programName}`);
-  if (a.short) out.push(`${p(a.short)} ${a.programName} already spent, so not taken back`);
-  if (a.returned) out.push(`+${p(a.returned)} ${a.programName} (the free item came back)`);
-  return out;
 }
 
 /**
@@ -66,7 +56,6 @@ export function RefundPanel({ saleId, onDone }: { saleId: string; onDone: () => 
       void qc.invalidateQueries({ queryKey: ["sale", saleId] });
       void qc.invalidateQueries({ queryKey: ["sales"] });
       void qc.invalidateQueries({ queryKey: ["products"] });
-      void qc.invalidateQueries({ queryKey: ["astroQueue"] });
       onDone();
     },
     onError: (err) => toast(errorMessage(err)),
@@ -101,7 +90,6 @@ export function RefundPanel({ saleId, onDone }: { saleId: string; onDone: () => 
                 <b>{l.name}</b>
                 <span className="sub">
                   {l.qty} sold · {formatMoney(l.lineTotalCents)} paid
-                  {l.rewardUnits ? ` · ${l.rewardUnits} free (Astro reward)` : ""}
                   {l.refundedQty ? ` · ${l.refundedQty} already refunded` : ""}
                 </span>
               </span>
@@ -190,11 +178,6 @@ export function RefundPanel({ saleId, onDone }: { saleId: string; onDone: () => 
           <span className="num">{formatMoney(plan.totalCents)}</span>
         </div>
         {lines.length > 0 && <p style={{ margin: "6px 0 0" }}>{plan.label}</p>}
-        {plan.astro.flatMap(astroEffectText).map((t) => (
-          <span key={t} className="disc">
-            Astro: {t}
-          </span>
-        ))}
       </div>
 
       {plan.needsApproval && (

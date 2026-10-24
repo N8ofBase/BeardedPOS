@@ -8,8 +8,7 @@
   --line: #d3dbd7;
   --accent: #0f6e5a;
   --accent-fg: #ffffff;
-  --astro: #6b3fd1;
-  --astro-soft: #efe9fd;
+  --note-bg: #efe9fd;
   --good: #1d7a3a;
   --warn: #a85c00;
   --warn-soft: #fdf0dc;
@@ -32,8 +31,7 @@
     --line: #2f3b37;
     --accent: #3fbf9c;
     --accent-fg: #06221b;
-    --astro: #a98bff;
-    --astro-soft: #2a2342;
+    --note-bg: #2a2342;
     --good: #5fd07e;
     --warn: #f0a845;
     --warn-soft: #3a2c14;
@@ -51,8 +49,7 @@
   --line: #2f3b37;
   --accent: #3fbf9c;
   --accent-fg: #06221b;
-  --astro: #a98bff;
-  --astro-soft: #2a2342;
+  --note-bg: #2a2342;
   --good: #5fd07e;
   --warn: #f0a845;
   --warn-soft: #3a2c14;

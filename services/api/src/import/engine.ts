@@ -4,7 +4,6 @@
 import { sql, type Transaction } from "kysely";
 import { AppError, isUniqueViolation, todayIso, type Ctx, type ImportType } from "@pet-pos/core";
 import type { DB } from "@pet-pos/db";
-import { programRow, punchRow } from "./astro.ts";
 import {
   Changes,
   Skip,
@@ -23,8 +22,6 @@ export type { ImportResult, RowOutcome } from "./base.ts";
 const HANDLERS: Record<ImportType, (r: Row, rc: RowCtx) => Promise<RowResult>> = {
   customers: customerRow,
   products: productRow,
-  programs: programRow,
-  punches: punchRow,
   orders: orderRow,
 };
 
@@ -36,7 +33,6 @@ function refusalReason(err: unknown): string {
     ["products_sku_per_business", "Another product already has that SKU"],
     ["customers_phone_per_business", "Another customer already has that phone number"],
     ["customers_email_per_business", "Another customer already has that email"],
-    ["astro_programs_name_per_business", "There's already a program with that name"],
   ];
   for (const [constraint, reason] of unique) if (isUniqueViolation(err, constraint)) return reason;
   const msg = (err as { message?: string })?.message ?? String(err);
@@ -98,7 +94,6 @@ function rowLabel(r: Row): string {
     [r.first, r.last].filter(Boolean).join(" ") ||
     r.item ||
     r.sku ||
-    r.program ||
     r.phone ||
     r.email ||
     "(blank row)"

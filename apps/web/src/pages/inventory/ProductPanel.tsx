@@ -30,9 +30,6 @@ interface Form {
   taxClass: "standard" | "exempt";
   reorderAt: string;
   onHand: string;
-  astroProgramId: string;
-  offerLabel: string;
-  offerAmount: string;
 }
 
 const EMPTY: Form = {
@@ -49,9 +46,6 @@ const EMPTY: Form = {
   taxClass: "standard",
   reorderAt: "3",
   onHand: "0",
-  astroProgramId: "",
-  offerLabel: "",
-  offerAmount: "",
 };
 
 function toForm(p: ProductRow): Form {
@@ -69,9 +63,6 @@ function toForm(p: ProductRow): Form {
     taxClass: p.taxClass,
     reorderAt: String(p.reorderAt),
     onHand: String(p.onHand),
-    astroProgramId: p.astroProgramId ?? "",
-    offerLabel: p.offerLabel ?? "",
-    offerAmount: p.offerCents ? centsToInput(p.offerCents) : "",
   };
 }
 
@@ -87,8 +78,6 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
     errors.wholesaleCents = "Enter a wholesale price like 15.00, or leave it blank.";
   const royalty = f.royalty.trim() ? parseTaxPercent(f.royalty) : 0;
   if (royalty === null) errors.royaltyMpct = "Enter a percent from 0 to 100, like 10 or 7.5.";
-  const offer = f.offerAmount.trim() ? parseMoney(f.offerAmount) : null;
-  if (f.offerAmount.trim() && offer === null) errors.offerCents = "Enter an amount like 5.00.";
   const reorder = Number(f.reorderAt || "0");
   return {
     errors,
@@ -102,9 +91,6 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
       costCents: cost ?? 0,
       taxClass: f.taxClass,
       reorderAt: reorder,
-      astroProgramId: f.astroProgramId || null,
-      offerLabel: f.offerLabel,
-      offerCents: offer,
       wholesaleCents: wholesale,
       royaltyMpct: royalty ?? 0,
       royaltyPayee: f.royaltyPayee.trim() || null,
@@ -168,14 +154,12 @@ function ProductForm({
   const toast = useToast();
   const [f, setF] = useState<Form>(product ? toForm(product) : { ...EMPTY, barcode: initialBarcode ?? "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const programs = useQuery({ queryKey: ["programs"], queryFn: () => api.call("listPrograms") });
 
   const set = (k: keyof Form) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["products"] });
     void qc.invalidateQueries({ queryKey: ["product"] });
-    void qc.invalidateQueries({ queryKey: ["programs"] });
   };
 
   const save = useMutation({
@@ -359,40 +343,6 @@ function ProductForm({
             {err("royaltyPayee")}
           </label>
         </div>
-
-        <fieldset className="form" style={{ border: 0, padding: 0, margin: 0 }}>
-          <label>
-            Astro frequent buyer program
-            <select value={f.astroProgramId} onChange={set("astroProgramId")}>
-              <option value="">None</option>
-              {programs.data?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Astro offer label
-            <input
-              value={f.offerLabel}
-              onChange={set("offerLabel")}
-              placeholder="e.g. $5 off 24 lb bag"
-              {...inv("offerLabel")}
-            />
-            {err("offerLabel")}
-          </label>
-          <label>
-            Astro offer amount ($)
-            <input
-              value={f.offerAmount}
-              onChange={set("offerAmount")}
-              inputMode="decimal"
-              {...inv("offerCents")}
-            />
-            {err("offerCents")}
-          </label>
-        </fieldset>
 
         <div className="actions">
           <button className="primary" type="submit" disabled={save.isPending}>

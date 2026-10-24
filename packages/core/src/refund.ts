@@ -1,9 +1,7 @@
 // Refund math. Everything is integer cents and running totals, so refunding a line
 // in several goes adds up to exactly what was paid for it, never a cent more or less.
 //
-// A line's units are refunded paid units first, then free (Astro reward) units:
-//   paid units p = qty − reward units on the line
-//   money back for the first R units = floor(lineTotal × min(R, p) / p)
+// Money back for the first R of a line's q units = floor(lineTotal × R / q)
 // Each refund gives back that running total minus what earlier refunds gave back.
 // Tax works the same way on the line's tax share.
 import { AppError } from "./errors.ts";
@@ -29,21 +27,18 @@ export interface RefundableLine {
   lineTotalCents: number;
   /** The line's share of the sale's tax. */
   taxCents: number;
-  /** Units that were the free Astro reward. */
-  rewardUnits: number;
   /** Units, cents and tax already refunded on earlier refunds. */
   refundedQty: number;
   refundedCents: number;
   refundedTaxCents: number;
 }
 
-/** Running total for the first `units` units, paid units first. */
-function upTo(total: number, units: number, paid: number): number {
-  if (paid <= 0) return 0;
-  const n = Math.min(units, paid);
-  const p = total * n;
+/** Running total for the first `units` of `qty` units. */
+function upTo(total: number, units: number, qty: number): number {
+  if (qty <= 0) return 0;
+  const p = total * Math.min(units, qty);
   if (!Number.isSafeInteger(p)) throw new RangeError("Amount too large to refund exactly");
-  return Math.floor(p / paid);
+  return Math.floor(p / qty);
 }
 
 export interface LineRefund {
@@ -52,10 +47,6 @@ export interface LineRefund {
   qty: number;
   amountCents: number;
   taxCents: number;
-  /** Paid units in this refund (they earned punches). */
-  paidUnits: number;
-  /** Free reward units in this refund. */
-  rewardUnits: number;
 }
 
 /** Money and units back for refunding `qty` more units of a line. */
@@ -68,19 +59,15 @@ export function refundLine(line: RefundableLine, qty: number): LineRefund {
         ? `${line.name}: you can refund 1 to ${left}.`
         : `${line.name} has already been refunded in full.`,
     );
-  const paid = line.qty - line.rewardUnits;
-  const before = line.refundedQty;
-  const after = before + qty;
-  const amount = upTo(line.lineTotalCents, after, paid) - line.refundedCents;
-  const tax = upTo(line.taxCents, after, paid) - line.refundedTaxCents;
+  const after = line.refundedQty + qty;
+  const amount = upTo(line.lineTotalCents, after, line.qty) - line.refundedCents;
+  const tax = upTo(line.taxCents, after, line.qty) - line.refundedTaxCents;
   return {
     lineId: line.id,
     name: line.name,
     qty,
     amountCents: Math.max(0, amount),
     taxCents: Math.max(0, tax),
-    paidUnits: Math.min(after, paid) - Math.min(before, paid),
-    rewardUnits: Math.max(0, after - paid) - Math.max(0, before - paid),
   };
 }
 

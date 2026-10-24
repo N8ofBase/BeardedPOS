@@ -5,7 +5,7 @@ import { addressLine, can, formatDate, formatPhone } from "@pet-pos/core";
 import type { CustomerCard } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
-import { BirthdayTag, Punches } from "./bits.tsx";
+import { BirthdayTag } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { CustomerProfilePage } from "./CustomerProfile.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
@@ -101,9 +101,6 @@ function Card({ c, onEdit, onDelete }: { c: CustomerCard; onEdit?: () => void; o
           Birthday {formatDate(c.birthday)} <BirthdayTag birthday={c.birthday} />
         </span>
       )}
-      {c.punchCards.map((card) => (
-        <Punches key={card.programId} card={card} />
-      ))}
       <div className="actions">
         <Link to={c.id}>Profile</Link>
         {onEdit && (

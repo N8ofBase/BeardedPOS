@@ -1,7 +1,7 @@
 // What each import file can hold. Aliases come from the prototype's IMP table and the
 // spec's accepted columns; header names are compared after normalizeHeader().
 
-export const IMPORT_TYPE_KEYS = ["customers", "products", "programs", "punches", "orders"] as const;
+export const IMPORT_TYPE_KEYS = ["customers", "products", "orders"] as const;
 export type ImportType = (typeof IMPORT_TYPE_KEYS)[number];
 
 export interface FieldDef {
@@ -79,48 +79,12 @@ export const IMPORT_TYPES: Record<ImportType, ImportTypeDef> = {
       f("royaltyPayee", "Royalty payee", "", ["royalty to", "payee", "designer"]),
       f("onHand", "On hand", "8", ["qty", "quantity", "stock", "on hand qty"]),
       f("reorderAt", "Reorder at", "3", ["reorder", "reorder point", "min"]),
-      f("program", "Astro program", "", ["program", "astro"]),
     ],
     needs: [{ message: "Pick the SKU or barcode column.", anyOf: ["sku", "barcode"] }],
   },
-  programs: {
-    label: "Astro frequent buyer programs",
-    help: "One row per program. Programs are matched by name, ignoring case.",
-    fields: [
-      f("name", "Program name", "Brand X dry food", ["program", "name"]),
-      f("brand", "Brand", "Brand X", ["manufacturer"]),
-      f("buyCount", "Buy count", "12", [
-        "buy",
-        "purchases required",
-        "punches required",
-        "buy qty",
-        "required",
-      ]),
-      f("reward", "Reward", "Next bag free", ["free item", "reward text"]),
-    ],
-    needs: [
-      { message: "Pick the program name column.", anyOf: ["name"] },
-      { message: "Pick the buy count column.", anyOf: ["buyCount"] },
-    ],
-  },
-  punches: {
-    label: "Astro punch balances",
-    help: "One row per customer per program. Customers and programs must already be here; import them first. The number becomes the customer's current balance.",
-    fields: [
-      f("phone", "Customer phone", "(212) 555-0199", ["phone", "mobile", "cell", "phone number"]),
-      f("email", "Customer email", "", ["email"]),
-      f("program", "Program name", "Brand X dry food", ["program"]),
-      f("count", "Current punches", "7", ["punches", "count", "balance", "purchases", "current"]),
-    ],
-    needs: [
-      { message: "Pick the customer phone or email column.", anyOf: ["phone", "email"] },
-      { message: "Pick the program name column.", anyOf: ["program"] },
-      { message: "Pick the current punches column.", anyOf: ["count"] },
-    ],
-  },
   orders: {
     label: "Past orders",
-    help: "One row per item sold. Rows for the same customer and receipt number become one order (with no receipt number, the same date). Customers must already be here; they're matched by phone, then email. Items are matched to products by SKU, then barcode; others keep their name. Past orders fill in order history and \"usually buys\" but don't change stock, payments or Astro punches. Importing the same orders again skips them.",
+    help: "One row per item sold. Rows for the same customer and receipt number become one order (with no receipt number, the same date). Customers must already be here; they're matched by phone, then email. Items are matched to products by SKU, then barcode; others keep their name. Past orders fill in order history and \"usually buys\" but don't change stock or payments. Importing the same orders again skips them.",
     fields: [
       f("date", "Date", "2025-03-14", ["order date", "sale date", "date sold", "transaction date"]),
       f("receipt", "Receipt number", "A-1043", [

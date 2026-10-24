@@ -10,9 +10,6 @@ export interface ProductInput {
   costCents: number;
   taxClass: "standard" | "exempt";
   reorderAt: number;
-  astroProgramId: string | null;
-  offerLabel: string | null;
-  offerCents: number | null;
   /** What a retailer pays; null when not sold wholesale. Left out: unchanged. */
   wholesaleCents?: number | null;
   /** Royalty on net profit, thousandths of a percent (7.5% = 7500). Left out: unchanged. */
@@ -37,7 +34,6 @@ export function cleanProduct(input: ProductInput): ProductInput {
     name: input.name.trim(),
     brand: blankToNull(input.brand),
     category: input.category.trim() || "Supplies",
-    offerLabel: blankToNull(input.offerLabel),
     ...(input.royaltyPayee !== undefined ? { royaltyPayee: blankToNull(input.royaltyPayee) } : {}),
   };
 }
@@ -64,12 +60,6 @@ export function validateProduct(p: ProductInput): FieldErrors<ProductInput> {
   if (p.royaltyPayee && p.royaltyPayee.trim().length > 100)
     e.royaltyPayee = "Royalty payee can be at most 100 characters.";
   if (!Number.isInteger(p.reorderAt) || p.reorderAt < 0) e.reorderAt = "Reorder at must be 0 or more.";
-  const hasLabel = !!p.offerLabel?.trim();
-  const hasAmount = p.offerCents !== null;
-  if (hasAmount && (!isCents(p.offerCents!) || p.offerCents! <= 0))
-    e.offerCents = "Offer amount must be more than $0.";
-  else if (hasLabel && !hasAmount) e.offerCents = "Enter the offer amount, or clear the offer label.";
-  else if (hasAmount && !hasLabel) e.offerLabel = "Describe the offer, for example $5 off 24 lb bag.";
   return e;
 }
 

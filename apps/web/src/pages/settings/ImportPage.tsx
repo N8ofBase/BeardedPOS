@@ -151,9 +151,9 @@ export function ImportPage() {
 
       <section className="panel">
         <p className="muted" style={{ maxWidth: "70ch" }}>
-          Upload a CSV or Excel file saved from a spreadsheet or exported from Astro. The first row must be
-          column names. Nothing is saved until you check the preview and tap Import, and every import can be
-          undone.
+          Upload a CSV or Excel file saved from a spreadsheet or exported from your old system. The first row
+          must be column names. Nothing is saved until you check the preview and tap Import, and every import
+          can be undone.
         </p>
         <div className="form" style={{ alignItems: "end" }}>
           <label>
@@ -285,8 +285,6 @@ export function ImportPage() {
 const ENTITY_WORD: Record<string, [string, string]> = {
   customer: ["customer", "customers"],
   product: ["product", "products"],
-  program: ["program", "programs"],
-  punch: ["punch balance", "punch balances"],
 };
 
 const countOf = (entity: string, n: number) => {

@@ -35,7 +35,6 @@ const settings = {
   logo: "data:image/png;base64,iVBORw0KGgo=",
   locationName: "Main St",
   taxPercent: "8.875",
-  astroDiscountsBeforeTax: true,
 };
 
 describe("store settings", () => {
@@ -153,15 +152,7 @@ describe("staff", () => {
 
 describe("remove demo data", () => {
   it("deletes only the sample records, keeps the user's, and the samples don't come back", async () => {
-    // The user's own records, including one tied to a sample program.
-    const { id: myProgram } = await invoke(db, owner, "saveProgram", {
-      name: "My club",
-      brand: null,
-      buyCount: 10,
-      rewardText: "",
-    });
-    const samples = await invoke(db, owner, "listPrograms", undefined);
-    const sampleProgram = samples.find((p) => p.name.endsWith("(DEMO)"))!;
+    // The user's own records.
     await invoke(db, owner, "saveProduct", {
       sku: "MINE-1",
       barcode: null,
@@ -172,12 +163,9 @@ describe("remove demo data", () => {
       costCents: 0,
       taxClass: "standard",
       reorderAt: 0,
-      astroProgramId: sampleProgram.id,
-      offerLabel: null,
-      offerCents: null,
       openingOnHand: 3,
     });
-    const { id: mine } = await invoke(db, owner, "saveCustomer", {
+    await invoke(db, owner, "saveCustomer", {
       customer: {
         name: "My customer",
         phone: "2125550160",
@@ -191,40 +179,25 @@ describe("remove demo data", () => {
         notes: "",
       },
     });
-    await db
-      .insertInto("astro_punches")
-      .values({
-        business_id: owner.businessId,
-        customer_id: mine,
-        program_id: myProgram,
-        qty: 4,
-        kind: "earn",
-      })
-      .execute();
 
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
       customers: 3,
       products: 4,
-      programs: 1,
-      punches: 2,
       discounts: 4,
     });
     await invoke(db, owner, "removeDemoData", undefined);
     expect(await invoke(db, owner, "demoDataPreview", undefined)).toEqual({
       customers: 0,
       products: 0,
-      programs: 0,
-      punches: 0,
       discounts: 0,
     });
 
-    expect(
-      (await invoke(db, owner, "searchCustomers", { q: "" })).map((c) => [c.name, c.punchCards[0]?.balance]),
-    ).toEqual([["My customer", 4]]);
-    expect(
-      (await invoke(db, owner, "listProducts", {})).map((p) => [p.sku, p.onHand, p.astroProgramId]),
-    ).toEqual([["MINE-1", 3, null]]);
-    expect((await invoke(db, owner, "listPrograms", undefined)).map((p) => p.name)).toEqual(["My club"]);
+    expect((await invoke(db, owner, "searchCustomers", { q: "" })).map((c) => c.name)).toEqual([
+      "My customer",
+    ]);
+    expect((await invoke(db, owner, "listProducts", {})).map((p) => [p.sku, p.onHand])).toEqual([
+      ["MINE-1", 3],
+    ]);
 
     // Samples don't reload on the next visit, and the (DEMO) sign-ins still work.
     await ensureDemo(db);
@@ -240,8 +213,6 @@ describe("remove demo data", () => {
         after: {
           customers: 3,
           products: 4,
-          programs: 1,
-          punches: 2,
           discounts: 4,
         },
       },

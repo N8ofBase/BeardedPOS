@@ -1,6 +1,6 @@
 # Pet store POS & grooming system
 
-Register, inventory, customers, and Astro Loyalty tracking for an independent pet store.
+Register, inventory and customers for an independent pet store.
 
 - `docs/SPEC.md` — the full spec (exported from the spec doc)
 - `docs/prototype.html` — working prototype; open it in a browser to see the screens and flows
@@ -8,8 +8,8 @@ Register, inventory, customers, and Astro Loyalty tracking for an independent pe
 
 Status: **Phases 1, 2 (except 2d, real Square) and 3 are done** in demo mode.
 - Phase 1: products and inventory, customers, bulk import, store settings, staff and demo data.
-- Phase 2a, the register: cash, simulated card reader and split payments, store discounts, Astro punches, rewards and offers, receipts, and camera barcode scanning.
-- Phase 2b: sales history by day and search, refunds (card first, then cash, with stock and Astro punches put right and owner approval above the manager limit), receipts by email or text (previewed in the demo), and the "To enter in Astro" queue.
+- Phase 2a, the register: cash, simulated card reader and split payments, store discounts, receipts, and camera barcode scanning.
+- Phase 2b: sales history by day and search, refunds (card first, then cash, with stock put right and owner approval above the manager limit), and receipts by email or text (previewed in the demo).
 
 - Phase 2c: end of day (drawer count by denomination, card total, over/short and deposit), past orders imported from the old system, and order history on the customer profile.
 

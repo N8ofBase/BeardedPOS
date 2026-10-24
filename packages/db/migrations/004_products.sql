@@ -12,22 +12,14 @@ CREATE TABLE products (
   cost_cents        integer NOT NULL DEFAULT 0 CHECK (cost_cents >= 0),
   tax_class         text NOT NULL DEFAULT 'standard' CHECK (tax_class IN ('standard', 'exempt')),
   reorder_at        integer NOT NULL DEFAULT 0 CHECK (reorder_at >= 0),
-  astro_program_id  uuid,
-  astro_offer_label text,
-  astro_offer_cents integer CHECK (astro_offer_cents > 0),
   active            boolean NOT NULL DEFAULT true,
   is_demo           boolean NOT NULL DEFAULT false,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT products_business_id_id UNIQUE (business_id, id),
-  CONSTRAINT products_offer_complete CHECK ((astro_offer_label IS NULL) = (astro_offer_cents IS NULL)),
-  -- The program must belong to the same business. Deleting a program clears the link only.
-  CONSTRAINT products_astro_program FOREIGN KEY (business_id, astro_program_id)
-    REFERENCES astro_programs (business_id, id) ON DELETE SET NULL (astro_program_id)
+  CONSTRAINT products_business_id_id UNIQUE (business_id, id)
 );
 CREATE UNIQUE INDEX products_sku_per_business ON products (business_id, lower(sku));
 CREATE UNIQUE INDEX products_barcode_per_business ON products (business_id, barcode) WHERE barcode IS NOT NULL;
-CREATE INDEX products_program ON products (astro_program_id) WHERE astro_program_id IS NOT NULL;
 CREATE TRIGGER products_updated_at BEFORE UPDATE ON products
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;

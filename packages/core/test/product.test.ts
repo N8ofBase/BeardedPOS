@@ -12,9 +12,6 @@ const base: ProductInput = {
   costCents: 4300,
   taxClass: "standard",
   reorderAt: 6,
-  astroProgramId: null,
-  offerLabel: null,
-  offerCents: null,
 };
 
 describe("stockStatus", () => {
@@ -49,13 +46,6 @@ describe("validateProduct", () => {
       reorderAt: "Reorder at must be 0 or more.",
     });
   });
-
-  it("needs both halves of an Astro offer", () => {
-    expect(validateProduct({ ...base, offerLabel: "$5 off" }).offerCents).toMatch(/offer amount/);
-    expect(validateProduct({ ...base, offerCents: 500 }).offerLabel).toMatch(/Describe the offer/);
-    expect(validateProduct({ ...base, offerLabel: "$5 off", offerCents: 0 }).offerCents).toMatch(/more than/);
-    expect(validateProduct({ ...base, offerLabel: "$5 off", offerCents: 500 })).toEqual({});
-  });
 });
 
 describe("cleanProduct", () => {
@@ -65,14 +55,12 @@ describe("cleanProduct", () => {
       sku: " 0001 ",
       barcode: "  ",
       brand: " ",
-      offerLabel: "",
       category: " ",
     });
     expect(c).toMatchObject({
       sku: "0001",
       barcode: null,
       brand: null,
-      offerLabel: null,
       category: "Supplies",
     });
   });

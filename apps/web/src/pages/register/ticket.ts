@@ -1,4 +1,4 @@
-// The ticket being rung up: lines, customer, rewards and discounts. Priced in the
+// The ticket being rung up: lines, customer and discounts. Priced in the
 // browser with the same priceSale() the server reruns at checkout, and kept in this
 // browser so a reload doesn't lose a sale in progress.
 import { priceSale, type PricedSale, type TicketLine } from "@pet-pos/core";
@@ -8,7 +8,6 @@ export interface TicketLineState {
   key: string;
   product: ProductRow;
   qty: number;
-  applyOffer: boolean;
 }
 
 export interface TicketDiscountState {
@@ -22,11 +21,10 @@ export interface TicketDiscountState {
 export interface Ticket {
   lines: TicketLineState[];
   customer: RegisterCustomer | null;
-  rewards: string[];
   discounts: TicketDiscountState[];
 }
 
-export const EMPTY_TICKET: Ticket = { lines: [], customer: null, rewards: [], discounts: [] };
+export const EMPTY_TICKET: Ticket = { lines: [], customer: null, discounts: [] };
 
 /** True when nothing is on the ticket to pay for. */
 export function isEmpty(t: Ticket): boolean {
@@ -44,37 +42,18 @@ export function addProduct(t: Ticket, product: ProductRow, qty = 1): Ticket {
       ...t,
       lines: t.lines.map((l) => (l === existing ? { ...l, qty: Math.min(9999, l.qty + qty), product } : l)),
     };
-  return { ...t, lines: [...t.lines, { key: newKey(), product, qty, applyOffer: false }] };
+  return { ...t, lines: [...t.lines, { key: newKey(), product, qty }] };
 }
 
 export function setQty(t: Ticket, key: string, qty: number): Ticket {
   if (qty <= 0) {
-    const lines = t.lines.filter((l) => l.key !== key);
     return {
       ...t,
-      lines,
+      lines: t.lines.filter((l) => l.key !== key),
       discounts: t.discounts.filter((d) => d.lineKey !== key),
-      rewards: keepRewards(t.rewards, lines),
     };
   }
   return { ...t, lines: t.lines.map((l) => (l.key === key ? { ...l, qty: Math.min(9999, qty) } : l)) };
-}
-
-function keepRewards(rewards: string[], lines: TicketLineState[]): string[] {
-  return rewards.filter((p) => lines.some((l) => l.product.astroProgramId === p));
-}
-
-export function toggleOffer(t: Ticket, key: string): Ticket {
-  return { ...t, lines: t.lines.map((l) => (l.key === key ? { ...l, applyOffer: !l.applyOffer } : l)) };
-}
-
-export function toggleReward(t: Ticket, programId: string): Ticket {
-  return {
-    ...t,
-    rewards: t.rewards.includes(programId)
-      ? t.rewards.filter((p) => p !== programId)
-      : [...t.rewards, programId],
-  };
 }
 
 export function removeDiscount(t: Ticket, index: number): Ticket {
@@ -89,9 +68,7 @@ export function toInput(t: Ticket): TicketInput {
       key: l.key,
       productId: l.product.id,
       qty: l.qty,
-      applyOffer: l.applyOffer,
     })),
-    rewards: t.rewards,
     discounts: t.discounts.map((d) => ({
       discountId: d.discount.id,
       lineKey: d.lineKey,
@@ -109,12 +86,6 @@ function ticketLines(t: Ticket): TicketLine[] {
     unitPriceCents: l.product.priceCents,
     qty: l.qty,
     taxClass: l.product.taxClass,
-    astroProgramId: l.product.astroProgramId,
-    offer:
-      l.product.offerLabel && l.product.offerCents
-        ? { label: l.product.offerLabel, cents: l.product.offerCents }
-        : null,
-    applyOffer: l.applyOffer && !!l.product.offerCents,
   }));
 }
 
@@ -124,22 +95,16 @@ export interface TicketPrice {
   problem: string | null;
 }
 
-/** Prices the ticket for the screen. Program names come from the customer's punch cards. */
-export function priceTicket(t: Ticket, taxRateMpct: number, astroBeforeTax: boolean): TicketPrice {
+/** Prices the ticket for the screen. */
+export function priceTicket(t: Ticket, taxRateMpct: number): TicketPrice {
   try {
-    const cards = t.customer?.card.punchCards ?? [];
     const priced = priceSale({
       lines: ticketLines(t),
       storeDiscounts: t.discounts.map((d) => ({
         rule: d.discount,
         lineKey: d.discount.scope === "line" ? d.lineKey : null,
       })),
-      rewards: t.rewards.map((p) => {
-        const c = cards.find((x) => x.programId === p);
-        return { programId: p, label: c ? `${c.rewardText} · ${c.programName}` : "Astro reward" };
-      }),
       taxRateMpct,
-      astroBeforeTax,
     });
     return { priced, problem: null };
   } catch (err) {

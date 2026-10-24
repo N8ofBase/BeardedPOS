@@ -1,6 +1,5 @@
--- Register: sales, their lines and payments, store discounts, and the Astro queue.
+-- Register: sales, their lines and payments, and store discounts.
 
-ALTER TABLE businesses ADD COLUMN astro_discounts_before_tax boolean NOT NULL DEFAULT true;
 ALTER TABLE staff ADD CONSTRAINT staff_business_id_id UNIQUE (business_id, id);
 
 -- Per-business counters (receipt numbers). Incremented with UPDATE … RETURNING under a row lock.
@@ -67,7 +66,6 @@ CREATE TABLE sales (
   total_cents          integer NOT NULL CHECK (total_cents >= 0),
   -- Copied at checkout, so a later settings change doesn't rewrite old sales.
   tax_rate_mpct        integer NOT NULL,
-  discounts_before_tax boolean NOT NULL,
   paid_at              timestamptz,
   canceled_at          timestamptz,
   is_demo              boolean NOT NULL DEFAULT false,
@@ -107,8 +105,6 @@ CREATE TABLE sale_lines (
   unit_price_cents  integer NOT NULL CHECK (unit_price_cents >= 0),
   discount_cents    integer NOT NULL DEFAULT 0 CHECK (discount_cents >= 0),
   line_total_cents  integer NOT NULL CHECK (line_total_cents >= 0),
-  astro_program_id  uuid,
-  earns_punches     integer NOT NULL DEFAULT 0 CHECK (earns_punches >= 0),
   created_at        timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT sale_lines_business_id_id UNIQUE (business_id, id),
   CONSTRAINT sale_lines_total CHECK (line_total_cents = unit_price_cents * qty - discount_cents),
@@ -124,13 +120,12 @@ CREATE POLICY sale_lines_own ON sale_lines
   WITH CHECK (business_id = current_business_id());
 REVOKE UPDATE, DELETE ON sale_lines FROM pos_app;
 
--- Every discount on a sale: store discounts, Astro offers and Astro rewards.
+-- Every discount on a sale.
 CREATE TABLE sale_discounts (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   business_id   uuid NOT NULL REFERENCES businesses (id) ON DELETE CASCADE,
   sale_id       uuid NOT NULL,
   sale_line_id  uuid,
-  source        text NOT NULL CHECK (source IN ('store', 'astro_offer', 'astro_reward')),
   discount_id   uuid,
   name          text NOT NULL,
   kind          text CHECK (kind IN ('percent', 'fixed')),
@@ -184,34 +179,3 @@ CREATE POLICY payments_own ON payments
   USING (business_id = current_business_id())
   WITH CHECK (business_id = current_business_id());
 REVOKE DELETE ON payments FROM pos_app;
-
--- Sales with Astro activity, to enter in the Astro portal until the live API exists.
-CREATE TABLE astro_queue (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  business_id uuid NOT NULL REFERENCES businesses (id) ON DELETE CASCADE,
-  sale_id     uuid NOT NULL,
-  payload     jsonb NOT NULL,
-  status      text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'entered', 'sent', 'failed')),
-  attempts    integer NOT NULL DEFAULT 0,
-  error       text,
-  entered_by  uuid,
-  entered_at  timestamptz,
-  created_at  timestamptz NOT NULL DEFAULT now(),
-  updated_at  timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT astro_queue_one_per_sale UNIQUE (sale_id),
-  FOREIGN KEY (business_id, sale_id) REFERENCES sales (business_id, id) ON DELETE CASCADE,
-  FOREIGN KEY (business_id, entered_by) REFERENCES staff (business_id, id) ON DELETE SET NULL (entered_by)
-);
-CREATE INDEX astro_queue_pending ON astro_queue (business_id, created_at) WHERE status = 'pending';
-CREATE TRIGGER astro_queue_updated_at BEFORE UPDATE ON astro_queue
-  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-ALTER TABLE astro_queue ENABLE ROW LEVEL SECURITY;
-ALTER TABLE astro_queue FORCE ROW LEVEL SECURITY;
-CREATE POLICY astro_queue_own ON astro_queue
-  USING (business_id = current_business_id())
-  WITH CHECK (business_id = current_business_id());
-REVOKE DELETE ON astro_queue FROM pos_app;
-
--- Punches now link back to the sale that earned or redeemed them.
-ALTER TABLE astro_punches ADD CONSTRAINT astro_punches_sale
-  FOREIGN KEY (business_id, sale_id) REFERENCES sales (business_id, id) ON DELETE SET NULL (sale_id);

@@ -22,21 +22,16 @@ const food: ProductRow = {
   taxClass: "standard",
   reorderAt: 6,
   onHand: 4,
-  astroProgramId: "a1",
-  astroProgramName: "Sample dry food club (DEMO)",
-  offerLabel: "$5 off 24 lb bag",
-  offerCents: 500,
   active: true,
 };
 
 describe("Inventory", () => {
-  it("shows price, margin, Astro tags and a low-stock tag", async () => {
+  it("shows price, margin and a low-stock tag", async () => {
     renderAs("owner", <InventoryRoutes />, { listProducts: [food] });
     expect(await screen.findByText("Sample Adult Dog Food 24 lb (DEMO)")).toBeTruthy();
     expect(screen.getByText("$64.99")).toBeTruthy();
     expect(screen.getByText("34%")).toBeTruthy();
     expect(screen.getByText("4 left")).toBeTruthy();
-    expect(screen.getByText("$5.00 offer")).toBeTruthy();
     expect(screen.getByRole("button", { name: "New product" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Receive" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();

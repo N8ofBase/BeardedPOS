@@ -28,10 +28,6 @@ export interface ProductRow {
   taxClass: TaxClass;
   reorderAt: number;
   onHand: number;
-  astroProgramId: string | null;
-  astroProgramName: string | null;
-  offerLabel: string | null;
-  offerCents: number | null;
   active: boolean;
 }
 
@@ -44,12 +40,11 @@ export interface MoveRow {
   createdAt: Date;
 }
 
-// Shared select for product rows with stock and program name.
+// Shared select for product rows with stock.
 export function productQuery(trx: Transaction<DB>) {
   return trx
     .selectFrom("products as p")
     .leftJoin("inventory_levels as l", "l.product_id", "p.id")
-    .leftJoin("astro_programs as a", "a.id", "p.astro_program_id")
     .select((eb) => [
       "p.id",
       "p.sku",
@@ -65,10 +60,6 @@ export function productQuery(trx: Transaction<DB>) {
       "p.tax_class as taxClass",
       "p.reorder_at as reorderAt",
       eb.fn.coalesce("l.on_hand", sql<number>`0`).as("onHand"),
-      "p.astro_program_id as astroProgramId",
-      "a.name as astroProgramName",
-      "p.astro_offer_label as offerLabel",
-      "p.astro_offer_cents as offerCents",
       "p.active",
     ]);
 }
@@ -177,9 +168,6 @@ export const saveProduct = defineHandler<SaveProductInput, { id: string }>({
       cost_cents: p.costCents,
       tax_class: p.taxClass,
       reorder_at: p.reorderAt,
-      astro_program_id: p.astroProgramId,
-      astro_offer_label: p.offerLabel,
-      astro_offer_cents: p.offerCents,
       ...(p.wholesaleCents !== undefined ? { wholesale_cents: p.wholesaleCents } : {}),
       ...(p.royaltyMpct !== undefined ? { royalty_mpct: p.royaltyMpct } : {}),
       ...(p.royaltyPayee !== undefined ? { royalty_payee: p.royaltyPayee } : {}),
@@ -245,8 +233,6 @@ export const saveProduct = defineHandler<SaveProductInput, { id: string }>({
         throw new AppError("conflict", "Another product already has that barcode.", {
           barcode: "Another product already has that barcode.",
         });
-      if ((err as { code?: string }).code === "23503")
-        throw new AppError("invalid", "That Astro program doesn't exist anymore. Pick another.");
       throw err;
     }
   },

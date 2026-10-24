@@ -18,15 +18,6 @@ const card: CustomerCard = {
   state: "IL",
   zip: null,
   birthday: null,
-  punchCards: [
-    {
-      programId: "a1",
-      programName: "Sample dry food club (DEMO)",
-      balance: 11,
-      buyCount: 12,
-      rewardText: "Next bag free",
-    },
-  ],
 };
 
 describe("ConfirmTyped", () => {
@@ -50,11 +41,10 @@ describe("ConfirmTyped", () => {
 });
 
 describe("Customers", () => {
-  it("shows the card: formatted phone and punch card", async () => {
+  it("shows the card: formatted phone", async () => {
     renderAs("cashier", <CustomersRoutes />, { searchCustomers: [card] });
     expect(await screen.findByText("Sample Customer (DEMO)")).toBeTruthy();
     expect(screen.getByText("(212) 555-0100")).toBeTruthy();
-    expect(screen.getByText("11/12")).toBeTruthy();
     expect(screen.getByRole("button", { name: "New customer" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();

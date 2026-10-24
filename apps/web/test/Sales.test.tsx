@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AstroQueueRow, Receipt, RefundInput, RefundPlan, SentReceipt } from "@pet-pos/api";
-import { AstroQueue } from "../src/pages/AstroQueue.tsx";
+import type { Receipt, RefundInput, RefundPlan, SentReceipt } from "@pet-pos/api";
 import { dayRange, refundTag } from "../src/pages/SalesPage.tsx";
 import { DEMO_SEND_NOTE, ReceiptSend } from "../src/pages/sales/ReceiptSend.tsx";
 import { RefundPanel } from "../src/pages/sales/RefundPanel.tsx";
@@ -22,8 +21,8 @@ const preview =
       saleId: "s1",
       receiptNumber: 1001,
       refundable: [
-        { saleLineId: "a", name: "Chew toy", qty: 3, refundedQty: 1, lineTotalCents: 3000, rewardUnits: 0 },
-        { saleLineId: "b", name: "Dog food", qty: 6, refundedQty: 0, lineTotalCents: 6000, rewardUnits: 0 },
+        { saleLineId: "a", name: "Chew toy", qty: 3, refundedQty: 1, lineTotalCents: 3000 },
+        { saleLineId: "b", name: "Dog food", qty: 6, refundedQty: 0, lineTotalCents: 6000 },
       ],
       lines: [],
       amountCents: units * 1000,
@@ -31,7 +30,6 @@ const preview =
       totalCents: total,
       payments: total ? [{ paymentId: "p", method: "cash", amountCents: total }] : [],
       label: `Hand back $${(total / 100).toFixed(2)} cash`,
-      astro: [],
       restock: input.restock,
       needsApproval: role === "manager" && total > 5000,
       limitCents: 5000,
@@ -125,53 +123,6 @@ describe("receipt sending", () => {
     renderAs("cashier", <ReceiptSend receipt={receipt} />);
     fireEvent.click(screen.getByRole("button", { name: "Text receipt" }));
     expect((screen.getByLabelText("Mobile number") as HTMLInputElement).value).toBe("(212) 555-0100");
-  });
-});
-
-const row = (over: Partial<AstroQueueRow>): AstroQueueRow => ({
-  id: "q1",
-  kind: "sale",
-  status: "pending",
-  createdAt: new Date("2026-10-19T15:00:00"),
-  saleId: "s1",
-  receiptNumber: 1001,
-  customerName: "Sample Customer (DEMO)",
-  customerPhone: "2125550100",
-  entries: ["+2 Sample dry food club (DEMO)", "Offer: $5 off 24 lb bag"],
-  attempts: 0,
-  error: null,
-  enteredByName: null,
-  enteredAt: null,
-  ...over,
-});
-
-describe("Astro queue", () => {
-  it("lists what to enter, written out, with Mark entered", async () => {
-    const { call } = renderAs("cashier", <AstroQueue />, {
-      listAstroQueue: [
-        row({}),
-        row({ id: "q2", kind: "refund", entries: ["Refund: −1 punch Dry food club"] }),
-      ],
-      markAstroEntered: undefined,
-    });
-    expect(await screen.findByText("+2 Sample dry food club (DEMO)")).toBeTruthy();
-    expect(screen.getByText("Offer: $5 off 24 lb bag")).toBeTruthy();
-    expect(screen.getByText("Refund: −1 punch Dry food club")).toBeTruthy();
-    expect(screen.getAllByText("(212) 555-0100")).toHaveLength(2);
-    fireEvent.click(screen.getAllByRole("button", { name: "Mark entered" })[0]!);
-    await waitFor(() => expect(call).toHaveBeenCalledWith("markAstroEntered", { id: "q1", entered: true }));
-  });
-
-  it("lets only managers and owners undo", async () => {
-    const entered = [row({ status: "entered", enteredByName: "Sam", enteredAt: new Date() })];
-    renderAs("cashier", <AstroQueue />, { listAstroQueue: entered });
-    fireEvent.click(screen.getByRole("button", { name: "Entered" }));
-    expect(await screen.findByText(/Entered by Sam/)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
-    cleanup();
-    renderAs("manager", <AstroQueue />, { listAstroQueue: entered });
-    fireEvent.click(screen.getByRole("button", { name: "Entered" }));
-    expect(await screen.findByRole("button", { name: "Undo" })).toBeTruthy();
   });
 });
 

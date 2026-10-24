@@ -18,9 +18,6 @@ const line = (over: Partial<TicketLine> & { key: string }): TicketLine => ({
   unitPriceCents: 1000,
   qty: 1,
   taxClass: "standard",
-  astroProgramId: null,
-  offer: null,
-  applyOffer: false,
   ...over,
 });
 
@@ -37,9 +34,7 @@ const rule = (over: Partial<DiscountRule> & { id: string }): DiscountRule => ({
 const base = (over: Partial<PriceInput>): PriceInput => ({
   lines: [],
   storeDiscounts: [],
-  rewards: [],
   taxRateMpct: 0,
-  astroBeforeTax: true,
   ...over,
 });
 
@@ -83,25 +78,10 @@ describe("tax", () => {
 });
 
 describe("item discounts", () => {
-  it("applies an Astro offer only when ticked, capped at the line", () => {
-    const offer = { label: "$5 off 24 lb bag", cents: 500 };
-    expect(priceSale(base({ lines: [line({ key: "a", offer })] })).discountCents).toBe(0);
-    const p = priceSale(base({ lines: [line({ key: "a", offer, applyOffer: true, qty: 2 })] }));
-    expect(p.discounts).toMatchObject([
-      { source: "astro_offer", name: "$5 off 24 lb bag", amountCents: 500, lineKey: "a" },
-    ]);
-    const small = priceSale(
-      base({ lines: [line({ key: "a", unitPriceCents: 300, offer, applyOffer: true })] }),
-    );
-    expect(small.totalCents).toBe(0);
-  });
-
-  it("applies a store item discount after the offer", () => {
+  it("caps an item discount at the line", () => {
     const p = priceSale(
       base({
-        lines: [
-          line({ key: "a", unitPriceCents: 2000, offer: { label: "o", cents: 500 }, applyOffer: true }),
-        ],
+        lines: [line({ key: "a", unitPriceCents: 300 })],
         storeDiscounts: [
           {
             rule: rule({ id: "dmg", kind: "fixed", percentMpct: null, amountCents: 500, scope: "line" }),
@@ -110,16 +90,31 @@ describe("item discounts", () => {
         ],
       }),
     );
-    expect(p.lines[0]!.netCents).toBe(1000);
-    const pct = priceSale(
+    expect(p.discounts).toMatchObject([{ name: "dmg", amountCents: 300, lineKey: "a", discountId: "dmg" }]);
+    expect(p.totalCents).toBe(0);
+  });
+
+  it("works each item discount on what's left after the one before", () => {
+    const p = priceSale(
       base({
-        lines: [
-          line({ key: "a", unitPriceCents: 2000, offer: { label: "o", cents: 500 }, applyOffer: true }),
+        lines: [line({ key: "a", unitPriceCents: 2000 })],
+        storeDiscounts: [
+          {
+            rule: rule({
+              id: "dmg",
+              kind: "fixed",
+              percentMpct: null,
+              amountCents: 500,
+              scope: "line",
+              combinable: true,
+            }),
+            lineKey: "a",
+          },
+          { rule: rule({ id: "half", percentMpct: 50_000, scope: "line", combinable: true }), lineKey: "a" },
         ],
-        storeDiscounts: [{ rule: rule({ id: "half", percentMpct: 50_000, scope: "line" }), lineKey: "a" }],
       }),
     );
-    expect(pct.lines[0]!.netCents).toBe(750); // 50% of what's left ($15), not of $20
+    expect(p.lines[0]!.netCents).toBe(750); // 50% of what's left ($15), not of $20
   });
 
   it("needs the item for an item discount", () => {
@@ -134,73 +129,22 @@ describe("item discounts", () => {
   });
 });
 
-describe("Astro rewards", () => {
-  const food = (key: string, price: number, qty = 1) =>
-    line({ key, unitPriceCents: price, qty, astroProgramId: "club" });
-
-  it("takes off the cheapest qualifying item, and that item doesn't earn", () => {
-    const p = priceSale(
-      base({
-        lines: [food("big", 6499), food("small", 3899), line({ key: "toy", unitPriceCents: 899 })],
-        rewards: [{ programId: "club", label: "Next bag free" }],
-      }),
-    );
-    expect(p.discounts).toEqual([
-      {
-        source: "astro_reward",
-        name: "Next bag free",
-        amountCents: 3899,
-        lineKey: "small",
-        discountId: null,
-        programId: "club",
-      },
-    ]);
-    expect(p.earned).toEqual({ club: 1 });
-  });
-
-  it("earns one punch per qualifying item", () => {
-    expect(priceSale(base({ lines: [food("a", 6499, 3), line({ key: "toy" })] })).earned).toEqual({
-      club: 3,
-    });
-  });
-
-  it("refuses a reward with nothing to redeem it on", () => {
-    expect(() =>
-      priceSale(
-        base({ lines: [line({ key: "toy" })], rewards: [{ programId: "club", label: "Next bag free" }] }),
-      ),
-    ).toThrow(/Add a qualifying item/);
-  });
-
-  it("comes off before tax, or after when the store says so", () => {
-    const input = base({
-      lines: [food("a", 6499), food("b", 3899)],
-      rewards: [{ programId: "club", label: "Free" }],
-      taxRateMpct: 7000,
-    });
-    expect(priceSale(input)).toMatchObject({ taxableCents: 6499, taxCents: 455, totalCents: 6954 });
-    expect(priceSale({ ...input, astroBeforeTax: false })).toMatchObject({
-      taxableCents: 10398,
-      taxCents: 728,
-      totalCents: 7227,
-    });
-  });
-});
-
 describe("whole-ticket store discounts", () => {
-  it("takes a percent off what's left after item discounts and rewards", () => {
+  it("takes a percent off what's left after item discounts", () => {
     const p = priceSale(
       base({
-        lines: [
-          line({ key: "a", unitPriceCents: 6499, offer: { label: "o", cents: 500 }, applyOffer: true }),
-          line({ key: "b", unitPriceCents: 1299 }),
+        lines: [line({ key: "a", unitPriceCents: 6499 }), line({ key: "b", unitPriceCents: 1299 })],
+        storeDiscounts: [
+          {
+            rule: rule({ id: "dmg", kind: "fixed", percentMpct: null, amountCents: 500, scope: "line" }),
+            lineKey: "a",
+          },
+          { rule: rule({ id: "emp", name: "Employee discount" }), lineKey: null },
         ],
-        storeDiscounts: [{ rule: rule({ id: "emp", name: "Employee discount" }), lineKey: null }],
       }),
     );
     // (5999 + 1299) × 20% = 1459.6 → 1460
     expect(p.discounts.at(-1)).toMatchObject({
-      source: "store",
       name: "Employee discount",
       amountCents: 1460,
     });

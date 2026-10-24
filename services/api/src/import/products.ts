@@ -70,16 +70,6 @@ export async function productRow(r: Row, rc: RowCtx): Promise<RowResult> {
   const payee = text(r.royaltyPayee);
   if (payee && payee.length > 100) rc.warn("Royalty payee is over 100 characters, left as it was");
   else if (payee) values.royalty_payee = payee;
-  const program = text(r.program);
-  if (program) {
-    const p = await rc.trx
-      .selectFrom("astro_programs")
-      .select("id")
-      .where(sql`lower(name)`, "=", program.toLowerCase())
-      .executeTakeFirst();
-    if (p) values.astro_program_id = p.id;
-    else rc.warn(`Unknown program "${program}", imported without it`);
-  }
   const onHand = count(rc, r.onHand, "On hand");
 
   let productId: string;

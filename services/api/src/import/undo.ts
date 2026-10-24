@@ -1,6 +1,6 @@
 // Reverses an import batch, newest change first: deletes rows it created, puts back
-// fields it changed (unless someone has changed them since), re-adds punch rows it
-// replaced, and reverses stock it moved with a new move.
+// fields it changed (unless someone has changed them since), and reverses stock it
+// moved with a new move.
 import { sql, type Transaction } from "kysely";
 import { AppError, type Ctx } from "@pet-pos/core";
 import type { DB, ImportEntity } from "@pet-pos/db";
@@ -10,16 +10,12 @@ import { sameValue } from "./base.ts";
 const TABLE: Record<Exclude<ImportEntity, "stock">, string> = {
   customer: "customers",
   product: "products",
-  program: "astro_programs",
-  punch: "astro_punches",
   sale: "sales",
 };
 
 const NOUN: Record<ImportEntity, string> = {
   customer: "Customer",
   product: "Product",
-  program: "Program",
-  punch: "Punch card",
   stock: "Stock",
   sale: "Order",
 };
@@ -139,11 +135,6 @@ export async function undoBatch(trx: Transaction<DB>, ctx: Ctx, batchId: string)
           },
         });
       }
-    } else if (c.op === "deleted" && c.before && !current) {
-      const entries = Object.entries(c.before);
-      await sql`INSERT INTO ${sql.table(table)} (${sql.join(entries.map(([k]) => sql.ref(k)))})
-        VALUES (${sql.join(entries.map(([, v]) => v))})`.execute(trx);
-      result.restored++;
     }
   }
 

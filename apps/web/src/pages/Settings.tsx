@@ -58,8 +58,8 @@ function Settings() {
         <section className="panel">
           <h2>Bulk import</h2>
           <p className="muted">
-            Load customers, products, Astro programs and punch balances from a CSV or Excel file. You see a
-            preview before anything is saved, and any import can be undone.
+            Load customers, products and past orders from a CSV or Excel file. You see a preview before
+            anything is saved, and any import can be undone.
           </p>
           <div>
             <Link to="import">Import a file</Link>
@@ -87,7 +87,6 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     logo: s.logo,
     locationName: s.locationName,
     taxPercent: taxPercentInput(s.taxRateMpct),
-    astroDiscountsBeforeTax: s.astroDiscountsBeforeTax,
     refundLimit: centsToInput(s.refundApprovalCents),
     drawerFloat: centsToInput(s.drawerFloatCents),
   });
@@ -223,18 +222,6 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
               </div>
             )}
           </div>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={f.astroDiscountsBeforeTax}
-              onChange={(e) => setF({ ...f, astroDiscountsBeforeTax: e.target.checked })}
-            />
-            Astro offers and rewards come off before tax
-          </label>
-          <p className="muted small" style={{ margin: 0 }}>
-            Check the store's Astro agreement. When this is off, tax is charged on the price before the Astro
-            discount.
-          </p>
         </fieldset>
 
         <div>
@@ -425,13 +412,11 @@ function plural(n: number, one: string, many: string) {
   return `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 }
 
-/** "3 customers, 4 products, 1 Astro program and 2 punch balances". */
+/** "3 customers, 4 products and 2 discounts". */
 export function demoSummary(c: DemoCounts): string {
   const parts = [
     c.customers ? plural(c.customers, "customer", "customers") : "",
     c.products ? plural(c.products, "product", "products") : "",
-    c.programs ? plural(c.programs, "Astro program", "Astro programs") : "",
-    c.punches ? plural(c.punches, "punch balance", "punch balances") : "",
     c.discounts ? plural(c.discounts, "discount", "discounts") : "",
   ].filter(Boolean);
   return new Intl.ListFormat("en-US").format(parts);
@@ -443,9 +428,7 @@ export function DemoData() {
   const toast = useToast();
   const [confirming, setConfirming] = useState(false);
   const counts = useQuery({ queryKey: ["demo-counts"], queryFn: () => api.call("demoDataPreview") });
-  const total = counts.data
-    ? counts.data.customers + counts.data.products + counts.data.programs + counts.data.discounts
-    : 0;
+  const total = counts.data ? counts.data.customers + counts.data.products + counts.data.discounts : 0;
 
   return (
     <section className="panel">
