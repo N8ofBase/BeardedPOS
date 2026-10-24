@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import meeple from "../assets/meeple.webp";
 import { brand } from "../content/site.ts";
 import { roll, type Link as RollTarget, type RollResult } from "../roll.ts";
+import { useTracker } from "../track/Tracker.tsx";
 
 const COLORS = ["#F6B820", "#FFD25E", "#E8463A", "#E6F2EE", "#7BAE4E", "#3B5BA9", "#FFFFFF", "#8E5BC2"];
 
@@ -19,6 +20,7 @@ function RollLink({ link }: { link: RollTarget }) {
 }
 
 export function Hero() {
+  const { track } = useTracker();
   const [result, setResult] = useState<RollResult | null>(null);
   const [face, setFace] = useState(20);
   const [motion, setMotion] = useState("");
@@ -61,6 +63,7 @@ export function Hero() {
   function onRoll() {
     const last = result && "name" in result ? result.name : undefined;
     const next = roll(Math.random, last);
+    track({ type: "roll", label: "name" in next ? next.name : next.kind });
     setMotion("");
     // Restart the tumble animation on the next frame.
     requestAnimationFrame(() =>

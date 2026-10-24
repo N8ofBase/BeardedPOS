@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { games } from "../content/site.ts";
-import type { Review } from "../reviews/reviews.ts";
+import type { Review } from "@bearded/store-core";
 import { gamePath } from "../roll.ts";
 import { Stars } from "./Stars.tsx";
 

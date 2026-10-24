@@ -1,6 +1,6 @@
 // Cart math. The cart holds only Square variation ids and quantities; names and prices always come
 // from the current catalog, and Square prices the order again at checkout, so the browser never sets a price.
-import type { Product } from "../catalog/catalog.ts";
+import type { Product } from "./catalog.ts";
 
 export interface CartLine {
   productId: string;

@@ -6,7 +6,7 @@ import { ReviewForm } from "../components/ReviewForm.tsx";
 import { ReviewList } from "../components/ReviewList.tsx";
 import { Stars } from "../components/Stars.tsx";
 import { brand, games, statusLabel } from "../content/site.ts";
-import { averageStars } from "../reviews/reviews.ts";
+import { averageStars } from "@bearded/store-core";
 import { NotFound } from "./NotFound.tsx";
 
 export function GamePage() {

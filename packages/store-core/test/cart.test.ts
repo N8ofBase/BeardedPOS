@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Product } from "../src/catalog/catalog.ts";
+import type { Product } from "../src/catalog.ts";
 import {
   addToCart,
   MAX_PER_LINE,
@@ -8,7 +8,7 @@ import {
   removeFromCart,
   setQty,
   summarize,
-} from "../src/cart/cart.ts";
+} from "../src/cart.ts";
 
 const product = (over: Partial<Product> = {}): Product => ({
   id: "V1",

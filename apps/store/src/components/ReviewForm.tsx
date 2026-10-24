@@ -1,7 +1,8 @@
 import { useId, useState, type FormEvent } from "react";
-import { useStore } from "../api/store.ts";
+import { errorText, useStore } from "../api/store.ts";
 import { games } from "../content/site.ts";
-import { isBot, LIMITS, validateReview, type ReviewErrors, type ReviewInput } from "../reviews/reviews.ts";
+import { isBot, LIMITS, validateReview, type ReviewErrors, type ReviewInput } from "@bearded/store-core";
+import { useTracker } from "../track/Tracker.tsx";
 import { rememberJoined } from "../vip/VipPopup.tsx";
 
 const blank = (game: string): ReviewInput => ({
@@ -18,10 +19,12 @@ const blank = (game: string): ReviewInput => ({
 /** The review form. On a game page `game` is set and the game picker is hidden. */
 export function ReviewForm({ game }: { game?: string }) {
   const store = useStore();
+  const { track } = useTracker();
   const id = useId();
   const [input, setInput] = useState<ReviewInput>(() => blank(game ?? ""));
   const [errors, setErrors] = useState<ReviewErrors>({});
   const [state, setState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  const [failure, setFailure] = useState("");
   const set = <K extends keyof ReviewInput>(k: K, v: ReviewInput[K]) => setInput((i) => ({ ...i, [k]: v }));
   const gameName = games.find((g) => g.slug === input.game)?.name;
 
@@ -44,9 +47,11 @@ export function ReviewForm({ game }: { game?: string }) {
           email: input.email.trim(),
         });
         if (input.joinVip) rememberJoined();
+        track({ type: "review_sent", label: input.game });
       }
       setState("sent");
-    } catch {
+    } catch (e) {
+      setFailure(errorText(e, "That didn’t go through. Try again in a minute."));
       setState("failed");
     }
   }
@@ -196,7 +201,11 @@ export function ReviewForm({ game }: { game?: string }) {
       <button className="btn red" type="submit" disabled={state === "sending"}>
         {state === "sending" ? "Sending…" : "Send review"}
       </button>
-      {state === "failed" && <p className="error">That didn’t go through. Try again in a minute.</p>}
+      {state === "failed" && (
+        <p className="error" role="alert">
+          {failure}
+        </p>
+      )}
     </form>
   );
 }

@@ -18,3 +18,5 @@ infra/.site/
 .vscode/
 .idea/
 *.log
+# store api development database
+services/store-api/.data/

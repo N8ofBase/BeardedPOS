@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { useStore } from "../api/store.ts";
-import { formatCents } from "../catalog/catalog.ts";
-import { maxQty } from "../cart/cart.ts";
+import { formatCents, maxQty } from "@bearded/store-core";
+import { errorText, useStore } from "../api/store.ts";
 import { useCart } from "../cart/CartProvider.tsx";
+import { useTracker } from "../track/Tracker.tsx";
 
 /** The cart's lines, subtotal and checkout button: shown in the drawer and on /cart. */
 export function CartContents({ onLeave }: { onLeave?: () => void }) {
   const cart = useCart();
   const store = useStore();
   const navigate = useNavigate();
+  const tracker = useTracker();
   const [state, setState] = useState<"idle" | "sending" | "failed">("idle");
+  const [error, setError] = useState("");
   const summary = cart.summary;
 
   if (!summary) return <p>Loading your cart…</p>;
@@ -18,13 +20,14 @@ export function CartContents({ onLeave }: { onLeave?: () => void }) {
   async function checkout() {
     setState("sending");
     try {
-      const { url } = await store.checkout(
-        summary!.lines.map((l) => ({ productId: l.product.id, qty: l.qty })),
-      );
+      const lines = summary!.lines.map((l) => ({ productId: l.product.id, qty: l.qty }));
+      const { url } = await store.checkout(lines, tracker.visitorId);
+      tracker.track({ type: "checkout_start", qty: lines.reduce((n, l) => n + l.qty, 0) });
       onLeave?.();
       if (url.startsWith("/")) navigate(url);
       else window.location.assign(url);
-    } catch {
+    } catch (e) {
+      setError(errorText(e, "Checkout didn’t open. Try again in a minute."));
       setState("failed");
     }
   }
@@ -94,7 +97,11 @@ export function CartContents({ onLeave }: { onLeave?: () => void }) {
           >
             {state === "sending" ? "Opening checkout…" : "Check out"}
           </button>
-          {state === "failed" && <p className="error">Checkout didn’t open. Try again in a minute.</p>}
+          {state === "failed" && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
         </>
       )}
     </div>

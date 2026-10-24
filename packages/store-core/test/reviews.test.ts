@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageStars, isBot, LIMITS, validateReview, type ReviewInput } from "../src/reviews/reviews.ts";
+import { averageStars, isBot, LIMITS, validateReview, type ReviewInput } from "../src/reviews.ts";
 
 const good: ReviewInput = {
   game: "fences",
