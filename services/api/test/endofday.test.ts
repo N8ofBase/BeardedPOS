@@ -208,7 +208,7 @@ const file = (): Rows => [
   { date: "3/14/2025", receipt: "A-1", phone, barcode: "0012345678905", lineTotal: "60.00" },
   { date: "2025-03-20", phone, item: "Old card game", lineTotal: "5.00" },
   { date: "2025-03-20", phone, item: "Old card game", qty: "2", lineTotal: "10.00" },
-  { date: "2025-03-21", phone: "9995550000", item: "Chew", lineTotal: "1.00" },
+  { date: "2025-03-21", phone: "9995550000", item: "Dice", lineTotal: "1.00" },
 ];
 
 describe("past orders import", () => {

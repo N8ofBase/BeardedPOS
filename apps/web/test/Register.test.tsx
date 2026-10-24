@@ -55,6 +55,7 @@ describe("ticket", () => {
       customerId: null,
       lines: [{ key: t.lines[0]!.key, productId: "p1", qty: 1 }],
       discounts: [],
+      rewards: 0,
     });
     expect(JSON.stringify(input)).not.toContain("6499");
   });
@@ -209,7 +210,7 @@ describe("receipt", () => {
           lineTotalCents: 12498,
         },
       ],
-      discounts: [{ name: "Damaged bag (DEMO)", amountCents: 500, note: null }],
+      discounts: [{ name: "Damaged box (DEMO)", amountCents: 500, note: null }],
       payments: [
         { method: "cash", status: "completed", amountCents: 13373, tenderedCents: 14000, changeCents: 627 },
       ],
@@ -226,7 +227,7 @@ describe("receipt", () => {
     expect(text).toMatch(/Tax 7%\s+\$8\.75/);
     expect(text).toMatch(/TOTAL\s+\$133\.73/);
     expect(text).toMatch(/Change\s+\$6\.27/);
-    expect(text).toMatch(/Damaged bag \(DEMO\)\s+-\$5\.00/);
+    expect(text).toMatch(/Damaged box \(DEMO\)\s+-\$5\.00/);
   });
 });
 

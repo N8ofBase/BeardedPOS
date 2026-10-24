@@ -1,6 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { formatMoney, REFUND_REASON_LABEL, REFUND_REASONS, type RefundReasonCode } from "@bearded/core";
+import {
+  bucksLabel,
+  formatMoney,
+  REFUND_REASON_LABEL,
+  REFUND_REASONS,
+  type RefundReasonCode,
+} from "@bearded/core";
 import type { RefundPlan } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
@@ -178,6 +184,19 @@ export function RefundPanel({ saleId, onDone }: { saleId: string; onDone: () => 
           <span className="num">{formatMoney(plan.totalCents)}</span>
         </div>
         {lines.length > 0 && <p style={{ margin: "6px 0 0" }}>{plan.label}</p>}
+        {lines.length > 0 && (plan.bucks.takeBack > 0 || plan.bucks.giveBack > 0) && (
+          <p className="muted small" style={{ margin: "4px 0 0" }}>
+            {[
+              plan.bucks.takeBack > 0 &&
+                `Takes back ${bucksLabel(plan.bucks.takeBack)} earned on these items`,
+              plan.bucks.giveBack > 0 &&
+                `Gives back the ${bucksLabel(plan.bucks.giveBack)} used on this sale`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            .
+          </p>
+        )}
       </div>
 
       {plan.needsApproval && (

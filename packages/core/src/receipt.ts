@@ -1,5 +1,6 @@
 // The receipt, built once here so the printed copy, the screen and what's sent by
 // email or text all match. 32 columns wide like a thermal printer (the prototype's format).
+import { bucksLabel } from "./loyalty.ts";
 import { formatMoney } from "./money.ts";
 import { REFUND_REASON_LABEL, type RefundReasonCode } from "./refund.ts";
 import { formatTaxPercent } from "./tax.ts";
@@ -52,6 +53,8 @@ export interface ReceiptData {
   totalCents: number;
   refundedCents: number;
   refunds: ReceiptRefund[];
+  /** Beard Bucks this sale moved, and the customer's balance now. */
+  bucks?: { earned: number; birthday: number; redeemed: number; balance: number } | null;
 }
 
 const W = 32;
@@ -108,6 +111,12 @@ export function receiptText(r: ReceiptData): string {
   }
   if (r.status === "canceled") out.push("", "*** CANCELED ***");
   if (r.customer) out.push("", `Customer: ${r.customer.name}`);
+  if (r.bucks) {
+    if (r.bucks.redeemed) out.push(`Used ${bucksLabel(r.bucks.redeemed)}`);
+    if (r.bucks.earned) out.push(`Earned ${bucksLabel(r.bucks.earned)}`);
+    if (r.bucks.birthday) out.push(`Happy birthday! +${bucksLabel(r.bucks.birthday)}`);
+    out.push(`Beard Bucks balance: ${r.bucks.balance.toLocaleString("en-US")}`);
+  }
   if (r.staffName) out.push(`Served by ${r.staffName}`);
   out.push("", "Thank you!");
   return out.join("\n");

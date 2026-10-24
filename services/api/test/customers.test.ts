@@ -42,9 +42,9 @@ describe("demo seed", () => {
     const cards = await invoke(db, cashier, "searchCustomers", { q: "" });
     expect(cards.map((c) => c.name)).toEqual([
       "Sample Buyer (DEMO)",
-      "Sample Cat Parent (DEMO)",
       "Sample Customer (DEMO)",
       "Sample Family (DEMO)",
+      "Sample Game Night Regular (DEMO)",
     ]);
   });
 });
@@ -98,7 +98,7 @@ describe("finding customers", () => {
       (await invoke(db, cashier, "searchCustomers", { q })).map((c) => c.name);
     expect(await names("family")).toEqual(["Sample Family (DEMO)"]);
     expect(await names("customer.demo@")).toEqual(["Sample Customer (DEMO)"]);
-    expect(await names("555-0101")).toEqual(["Sample Cat Parent (DEMO)"]);
+    expect(await names("555-0101")).toEqual(["Sample Game Night Regular (DEMO)"]);
     expect(await names("(212) 555")).toHaveLength(3);
     expect(await names("01")).toEqual([]);
   });

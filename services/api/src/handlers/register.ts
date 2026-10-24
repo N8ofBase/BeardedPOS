@@ -21,6 +21,14 @@ import { terminal } from "../payments/terminal.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
 import { CUSTOMER_COLUMNS, toCards, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
+import {
+  earnOnSale,
+  giveBackOnVoid,
+  loyaltyCard,
+  redeemRewards,
+  saleBucks,
+  type LoyaltyCard,
+} from "./loyalty.ts";
 import { moneyTotals } from "./totals.ts";
 
 type Trx = Transaction<DB>;
@@ -33,6 +41,8 @@ export interface TicketInput {
     qty: number;
   }[];
   discounts: { discountId: string; lineKey: string | null; note?: string; approvedBy?: string | null }[];
+  /** Beard Bucks rewards to use, $5 off for each 100 Bucks. */
+  rewards?: number;
 }
 
 interface Loaded {
@@ -121,6 +131,7 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
     lines,
     storeDiscounts: applied,
     taxRateMpct: loc.tax_rate_mpct,
+    rewards: requireInt(t.rewards ?? 0, "Beard Bucks rewards", { min: 0, max: 100 }),
   });
   return {
     priced,
@@ -231,7 +242,7 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
           sale_line_id: d.lineKey ? (lineIds.get(d.lineKey) ?? null) : null,
           discount_id: d.discountId,
           name: d.name,
-          kind: a?.rule.kind ?? null,
+          kind: a?.rule.kind ?? (d.discountId ? null : "fixed"),
           percent_mpct: a?.rule.percentMpct ?? null,
           amount_cents: d.amountCents,
           note: a?.note ?? null,
@@ -240,6 +251,8 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
         })
         .execute();
     }
+
+    await redeemRewards(trx, ctx, t.customerId, sale.id, t.rewards ?? 0);
 
     const cashOnly = L.applied.some((a) => L.rules.get(a.rule.id)?.cashOnly);
     let paid = false;
@@ -331,6 +344,7 @@ async function finishSale(trx: Trx, ctx: Ctx, saleId: string): Promise<boolean> 
     .set({ status: "paid", paid_at: new Date() })
     .where("id", "=", saleId)
     .execute();
+  await earnOnSale(trx, ctx, sale);
   return true;
 }
 
@@ -491,6 +505,7 @@ export const cancelSale = defineHandler<{ saleId: string; reason?: string }, { r
       .set({ status: "canceled", canceled_at: new Date() })
       .where("id", "=", saleId)
       .execute();
+    await giveBackOnVoid(trx, ctx, saleId, sale.customer_id);
     await audit(trx, ctx, {
       action: "sale.void",
       entity: "sale",
@@ -608,6 +623,7 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       totalCents: s.total_cents,
       refundedCents: s.refunded_cents,
       refunds,
+      bucks: await saleBucks(trx, s.id, s.customer_id),
     };
   },
 });
@@ -747,11 +763,13 @@ export interface RegisterCustomer {
   /** Top products from this customer's past sales, for one-tap adding. */
   usuallyBuys: (ProductRow & { times: number })[];
   lastVisit: Date | null;
+  /** Beard Buddy balance; null when the store has loyalty turned off. */
+  loyalty: LoyaltyCard | null;
 }
 
 export const registerCustomer = defineHandler<{ id: string }, RegisterCustomer>({
   action: "register.use",
-  async run(trx, _ctx, { id }) {
+  async run(trx, ctx, { id }) {
     const row = await trx
       .selectFrom("customers")
       .select(CUSTOMER_COLUMNS)
@@ -789,6 +807,7 @@ export const registerCustomer = defineHandler<{ id: string }, RegisterCustomer>(
         })
         .filter((x): x is ProductRow & { times: number } => !!x),
       lastVisit: last?.paid_at ?? null,
+      loyalty: await loyaltyCard(trx, ctx, id),
     };
   },
 });

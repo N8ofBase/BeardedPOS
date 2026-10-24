@@ -94,6 +94,7 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
     taxPercent: taxPercentInput(s.taxRateMpct),
     refundLimit: centsToInput(s.refundApprovalCents),
     drawerFloat: centsToInput(s.drawerFloatCents),
+    loyaltyEnabled: s.loyaltyEnabled,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -197,6 +198,14 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
               />
               {err("drawerFloatCents")}
               <span className="muted small">Left in the drawer each morning; end of day counts from it.</span>
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={f.loyaltyEnabled}
+                onChange={(e) => setF({ ...f, loyaltyEnabled: e.target.checked })}
+              />
+              Beard Buddy loyalty: 1 Beard Buck per dollar, 100 Bucks = $5 off, 100 Bucks on their birthday
             </label>
             <label>
               Brand color

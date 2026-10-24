@@ -62,6 +62,7 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - Camera scanning: `barcode-detector` and `zxing-wasm` must be the same build (`apps/web/test/scannerVersions.test.ts` checks it). Upgrade both together.
 - Card payments go through `PaymentTerminal` (`services/api/src/payments/terminal.ts`). Demo mode uses `SimulatedTerminal`; never put a Square access token in the browser.
 - Prices and totals come only from `priceSale()` in `packages/core/src/sale.ts`. The server reruns it at checkout; never trust totals from the browser.
+- Beard Buddy loyalty: the rules (earn, rewards, birthday gift, refunds) are in `packages/core/src/loyalty.ts`; a reward is a ticket discount inside `priceSale()`. Bucks live in the append-only `loyalty_ledger` (balance = sum), written only through `services/api/src/handlers/loyalty.ts` in the same transaction as the sale, void or refund.
 - Refund amounts come only from `refundLine()` in `packages/core/src/refund.ts` (running totals of what was paid per line). `refundPreview` and `refundSale` share `planRefund()`, so the screen shows exactly what happens.
 - The receipt text (printed, on screen, emailed, texted) is built once in `packages/core/src/receipt.ts`.
 - Day totals (Sales KPIs and end of day) come only from `moneyTotals()` in `services/api/src/handlers/totals.ts`. Imported orders (`sales.source = 'import'`) have no receipt number or payments and never count there; register queries filter `source = 'register'`.

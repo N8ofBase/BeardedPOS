@@ -101,12 +101,12 @@ describe("retailers", () => {
 
 describe("tags", () => {
   it("tags a customer by name, adding new tags and matching any case", async () => {
-    const c = (await invoke(db, cashier, "searchCustomers", { q: "Sample Cat" }))[0]!;
+    const c = (await invoke(db, cashier, "searchCustomers", { q: "Sample Game Night" }))[0]!;
     await invoke(db, cashier, "setCustomerTags", {
       customerId: c.id,
       tags: ["vip (demo)", "Board game club"],
     });
-    const tagged = (await invoke(db, cashier, "searchCustomers", { q: "Sample Cat" }))[0]!;
+    const tagged = (await invoke(db, cashier, "searchCustomers", { q: "Sample Game Night" }))[0]!;
     expect(tagged.tags.map((t) => t.name)).toEqual(["Board game club", "VIP (DEMO)"]);
     const tags = await invoke(db, cashier, "listTags", undefined);
     expect(tags.find((t) => t.name === "VIP (DEMO)")!.customers).toBe(3);
@@ -115,7 +115,7 @@ describe("tags", () => {
       (await invoke(db, cashier, "searchCustomers", { q: "", tagId: club.id })).map((x) => x.id),
     ).toEqual([c.id]);
     await invoke(db, cashier, "setCustomerTags", { customerId: c.id, tags: [] });
-    expect((await invoke(db, cashier, "searchCustomers", { q: "Sample Cat" }))[0]!.tags).toEqual([]);
+    expect((await invoke(db, cashier, "searchCustomers", { q: "Sample Game Night" }))[0]!.tags).toEqual([]);
   });
 
   it("renames and deletes tags (managers and owners only) and refuses duplicates", async () => {
@@ -195,7 +195,7 @@ describe("people the website meets", () => {
     });
     const p = await invoke(db, owner, "getCustomer", { id: r.customerId });
     expect(p).toMatchObject({
-      name: "Sample Cat Parent (DEMO)",
+      name: "Sample Game Night Regular (DEMO)",
       email: "cat@example.com",
       emailOptIn: false,
     });

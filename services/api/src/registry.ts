@@ -29,6 +29,7 @@ import {
   undoPreview,
 } from "./handlers/import.ts";
 import { demoDataPreview, removeDemoData } from "./handlers/demo.ts";
+import { adjustBucks, customerBucks } from "./handlers/loyalty.ts";
 import { drawerSummary, listDrawerCounts, saveDrawerCount } from "./handlers/drawer.ts";
 import { customerHistory } from "./handlers/history.ts";
 import { deleteDiscount, listDiscounts, saveDiscount } from "./handlers/discounts.ts";
@@ -83,6 +84,8 @@ export const handlers = {
   updateSettings,
   demoDataPreview,
   removeDemoData,
+  customerBucks,
+  adjustBucks,
   listProducts,
   findByCode,
   getProduct,

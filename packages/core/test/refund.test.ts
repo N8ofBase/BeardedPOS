@@ -13,7 +13,7 @@ import {
 
 const line = (over: Partial<RefundableLine> = {}): RefundableLine => ({
   id: "l1",
-  name: "Chew toy",
+  name: "Card sleeves",
   qty: 3,
   lineTotalCents: 1000,
   taxCents: 89,
@@ -118,7 +118,7 @@ const receipt: ReceiptData = {
   lines: [
     {
       id: "l1",
-      name: "Chew toy",
+      name: "Card sleeves",
       sku: "T1",
       qty: 3,
       unitPriceCents: 1000,
@@ -145,7 +145,7 @@ const receipt: ReceiptData = {
       approvedByName: null,
       amountCents: 1000,
       taxCents: 89,
-      lines: [{ name: "Chew toy", qty: 1, amountCents: 1000 }],
+      lines: [{ name: "Card sleeves", qty: 1, amountCents: 1000 }],
       payments: [{ method: "card", amountCents: 1089 }],
     },
   ],
@@ -155,7 +155,7 @@ describe("receipt text", () => {
   it("lists refunds with the reason and the net paid", () => {
     const t = receiptText(receipt);
     expect(t).toContain("REFUND");
-    expect(t).toMatch(/1× Chew toy\s+-\$10\.00/);
+    expect(t).toMatch(/1× Card sleeves\s+-\$10\.00/);
     expect(t).toMatch(/To card\s+-\$10\.89/);
     expect(t).toContain("Damaged");
     expect(t).toMatch(/NET PAID\s+\$21\.77/);

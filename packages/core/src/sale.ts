@@ -4,8 +4,10 @@
 // Order of discounts (each works on what's left after the one before):
 //   1. item discounts
 //   2. whole-ticket discounts, spread across lines in proportion
+//   3. Beard Bucks rewards ($5 each), spread the same way
 // Discounts always lower the taxable amount. Tax is rounded once per sale, half up.
 import { AppError } from "./errors.ts";
+import { REWARD_CENTS, REWARD_NAME } from "./loyalty.ts";
 import { assertCents } from "./money.ts";
 
 export interface TicketLine {
@@ -38,13 +40,16 @@ export interface PriceInput {
   lines: TicketLine[];
   storeDiscounts: AppliedStoreDiscount[];
   taxRateMpct: number;
+  /** Beard Bucks rewards used on this ticket, $5 off each. */
+  rewards?: number;
 }
 
 export interface PricedDiscount {
   name: string;
   amountCents: number;
   lineKey: string | null;
-  discountId: string;
+  /** Null for a Beard Bucks reward. */
+  discountId: string | null;
 }
 
 export interface PricedLine {
@@ -134,7 +139,7 @@ function checkStacking(applied: AppliedStoreDiscount[]): void {
 }
 
 export function priceSale(input: PriceInput): PricedSale {
-  const { lines, storeDiscounts, taxRateMpct } = input;
+  const { lines, storeDiscounts, taxRateMpct, rewards = 0 } = input;
   if (!Number.isSafeInteger(taxRateMpct) || taxRateMpct < 0) throw new TypeError("Bad tax rate");
   checkStacking(storeDiscounts);
 
@@ -180,6 +185,31 @@ export function priceSale(input: PriceInput): PricedSale {
       amountCents: amt,
       lineKey: null,
       discountId: a.rule.id,
+    });
+  }
+
+  // 3. Beard Bucks rewards: $5 each, and each needs $5 left on the ticket to take off.
+  if (!Number.isInteger(rewards) || rewards < 0) throw new TypeError("Bad reward count");
+  if (rewards > 0) {
+    const base = work.reduce((s, w) => s + w.net, 0);
+    if (rewards * REWARD_CENTS > base)
+      throw new AppError(
+        "invalid",
+        rewards === 1
+          ? "A Beard Bucks reward needs at least $5 on the ticket."
+          : `${rewards} Beard Bucks rewards need at least $${(rewards * REWARD_CENTS) / 100} on the ticket.`,
+      );
+    const amt = rewards * REWARD_CENTS;
+    const shares = allocate(
+      amt,
+      work.map((w) => w.net),
+    );
+    work.forEach((w, i) => (w.net -= shares[i]!));
+    discounts.push({
+      name: rewards === 1 ? REWARD_NAME : `${REWARD_NAME} ×${rewards}`,
+      amountCents: amt,
+      lineKey: null,
+      discountId: null,
     });
   }
 

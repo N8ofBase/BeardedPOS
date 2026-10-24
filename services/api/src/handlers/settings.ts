@@ -13,6 +13,8 @@ export interface StoreSettings {
   refundApprovalCents: number;
   /** Starting cash left in the drawer each morning. */
   drawerFloatCents: number;
+  /** Beard Buddy loyalty is on. */
+  loyaltyEnabled: boolean;
 }
 
 /** Largest logo data URL accepted (the browser resizes to 256 px first). */
@@ -23,7 +25,14 @@ export const getSettings = defineHandler<void, StoreSettings>({
   async run(trx, ctx) {
     const b = await trx
       .selectFrom("businesses")
-      .select(["name", "brand_color", "logo_data", "refund_approval_cents", "drawer_float_cents"])
+      .select([
+        "name",
+        "brand_color",
+        "logo_data",
+        "refund_approval_cents",
+        "drawer_float_cents",
+        "loyalty_enabled",
+      ])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
     const loc = await trx
@@ -41,6 +50,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
       taxRateMpct: loc.tax_rate_mpct,
       refundApprovalCents: b.refund_approval_cents,
       drawerFloatCents: b.drawer_float_cents,
+      loyaltyEnabled: b.loyalty_enabled,
     };
   },
 });
@@ -57,6 +67,8 @@ export interface SettingsInput {
   refundApprovalCents?: number;
   /** Left out: unchanged. */
   drawerFloatCents?: number;
+  /** Left out: unchanged. */
+  loyaltyEnabled?: boolean;
 }
 
 export const updateSettings = defineHandler<SettingsInput, void>({
@@ -95,6 +107,7 @@ export const updateSettings = defineHandler<SettingsInput, void>({
       .set({
         ...(limit !== undefined ? { refund_approval_cents: limit } : {}),
         ...(float !== undefined ? { drawer_float_cents: float } : {}),
+        ...(input.loyaltyEnabled !== undefined ? { loyalty_enabled: input.loyaltyEnabled } : {}),
         name,
         brand_color: input.brandColor,
         logo_data: input.logo,
