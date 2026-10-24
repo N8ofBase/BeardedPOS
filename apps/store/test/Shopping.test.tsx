@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CART_KEY } from "../src/cart/CartProvider.tsx";
-import type { Review } from "../src/reviews/reviews.ts";
+import type { Review } from "@bearded/store-core";
 import { MEMORY_KEY, SHOWN_KEY } from "../src/vip/VipPopup.tsx";
 import { renderStore } from "./render.tsx";
 
@@ -46,12 +46,15 @@ describe("cart", () => {
   });
 
   it("sends only ids and quantities to checkout, then clears the cart on the thank-you page", async () => {
-    const checkout = vi.fn(async () => ({ url: "/thanks?preview=1" }));
+    const checkout = vi.fn(async () => ({ url: "/thanks?preview=1", orderId: "" }));
     localStorage.setItem(CART_KEY, JSON.stringify([{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }]));
     renderStore("/cart", { checkout });
     fireEvent.click(await screen.findByRole("button", { name: "Check out" }));
     expect(await screen.findByRole("heading", { name: "Thanks for your order!" })).toBeTruthy();
-    expect(checkout).toHaveBeenCalledWith([{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }]);
+    expect(checkout).toHaveBeenCalledWith(
+      [{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }],
+      expect.any(String),
+    );
     expect(screen.getByText(/no payment was taken/)).toBeTruthy();
     await waitFor(() => expect(localStorage.getItem(CART_KEY)).toBeNull());
   });

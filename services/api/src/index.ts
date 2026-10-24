@@ -11,9 +11,7 @@ export type {
   ProductRow,
   SaveProductInput,
 } from "./handlers/inventory.ts";
-export type { AstroQueueRow, ProgramRow, SaveProgramInput } from "./handlers/astro.ts";
 export type {
-  AstroEffect,
   RefundInput,
   RefundPlan,
   RefundResult,
@@ -30,17 +28,10 @@ export type {
 } from "./handlers/drawer.ts";
 export type { CustomerHistory, HistoryOrder } from "./handlers/history.ts";
 export type { MoneyTotals } from "./handlers/totals.ts";
-export { MAX_ASTRO_ATTEMPTS, processAstroQueue, type SendSummary } from "./astro/sender.ts";
 export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";
 export type { ImportResult, RowOutcome } from "./import/engine.ts";
 export type { UndoResult } from "./import/undo.ts";
-export type {
-  CustomerCard,
-  CustomerProfile,
-  DeletePreview,
-  PunchCard,
-  TagChip,
-} from "./handlers/customers.ts";
+export type { CustomerCard, CustomerProfile, DeletePreview, TagChip } from "./handlers/customers.ts";
 export {
   recordStoreContact,
   sqlClient,

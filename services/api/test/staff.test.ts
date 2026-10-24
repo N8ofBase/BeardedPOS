@@ -22,7 +22,7 @@ describe("me", () => {
     const res = await invoke(db, owner, "me", undefined);
     expect(res.staff).toMatchObject({ name: "Sample Owner (DEMO)", role: "owner" });
     expect(res.business.name).toBe("Sample Pet Store (DEMO)");
-    expect(res.business.modules).toEqual({ astro: true });
+    expect(res.business.modules).toEqual({});
     expect(res.location).toMatchObject({ name: "Main store (DEMO)", taxRateMpct: 7000 });
   });
 

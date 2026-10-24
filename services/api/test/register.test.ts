@@ -12,7 +12,6 @@ let manager: Ctx;
 let cashier: Ctx;
 let sku: Record<string, { id: string; onHand: number; priceCents: number }>;
 let sampleCustomer: string;
-let club: string;
 
 beforeEach(async () => {
   ({ db } = await createTestDb());
@@ -29,7 +28,6 @@ beforeEach(async () => {
   const products = await invoke(db, owner, "listProducts", {});
   sku = Object.fromEntries(products.map((p) => [p.sku, p]));
   sampleCustomer = (await invoke(db, owner, "lookupByPhone", { phone: "2125550100" }))!.id;
-  club = (await invoke(db, owner, "listPrograms", undefined))[0]!.id;
 });
 
 const discountId = async (code: string) =>
@@ -37,23 +35,13 @@ const discountId = async (code: string) =>
 
 const ticket = (over: Partial<TicketInput> = {}): TicketInput => ({
   customerId: null,
-  lines: [{ key: "1", productId: sku["0003"]!.id, qty: 1, applyOffer: false }],
-  rewards: [],
+  lines: [{ key: "1", productId: sku["0003"]!.id, qty: 1 }],
   discounts: [],
   ...over,
 });
 
 const onHand = async (s: string) =>
   (await invoke(db, owner, "listProducts", { includeArchived: true })).find((p) => p.sku === s)!.onHand;
-const balance = async () =>
-  (await invoke(db, owner, "getCustomer", { id: sampleCustomer })).punchCards.find(
-    (c) => c.programId === club,
-  )?.balance ?? 0;
-const queue = () =>
-  withBusiness(db, owner.businessId, (trx) =>
-    trx.selectFrom("astro_queue").select(["sale_id", "payload", "status"]).execute(),
-  );
-
 describe("startCheckout", () => {
   it("prices with current prices and 7% tax, and numbers receipts per business", async () => {
     const a = await invoke(db, cashier, "startCheckout", ticket());
@@ -70,14 +58,12 @@ describe("startCheckout", () => {
     await invoke(db, owner, "saveProduct", {
       ...(await invoke(db, owner, "getProduct", { id: sku["0003"]!.id })).product,
       priceCents: 1500,
-      offerLabel: null,
-      offerCents: null,
       id: sku["0003"]!.id,
     });
     expect((await invoke(db, cashier, "startCheckout", ticket())).subtotalCents).toBe(1500);
   });
 
-  it("refuses an empty ticket, archived products, and a reward without a full card", async () => {
+  it("refuses an empty ticket and archived products", async () => {
     await expect(invoke(db, cashier, "startCheckout", ticket({ lines: [] }))).rejects.toThrow(/empty/);
     await invoke(db, owner, "archiveProduct", { id: sku["0004"]!.id, archived: true });
     await expect(
@@ -85,15 +71,9 @@ describe("startCheckout", () => {
         db,
         cashier,
         "startCheckout",
-        ticket({ lines: [{ key: "1", productId: sku["0004"]!.id, qty: 1, applyOffer: false }] }),
+        ticket({ lines: [{ key: "1", productId: sku["0004"]!.id, qty: 1 }] }),
       ),
     ).rejects.toThrow(/isn't for sale/);
-    await expect(invoke(db, cashier, "startCheckout", ticket({ rewards: [club] }))).rejects.toThrow(
-      /Attach the customer/,
-    );
-    await expect(
-      invoke(db, cashier, "startCheckout", ticket({ customerId: sampleCustomer, rewards: [club] })),
-    ).rejects.toThrow(/card isn't full yet \(11 of 12\)/);
   });
 });
 
@@ -183,7 +163,7 @@ describe("card (simulated Square Terminal)", () => {
 });
 
 describe("finishing a sale", () => {
-  it("takes stock, adds punches, and queues the sale for Astro", async () => {
+  it("takes stock and marks the sale paid", async () => {
     const before = await onHand("0001");
     const s = await invoke(
       db,
@@ -192,90 +172,22 @@ describe("finishing a sale", () => {
       ticket({
         customerId: sampleCustomer,
         lines: [
-          { key: "1", productId: sku["0001"]!.id, qty: 2, applyOffer: true },
-          { key: "2", productId: sku["0003"]!.id, qty: 1, applyOffer: false },
+          { key: "1", productId: sku["0001"]!.id, qty: 2 },
+          { key: "2", productId: sku["0003"]!.id, qty: 1 },
         ],
       }),
     );
-    // 2 × 64.99 − 5.00 offer + 12.99 = 137.97; tax 7% = 9.66 (9.6579 → 9.66)
-    expect(s).toMatchObject({ subtotalCents: 14297, discountCents: 500, taxCents: 966, totalCents: 14763 });
+    // 2 × 64.99 + 12.99 = 142.97; tax 7% = 10.01 (10.0079 → 10.01)
+    expect(s).toMatchObject({ subtotalCents: 14297, discountCents: 0, taxCents: 1001, totalCents: 15298 });
     await invoke(db, cashier, "payCash", {
       saleId: s.saleId,
       amountCents: s.totalCents,
-      tenderedCents: 15000,
+      tenderedCents: 16000,
     });
 
     expect(await onHand("0001")).toBe(before - 2);
-    expect(await balance()).toBe(13);
-    const q = await queue();
-    expect(q).toHaveLength(1);
-    expect(q[0]).toMatchObject({
-      sale_id: s.saleId,
-      status: "pending",
-      payload: {
-        receiptNumber: 1001,
-        customer: { name: "Sample Customer (DEMO)", phone: "2125550100" },
-        earned: [{ programName: "Sample dry food club (DEMO)", punches: 2 }],
-        offers: [{ label: "$5 off 24 lb bag", amountCents: 500, sku: "0001" }],
-        rewards: [],
-      },
-    });
     const receipt = await invoke(db, cashier, "getSale", { id: s.saleId });
-    expect(receipt).toMatchObject({
-      status: "paid",
-      earned: [{ programName: "Sample dry food club (DEMO)", punches: 2 }],
-    });
-  });
-
-  it("redeems a full card: the cheapest bag is free and its punches are used", async () => {
-    // Fill the card: 11 + 1 = 12.
-    const fill = await invoke(
-      db,
-      cashier,
-      "startCheckout",
-      ticket({
-        customerId: sampleCustomer,
-        lines: [{ key: "1", productId: sku["0002"]!.id, qty: 1, applyOffer: false }],
-      }),
-    );
-    await invoke(db, cashier, "payCash", {
-      saleId: fill.saleId,
-      amountCents: fill.totalCents,
-      tenderedCents: fill.totalCents,
-    });
-    expect(await balance()).toBe(12);
-
-    const s = await invoke(
-      db,
-      cashier,
-      "startCheckout",
-      ticket({
-        customerId: sampleCustomer,
-        rewards: [club],
-        lines: [
-          { key: "1", productId: sku["0001"]!.id, qty: 1, applyOffer: false },
-          { key: "2", productId: sku["0002"]!.id, qty: 1, applyOffer: false },
-        ],
-      }),
-    );
-    expect(s.discountCents).toBe(3899);
-    await invoke(db, cashier, "payCash", {
-      saleId: s.saleId,
-      amountCents: s.totalCents,
-      tenderedCents: s.totalCents,
-    });
-    // 12 − 12 redeemed + 1 earned (the free bag doesn't earn).
-    expect(await balance()).toBe(1);
-  });
-
-  it("queues nothing for a sale without Astro activity", async () => {
-    const s = await invoke(db, cashier, "startCheckout", ticket());
-    await invoke(db, cashier, "payCash", {
-      saleId: s.saleId,
-      amountCents: s.totalCents,
-      tenderedCents: s.totalCents,
-    });
-    expect(await queue()).toEqual([]);
+    expect(receipt).toMatchObject({ status: "paid", customer: { name: "Sample Customer (DEMO)" } });
   });
 
   it("finishes a fully discounted sale with no payment", async () => {
@@ -285,7 +197,7 @@ describe("finishing a sale", () => {
       manager,
       "startCheckout",
       ticket({
-        lines: [{ key: "1", productId: sku["0004"]!.id, qty: 1, applyOffer: false }],
+        lines: [{ key: "1", productId: sku["0004"]!.id, qty: 1 }],
         discounts: [
           { discountId: dmg, lineKey: "1" },
           { discountId: dmg, lineKey: "1" },
@@ -376,7 +288,7 @@ describe("store discounts", () => {
       invoke(db, cashier, "startCheckout", ticket({ discounts: [{ discountId: emp, lineKey: null }] })),
     ).rejects.toThrow(/Add a note/);
     const dmg = await discountId("DMG");
-    const line = { key: "1", productId: sku["0004"]!.id, qty: 1, applyOffer: false };
+    const line = { key: "1", productId: sku["0004"]!.id, qty: 1 };
     await expect(
       invoke(
         db,
@@ -549,7 +461,7 @@ describe("sales list and register customer", () => {
         "startCheckout",
         ticket({
           customerId: sampleCustomer,
-          lines: [{ key: "1", productId: sku[s]!.id, qty: 1, applyOffer: false }],
+          lines: [{ key: "1", productId: sku[s]!.id, qty: 1 }],
         }),
       );
       await invoke(db, cashier, "payCash", {

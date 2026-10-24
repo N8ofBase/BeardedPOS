@@ -3,7 +3,6 @@ import { ErrorBoundary } from "../ui/ErrorBoundary.tsx";
 import { StoreMark } from "../ui/StoreMark.tsx";
 import { isHexColor, readableOn, ROLE_LABEL } from "@pet-pos/core";
 import type { Me } from "@pet-pos/api";
-import { AstroPage } from "../pages/AstroPage.tsx";
 import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
 import { EmailRoutes } from "../pages/email/EmailPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
@@ -25,7 +24,6 @@ const PAGES: Record<string, () => React.ReactNode> = {
   "/customers": () => <CustomersRoutes />,
   "/email": () => <EmailRoutes />,
   "/sales": () => <SalesRoutes />,
-  "/astro": () => <AstroPage />,
   "/settings": () => <SettingsRoutes />,
 };
 

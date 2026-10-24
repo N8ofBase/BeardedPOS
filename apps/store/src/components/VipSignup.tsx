@@ -1,16 +1,21 @@
 import { useId, useState, type FormEvent } from "react";
 import { looksLikeEmail, useStore } from "../api/store.ts";
 import { brand } from "../content/site.ts";
+import { useTracker } from "../track/Tracker.tsx";
 
 /** The VIP email form, used by the VIP band and the popup. */
 export function VipSignup({
   label = "Join the VIP list",
+  source = "band",
   onJoined,
 }: {
   label?: string;
+  /** Which signup it was, for store stats. */
+  source?: "band" | "popup";
   onJoined?: () => void;
 }) {
   const store = useStore();
+  const { track } = useTracker();
   const id = useId();
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "joined" | "failed">("idle");
@@ -25,7 +30,8 @@ export function VipSignup({
     setError("");
     setState("sending");
     try {
-      await store.joinVip(email.trim());
+      await store.joinVip(email.trim(), source);
+      track({ type: "vip_join", label: source });
       setState("joined");
       onJoined?.();
     } catch {

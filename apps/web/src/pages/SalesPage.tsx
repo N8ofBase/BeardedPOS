@@ -117,7 +117,6 @@ export function SalesPage() {
             value={list.data.refundCents ? `−${formatMoney(list.data.refundCents)}` : formatMoney(0)}
           />
           <Kpi label="Discounts" value={formatMoney(list.data.discountCents)} />
-          <Kpi label="Astro discounts" value={formatMoney(list.data.astroDiscountCents)} />
         </div>
       )}
       <div className="tablewrap">

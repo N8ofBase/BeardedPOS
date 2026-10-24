@@ -3,14 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CheckoutResult, ProductRow } from "@pet-pos/api";
 import { PaymentPanel } from "../src/pages/register/PaymentPanel.tsx";
 import { receiptText } from "@pet-pos/core";
-import {
-  addProduct,
-  EMPTY_TICKET,
-  priceTicket,
-  setQty,
-  toInput,
-  toggleOffer,
-} from "../src/pages/register/ticket.ts";
+import { addProduct, EMPTY_TICKET, priceTicket, setQty, toInput } from "../src/pages/register/ticket.ts";
 import { todayRange } from "../src/pages/SalesPage.tsx";
 import { CameraButton, cameraErrorMessage } from "../src/ui/scanner/CameraScanner.tsx";
 import { createDeduper } from "../src/ui/scanner/detector.ts";
@@ -36,10 +29,6 @@ const food: ProductRow = {
   taxClass: "standard",
   reorderAt: 6,
   onHand: 14,
-  astroProgramId: "club",
-  astroProgramName: "Dry food club",
-  offerLabel: "$5 off 24 lb bag",
-  offerCents: 500,
   active: true,
 };
 
@@ -49,14 +38,11 @@ describe("ticket", () => {
     t = addProduct(t, food);
     expect(t.lines).toHaveLength(1);
     expect(t.lines[0]!.qty).toBe(2);
-    expect(priceTicket(t, 7000, true).priced).toMatchObject({
+    expect(priceTicket(t, 7000).priced).toMatchObject({
       subtotalCents: 12998,
       taxCents: 910,
       totalCents: 13908,
     });
-
-    t = toggleOffer(t, t.lines[0]!.key);
-    expect(priceTicket(t, 7000, true).priced!.totalCents).toBe(12998 - 500 + 875);
 
     t = setQty(t, t.lines[0]!.key, 0);
     expect(t.lines).toEqual([]);
@@ -67,8 +53,7 @@ describe("ticket", () => {
     const input = toInput(t);
     expect(input).toEqual({
       customerId: null,
-      lines: [{ key: t.lines[0]!.key, productId: "p1", qty: 1, applyOffer: false }],
-      rewards: [],
+      lines: [{ key: t.lines[0]!.key, productId: "p1", qty: 1 }],
       discounts: [],
     });
     expect(JSON.stringify(input)).not.toContain("6499");
@@ -107,7 +92,7 @@ describe("ticket", () => {
         },
       ],
     };
-    expect(priceTicket(t, 7000, true).problem).toMatch(/Only one whole-ticket discount/);
+    expect(priceTicket(t, 7000).problem).toMatch(/Only one whole-ticket discount/);
   });
 });
 
@@ -202,7 +187,7 @@ describe("payment", () => {
 });
 
 describe("receipt", () => {
-  it("prints in 32 columns with discounts, tax, payment and Astro credit", () => {
+  it("prints in 32 columns with discounts, tax and payment", () => {
     const text = receiptText({
       id: "s1",
       receiptNumber: 1001,
@@ -224,7 +209,7 @@ describe("receipt", () => {
           lineTotalCents: 12498,
         },
       ],
-      discounts: [{ name: "$5 off 24 lb bag", source: "astro_offer", amountCents: 500, note: null }],
+      discounts: [{ name: "Damaged bag (DEMO)", amountCents: 500, note: null }],
       payments: [
         { method: "cash", status: "completed", amountCents: 13373, tenderedCents: 14000, changeCents: 627 },
       ],
@@ -235,14 +220,13 @@ describe("receipt", () => {
       totalCents: 13373,
       refundedCents: 0,
       refunds: [],
-      earned: [{ programName: "Dry food club", punches: 2 }],
     });
     for (const line of text.split("\n")) expect(line.length).toBeLessThanOrEqual(32);
     expect(text).toContain("2× Adult Dog Food 24 lb");
     expect(text).toMatch(/Tax 7%\s+\$8\.75/);
     expect(text).toMatch(/TOTAL\s+\$133\.73/);
     expect(text).toMatch(/Change\s+\$6\.27/);
-    expect(text).toContain("Astro credit: 2 × Dry food club");
+    expect(text).toMatch(/Damaged bag \(DEMO\)\s+-\$5\.00/);
   });
 });
 

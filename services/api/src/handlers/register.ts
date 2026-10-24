@@ -1,7 +1,7 @@
 // Register checkout. The browser shows totals with priceSale() as the ticket
 // changes; startCheckout reruns it here with current prices and saved discounts,
-// never trusting the browser's numbers. A sale finishes (stock, punches, Astro
-// queue) exactly once, in the transaction of the payment that completes it.
+// never trusting the browser's numbers. A sale finishes (stock moves, status paid)
+// exactly once, in the transaction of the payment that completes it.
 import { sql, type Transaction } from "kysely";
 import {
   allocate,
@@ -9,7 +9,6 @@ import {
   can,
   priceSale,
   type AppliedStoreDiscount,
-  type AstroSalePayload,
   type Ctx,
   type DiscountRule,
   type PricedSale,
@@ -20,7 +19,7 @@ import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { terminal } from "../payments/terminal.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
-import { toCards, CUSTOMER_COLUMNS, type CustomerCard } from "./customers.ts";
+import { CUSTOMER_COLUMNS, toCards, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
 import { moneyTotals } from "./totals.ts";
 
@@ -32,10 +31,7 @@ export interface TicketInput {
     key: string;
     productId: string;
     qty: number;
-    applyOffer: boolean;
   }[];
-  /** Astro programs whose full card is being redeemed. */
-  rewards: string[];
   discounts: { discountId: string; lineKey: string | null; note?: string; approvedBy?: string | null }[];
 }
 
@@ -46,11 +42,10 @@ interface Loaded {
   applied: (AppliedStoreDiscount & { note: string | null; approvedBy: string | null })[];
   rules: Map<string, { cashOnly: boolean }>;
   taxRateMpct: number;
-  astroBeforeTax: boolean;
   locationId: string;
 }
 
-/** Turns a ticket into priced lines, checking every product, reward and discount. */
+/** Turns a ticket into priced lines, checking every product and discount. */
 async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
   if (!t.lines.length) throw new AppError("invalid", "The ticket is empty.");
   if (t.lines.length > 200) throw new AppError("invalid", "A ticket can have up to 200 lines.");
@@ -75,36 +70,8 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
       unitPriceCents: p.priceCents,
       qty: l.qty,
       taxClass: p.taxClass,
-      astroProgramId: p.astroProgramId,
-      offer: p.offerLabel && p.offerCents ? { label: p.offerLabel, cents: p.offerCents } : null,
-      applyOffer: l.applyOffer && !!p.offerCents,
     };
   });
-
-  // Rewards: a customer with a full card for each program.
-  const rewardIds = [...new Set(t.rewards)];
-  const rewards: { programId: string; label: string }[] = [];
-  if (rewardIds.length) {
-    if (!t.customerId) throw new AppError("invalid", "Attach the customer to redeem their reward.");
-    for (const programId of rewardIds) {
-      const p = await trx
-        .selectFrom("astro_programs as a")
-        .leftJoin("astro_balances as b", (j) =>
-          j.onRef("b.program_id", "=", "a.id").on("b.customer_id", "=", t.customerId!),
-        )
-        .select(["a.name", "a.reward_text", "a.buy_count", "b.balance"])
-        .where("a.id", "=", programId)
-        .where("a.active", "=", true)
-        .executeTakeFirst();
-      if (!p) throw new AppError("invalid", "That Astro program isn't active anymore.");
-      if ((p.balance ?? 0) < p.buy_count)
-        throw new AppError(
-          "invalid",
-          `${p.name}: the card isn't full yet (${p.balance ?? 0} of ${p.buy_count}).`,
-        );
-      rewards.push({ programId, label: `${p.reward_text} · ${p.name}` });
-    }
-  }
 
   // Store discounts: active, approved when they need it, with a note when they ask for one.
   const applied: Loaded["applied"] = [];
@@ -145,11 +112,6 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
     rules.set(r.id, { cashOnly: r.cash_only });
   }
 
-  const biz = await trx
-    .selectFrom("businesses")
-    .select("astro_discounts_before_tax")
-    .where("id", "=", ctx.businessId)
-    .executeTakeFirstOrThrow();
   const loc = await trx
     .selectFrom("locations")
     .select(["id", "tax_rate_mpct"])
@@ -158,9 +120,7 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
   const priced = priceSale({
     lines,
     storeDiscounts: applied,
-    rewards,
     taxRateMpct: loc.tax_rate_mpct,
-    astroBeforeTax: biz.astro_discounts_before_tax,
   });
   return {
     priced,
@@ -169,7 +129,6 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
     applied,
     rules,
     taxRateMpct: loc.tax_rate_mpct,
-    astroBeforeTax: biz.astro_discounts_before_tax,
     locationId: loc.id,
   };
 }
@@ -226,7 +185,6 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
         tax_cents: p.taxCents,
         total_cents: p.totalCents,
         tax_rate_mpct: L.taxRateMpct,
-        discounts_before_tax: L.astroBeforeTax,
       })
       .returning("id")
       .executeTakeFirstOrThrow();
@@ -255,8 +213,6 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
           unit_price_cents: line.unitPriceCents,
           discount_cents: pl.discountCents,
           line_total_cents: pl.netCents,
-          astro_program_id: prod?.astroProgramId ?? null,
-          earns_punches: pl.earnsPunches,
           tax_cents: taxShares[i]!,
           unit_cost_cents: prod?.costCents ?? null,
         })
@@ -266,16 +222,13 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
     }
 
     for (const d of p.discounts) {
-      const a = d.discountId
-        ? L.applied.find((x) => x.rule.id === d.discountId && x.lineKey === d.lineKey)
-        : undefined;
+      const a = L.applied.find((x) => x.rule.id === d.discountId && x.lineKey === d.lineKey);
       await trx
         .insertInto("sale_discounts")
         .values({
           business_id: ctx.businessId,
           sale_id: sale.id,
           sale_line_id: d.lineKey ? (lineIds.get(d.lineKey) ?? null) : null,
-          source: d.source,
           discount_id: d.discountId,
           name: d.name,
           kind: a?.rule.kind ?? null,
@@ -338,8 +291,7 @@ async function hasCashOnlyDiscount(trx: Trx, saleId: string): Promise<boolean> {
 }
 
 /**
- * Finishes a fully paid sale: stock moves, Astro punches, the Astro queue row, and
- * status paid. Guarded by the open status (row-locked), so it runs once.
+ * Finishes a fully paid sale: stock moves and status paid. Guarded by the open status (row-locked), so it runs once.
  */
 async function finishSale(trx: Trx, ctx: Ctx, saleId: string): Promise<boolean> {
   const sale = await trx
@@ -371,112 +323,6 @@ async function finishSale(trx: Trx, ctx: Ctx, saleId: string): Promise<boolean> 
         ref_id: saleId,
         staff_id: ctx.staffId,
       })
-      .execute();
-  }
-
-  const discounts = await trx
-    .selectFrom("sale_discounts")
-    .selectAll()
-    .where("sale_id", "=", saleId)
-    .execute();
-  const programIds = [...new Set(lines.map((l) => l.astro_program_id).filter((x): x is string => !!x))];
-  const programs = programIds.length
-    ? await trx
-        .selectFrom("astro_programs")
-        .select(["id", "name", "buy_count"])
-        .where("id", "in", programIds)
-        .execute()
-    : [];
-  const prog = new Map(programs.map((p) => [p.id, p]));
-  const earned = new Map<string, number>();
-  for (const l of lines)
-    if (l.astro_program_id && l.earns_punches)
-      earned.set(l.astro_program_id, (earned.get(l.astro_program_id) ?? 0) + l.earns_punches);
-  const rewards = discounts
-    .filter((d) => d.source === "astro_reward")
-    .map((d) => ({ d, programId: lines.find((l) => l.id === d.sale_line_id)?.astro_program_id ?? null }))
-    .filter((r): r is { d: (typeof discounts)[number]; programId: string } => !!r.programId);
-  const offers = discounts.filter((d) => d.source === "astro_offer");
-
-  if (sale.customer_id) {
-    for (const [programId, qty] of earned)
-      await trx
-        .insertInto("astro_punches")
-        .values({
-          business_id: ctx.businessId,
-          customer_id: sale.customer_id,
-          program_id: programId,
-          sale_id: saleId,
-          qty,
-          kind: "earn",
-        })
-        .execute();
-    for (const r of rewards)
-      await trx
-        .insertInto("astro_punches")
-        .values({
-          business_id: ctx.businessId,
-          customer_id: sale.customer_id,
-          program_id: r.programId,
-          sale_id: saleId,
-          qty: prog.get(r.programId)?.buy_count ?? 1,
-          kind: "redeem",
-        })
-        .execute();
-  }
-
-  const astroActivity = (sale.customer_id && earned.size > 0) || rewards.length > 0 || offers.length > 0;
-  if (astroActivity) {
-    const customer = sale.customer_id
-      ? await trx
-          .selectFrom("customers")
-          .select(["name", "phone", "email", "astro_customer_id"])
-          .where("id", "=", sale.customer_id)
-          .executeTakeFirst()
-      : undefined;
-    const payload: AstroSalePayload = {
-      saleId,
-      receiptNumber: sale.receipt_number!,
-      soldAt: new Date().toISOString(),
-      customer: customer
-        ? {
-            name: customer.name,
-            phone: customer.phone,
-            email: customer.email,
-            astroCustomerId: customer.astro_customer_id,
-          }
-        : null,
-      items: lines
-        .filter((l) => l.product_id)
-        .map((l) => ({
-          sku: l.sku,
-          upc: l.barcode,
-          name: l.name,
-          qty: l.qty,
-          unitPriceCents: l.unit_price_cents,
-        })),
-      earned: sale.customer_id
-        ? [...earned].map(([programId, punches]) => ({
-            programId,
-            programName: prog.get(programId)?.name ?? "",
-            punches,
-          }))
-        : [],
-      rewards: rewards.map((r) => ({
-        programId: r.programId,
-        programName: prog.get(r.programId)?.name ?? "",
-        label: r.d.name,
-        amountCents: r.d.amount_cents,
-      })),
-      offers: offers.map((o) => ({
-        label: o.name,
-        amountCents: o.amount_cents,
-        sku: lines.find((l) => l.id === o.sale_line_id)?.sku ?? null,
-      })),
-    };
-    await trx
-      .insertInto("astro_queue")
-      .values({ business_id: ctx.businessId, sale_id: saleId, payload: JSON.stringify(payload) })
       .execute();
   }
 
@@ -705,7 +551,7 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       .execute();
     const discounts = await trx
       .selectFrom("sale_discounts")
-      .select(["name", "source", "amount_cents", "note"])
+      .select(["name", "amount_cents", "note"])
       .where("sale_id", "=", id)
       .orderBy("created_at")
       .execute();
@@ -715,13 +561,6 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       .where("sale_id", "=", id)
       .where("status", "in", ["completed", "refunded"])
       .orderBy("created_at")
-      .execute();
-    const punches = await trx
-      .selectFrom("astro_punches as p")
-      .innerJoin("astro_programs as a", "a.id", "p.program_id")
-      .select(["a.name", "p.qty"])
-      .where("p.sale_id", "=", id)
-      .where("p.kind", "=", "earn")
       .execute();
     const refunds = await saleRefunds(trx, id);
     return {
@@ -752,7 +591,6 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       })),
       discounts: discounts.map((d) => ({
         name: d.name,
-        source: d.source,
         amountCents: d.amount_cents,
         note: d.note,
       })),
@@ -770,7 +608,6 @@ export const getSale = defineHandler<{ id: string }, Receipt>({
       totalCents: s.total_cents,
       refundedCents: s.refunded_cents,
       refunds,
-      earned: punches.map((p) => ({ programName: p.name, punches: p.qty })),
     };
   },
 });
@@ -848,7 +685,6 @@ export interface SalesDay {
   cardCents: number;
   cashCents: number;
   discountCents: number;
-  astroDiscountCents: number;
   /** Refunds made in the range, on any sale. */
   refundCount: number;
   refundCents: number;
@@ -900,7 +736,6 @@ export const listSales = defineHandler<{ from: string; to: string; q?: string },
       cardCents: t.cardInCents - t.cardBackCents,
       cashCents: t.cashInCents - t.cashBackCents,
       discountCents: t.discountCents,
-      astroDiscountCents: t.astroDiscountCents,
       refundCount: t.refundCount,
       refundCents: t.refundCents,
     };
@@ -923,7 +758,6 @@ export const registerCustomer = defineHandler<{ id: string }, RegisterCustomer>(
       .where("id", "=", id)
       .executeTakeFirst();
     if (!row) throw new AppError("not_found", "That customer doesn't exist anymore.");
-    const [card] = await toCards(trx, [row]);
     const top = await trx
       .selectFrom("sale_lines as l")
       .innerJoin("sales as s", "s.id", "l.sale_id")
@@ -947,7 +781,7 @@ export const registerCustomer = defineHandler<{ id: string }, RegisterCustomer>(
       .orderBy("paid_at", "desc")
       .executeTakeFirst();
     return {
-      card: card!,
+      card: (await toCards(trx, [row]))[0]!,
       usuallyBuys: top
         .map((t) => {
           const p = products.find((x) => x.id === t.product_id);

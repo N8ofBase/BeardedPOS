@@ -38,17 +38,13 @@ beforeEach(async () => {
 });
 
 describe("demo seed", () => {
-  it("adds sample customers and a punch card", async () => {
+  it("adds sample customers", async () => {
     const cards = await invoke(db, cashier, "searchCustomers", { q: "" });
     expect(cards.map((c) => c.name)).toEqual([
       "Sample Buyer (DEMO)",
       "Sample Cat Parent (DEMO)",
       "Sample Customer (DEMO)",
       "Sample Family (DEMO)",
-    ]);
-    const sample = cards.find((c) => c.name === "Sample Customer (DEMO)")!;
-    expect(sample.punchCards).toMatchObject([
-      { programName: "Sample dry food club (DEMO)", balance: 11, buyCount: 12 },
     ]);
   });
 });
@@ -120,7 +116,6 @@ describe("deleteCustomer", () => {
     const [sample] = await invoke(db, owner, "searchCustomers", { q: "Sample Customer" });
     expect(await invoke(db, manager, "deletePreview", { id: sample!.id })).toEqual({
       name: "Sample Customer (DEMO)",
-      punchCards: 1,
     });
 
     await invoke(db, manager, "deleteCustomer", { id: sample!.id });
@@ -135,7 +130,6 @@ describe("deleteCustomer", () => {
         entity_id: sample!.id,
         before: {
           name: "Sample Customer (DEMO)",
-          punch_cards: 1,
         },
         after: null,
         staff_id: manager.staffId,

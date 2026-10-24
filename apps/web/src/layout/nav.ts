@@ -13,7 +13,6 @@ export const NAV: NavItem[] = [
   { path: "/customers", label: "Customers", action: "customers.view" },
   { path: "/email", label: "Email", action: "email.send" },
   { path: "/sales", label: "Sales", action: "sales.view" },
-  { path: "/astro", label: "Astro", action: "astro.view" },
   { path: "/settings", label: "Settings", action: "settings.view" },
 ];
 

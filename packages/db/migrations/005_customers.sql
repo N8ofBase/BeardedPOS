@@ -14,7 +14,6 @@ CREATE TABLE customers (
   birthday          date,
   sms_opt_in        boolean NOT NULL DEFAULT false,
   notes             text,
-  astro_customer_id text,
   is_demo           boolean NOT NULL DEFAULT false,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now(),

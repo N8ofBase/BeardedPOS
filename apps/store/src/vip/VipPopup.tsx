@@ -3,6 +3,7 @@ import { useLocation } from "react-router";
 import meeple from "../assets/meeple.webp";
 import { VipSignup } from "../components/VipSignup.tsx";
 import { readKey, writeKey } from "../storage.ts";
+import { useTracker } from "../track/Tracker.tsx";
 import {
   DELAY_SECONDS,
   SCROLL_SHARE,
@@ -25,6 +26,7 @@ export function VipPopup() {
   const [open, setOpen] = useState(false);
   const [joined, setJoined] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const { track } = useTracker();
 
   const allowed = useCallback(
     () =>
@@ -41,7 +43,8 @@ export function VipPopup() {
     if (!allowed()) return;
     writeKey("session", SHOWN_KEY, "1");
     setOpen(true);
-  }, [allowed]);
+    track({ type: "popup_shown" });
+  }, [allowed, track]);
 
   // Arm the triggers: time on site, half the page scrolled, or (on a computer) the mouse leaving the top.
   useEffect(() => {
@@ -65,8 +68,11 @@ export function VipPopup() {
 
   const close = useCallback(() => {
     setOpen(false);
-    if (!joined) remember({ snoozedUntil: snoozeUntil(Date.now()) });
-  }, [joined]);
+    if (!joined) {
+      remember({ snoozedUntil: snoozeUntil(Date.now()) });
+      track({ type: "popup_closed" });
+    }
+  }, [joined, track]);
 
   useEffect(() => {
     if (!open) return;
@@ -98,9 +104,11 @@ export function VipPopup() {
         </p>
         <VipSignup
           label="Your email"
+          source="popup"
           onJoined={() => {
             setJoined(true);
             rememberJoined();
+            track({ type: "popup_joined" });
           }}
         />
         {!joined && (

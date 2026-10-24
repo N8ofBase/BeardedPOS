@@ -38,9 +38,7 @@ const open = (lines: [string, number][], customer = false) =>
       key: String(i),
       productId: sku[code]!.id,
       qty,
-      applyOffer: false,
     })),
-    rewards: [],
     discounts: [],
   });
 const cash = (saleId: string, cents: number) =>
@@ -243,11 +241,9 @@ describe("past orders import", () => {
       "Old brand treats",
     ]);
 
-    // No stock, payments or punches.
+    // No stock or payments.
     expect(await invoke(db, owner, "listProducts", { includeArchived: true })).toEqual(before);
     expect(await rows("payments")).toEqual([]);
-    const card = (await invoke(db, owner, "getCustomer", { id: sampleCustomer })).punchCards[0]!;
-    expect(card.balance).toBe(11);
 
     // Not on the Sales page; can't be refunded or opened as a receipt.
     const all = { from: "2000-01-01T00:00:00Z", to: "2100-01-01T00:00:00Z" };
@@ -309,28 +305,5 @@ describe("customer order history", () => {
     const p2 = await invoke(db, owner, "customerHistory", { id: sampleCustomer, before: p1.next });
     expect(p2.page.map((o) => new Date(o.date).getDate())).toEqual([1]);
     expect(p2.next).toBeNull();
-  });
-});
-
-describe("punch balance import after refunds", () => {
-  it("counts punches taken back by a refund", async () => {
-    const s = await open([["0001", 2]], true);
-    await cash(s.saleId, s.totalCents);
-    const line = (await invoke(db, owner, "getSale", { id: s.saleId })).lines[0]!.id;
-    await invoke(db, owner, "refundSale", {
-      saleId: s.saleId,
-      lines: [{ saleLineId: line, qty: 1 }],
-      restock: true,
-      reason: "changed_mind",
-    });
-    const program = (await invoke(db, owner, "listPrograms", undefined))[0]!.name;
-    const { batchId } = await invoke(db, owner, "startImport", {
-      type: "punches",
-      fileName: "p.csv",
-      totalRows: 1,
-    });
-    await invoke(db, owner, "importChunk", { batchId, offset: 0, rows: [{ phone, program, count: "5" }] });
-    const card = (await invoke(db, owner, "getCustomer", { id: sampleCustomer })).punchCards[0]!;
-    expect(card.balance).toBe(5);
   });
 });

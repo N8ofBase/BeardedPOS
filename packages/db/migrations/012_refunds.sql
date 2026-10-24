@@ -1,4 +1,4 @@
--- Refunds, receipts sent by email or text, and refund rows in the Astro queue.
+-- Refunds and receipts sent by email or text.
 
 -- Managers can refund up to this much without an owner's OK (spec: "refunds up to a limit").
 ALTER TABLE businesses ADD COLUMN refund_approval_cents integer NOT NULL DEFAULT 5000
@@ -74,30 +74,6 @@ CREATE POLICY refund_payments_own ON refund_payments
   USING (business_id = current_business_id())
   WITH CHECK (business_id = current_business_id());
 REVOKE UPDATE, DELETE ON refund_payments FROM pos_app;
-
--- Punches a refund takes back (refund_reversal) or gives back (reward_return).
-ALTER TABLE astro_punches ADD COLUMN refund_id uuid;
-ALTER TABLE astro_punches ADD CONSTRAINT astro_punches_refund
-  FOREIGN KEY (business_id, refund_id) REFERENCES refunds (business_id, id) ON DELETE SET NULL (refund_id);
-ALTER TABLE astro_punches DROP CONSTRAINT astro_punches_kind_check;
-ALTER TABLE astro_punches ADD CONSTRAINT astro_punches_kind_check
-  CHECK (kind IN ('earn', 'redeem', 'opening_balance', 'refund_reversal', 'reward_return'));
-CREATE OR REPLACE VIEW astro_balances WITH (security_invoker = true) AS
-  SELECT business_id,
-         customer_id,
-         program_id,
-         sum(CASE WHEN kind IN ('redeem', 'refund_reversal') THEN -qty ELSE qty END)::integer AS balance
-  FROM astro_punches
-  GROUP BY business_id, customer_id, program_id;
-
--- The Astro queue holds refunds too: one row per sale, plus one per refund.
-ALTER TABLE astro_queue ADD COLUMN kind text NOT NULL DEFAULT 'sale' CHECK (kind IN ('sale', 'refund'));
-ALTER TABLE astro_queue ADD COLUMN refund_id uuid;
-ALTER TABLE astro_queue ADD CONSTRAINT astro_queue_refund
-  FOREIGN KEY (business_id, refund_id) REFERENCES refunds (business_id, id) ON DELETE CASCADE;
-ALTER TABLE astro_queue DROP CONSTRAINT astro_queue_one_per_sale;
-CREATE UNIQUE INDEX astro_queue_sale_once ON astro_queue (sale_id) WHERE kind = 'sale';
-CREATE UNIQUE INDEX astro_queue_refund_once ON astro_queue (refund_id) WHERE refund_id IS NOT NULL;
 
 -- Receipts sent by email or text. Demo mode only previews them (status preview).
 CREATE TABLE receipt_outbox (

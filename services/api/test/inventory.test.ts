@@ -20,9 +20,6 @@ const product: ProductInput = {
   costCents: 1200,
   taxClass: "standard",
   reorderAt: 3,
-  astroProgramId: null,
-  offerLabel: null,
-  offerCents: null,
 };
 
 beforeEach(async () => {
@@ -54,11 +51,6 @@ describe("demo seed", () => {
       ["0001", 14],
       ["0003", 30],
     ]);
-    expect(rows.find((r) => r.sku === "0001")).toMatchObject({
-      astroProgramName: "Sample dry food club (DEMO)",
-      offerLabel: "$5 off 24 lb bag",
-      offerCents: 500,
-    });
   });
 
   it("is safe to run again", async () => {
@@ -234,27 +226,6 @@ describe("finding products", () => {
     expect(await invoke(db, owner, "listProducts", { q: "rope" })).toEqual([]);
     expect(await invoke(db, owner, "listProducts", { q: "rope", includeArchived: true })).toHaveLength(1);
     expect(await invoke(db, owner, "findByCode", { code: "0004" })).toBeNull();
-  });
-});
-
-describe("Astro programs", () => {
-  it("lists programs with their product counts", async () => {
-    expect(await invoke(db, cashier, "listPrograms", undefined)).toMatchObject([
-      { name: "Sample dry food club (DEMO)", buyCount: 12, rewardText: "Next bag free", productCount: 2 },
-    ]);
-  });
-
-  it("adds a program and refuses a duplicate name", async () => {
-    await invoke(db, manager, "saveProgram", { name: "Cat club", brand: null, buyCount: 10, rewardText: "" });
-    await expect(
-      invoke(db, manager, "saveProgram", { name: "cat CLUB", brand: null, buyCount: 10, rewardText: "" }),
-    ).rejects.toThrow(/already a program/);
-    await expect(
-      invoke(db, cashier, "saveProgram", { name: "X", brand: null, buyCount: 10, rewardText: "" }),
-    ).rejects.toThrow(/permission/);
-    await expect(
-      invoke(db, owner, "saveProgram", { name: "Y", brand: null, buyCount: 1, rewardText: "" }),
-    ).rejects.toThrow(/2 to 1000/);
   });
 });
 

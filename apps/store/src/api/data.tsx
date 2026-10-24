@@ -1,7 +1,7 @@
 // Loads the catalog and approved reviews once per visit and shares them with every screen.
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { storeProducts, type Product } from "../catalog/catalog.ts";
-import type { Review } from "../reviews/reviews.ts";
+import { storeProducts, type Product } from "@bearded/store-core";
+import type { Review } from "@bearded/store-core";
 import { useStore, type Loadable } from "./store.ts";
 
 const ProductsContext = createContext<Loadable<Product[]>>({ state: "loading" });

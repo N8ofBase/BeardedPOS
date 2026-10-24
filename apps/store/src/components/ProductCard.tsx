@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router";
-import { formatCents, stockLabel, type Product } from "../catalog/catalog.ts";
-import { canBuy } from "../cart/cart.ts";
+import { formatCents, stockLabel, type Product } from "@bearded/store-core";
+import { canBuy } from "@bearded/store-core";
 import { useCart } from "../cart/CartProvider.tsx";
 import { games } from "../content/site.ts";
 import { gamePath } from "../roll.ts";

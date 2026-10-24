@@ -65,10 +65,13 @@ describe("retailers", () => {
       wholesaleTerms: "Net 30",
       emailOptIn: true,
     });
-    expect((await invoke(db, cashier, "searchCustomers", { q: "dice" })).map((c) => c.name)).toEqual(["Ann"]);
+    expect((await invoke(db, cashier, "searchCustomers", { q: "dice den" })).map((c) => c.name)).toEqual([
+      "Ann",
+      "Sample Buyer (DEMO)",
+    ]);
     expect(
       (await invoke(db, cashier, "searchCustomers", { q: "", kind: "retailer" })).map((c) => c.company),
-    ).toEqual(["Sample Game Shop (DEMO)", "Dice Den"].sort());
+    ).toEqual(["Sample Dice Den (DEMO)", "Dice Den"].sort());
   });
 
   it("leaves type and opt-in alone when an older caller doesn't send them", async () => {

@@ -27,9 +27,6 @@ const fences: ProductInput = {
   royaltyPayee: "Ada Designer",
   taxClass: "exempt",
   reorderAt: 0,
-  astroProgramId: null,
-  offerLabel: null,
-  offerCents: null,
 };
 
 beforeEach(async () => {
@@ -50,8 +47,7 @@ beforeEach(async () => {
 async function sell(qty: number, ctx: Ctx = cashier, productId = gameId) {
   const s = await invoke(db, ctx, "startCheckout", {
     customerId: null,
-    lines: [{ key: "0", productId, qty, applyOffer: false }],
-    rewards: [],
+    lines: [{ key: "0", productId, qty }],
     discounts: [],
   });
   await invoke(db, ctx, "payCash", {
@@ -146,8 +142,7 @@ describe("profit by game", () => {
     await sell(1);
     const s = await invoke(db, cashier, "startCheckout", {
       customerId: null,
-      lines: [{ key: "0", productId: gameId, qty: 5, applyOffer: false }],
-      rewards: [],
+      lines: [{ key: "0", productId: gameId, qty: 5 }],
       discounts: [],
     });
     await invoke(db, cashier, "cancelSale", { saleId: s.saleId });
