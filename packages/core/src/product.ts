@@ -13,6 +13,12 @@ export interface ProductInput {
   astroProgramId: string | null;
   offerLabel: string | null;
   offerCents: number | null;
+  /** What a retailer pays; null when not sold wholesale. Left out: unchanged. */
+  wholesaleCents?: number | null;
+  /** Royalty on net profit, thousandths of a percent (7.5% = 7500). Left out: unchanged. */
+  royaltyMpct?: number;
+  /** Who the royalty is paid to. Left out: unchanged. */
+  royaltyPayee?: string | null;
 }
 
 export type FieldErrors<T> = Partial<Record<keyof T, string>>;
@@ -32,6 +38,7 @@ export function cleanProduct(input: ProductInput): ProductInput {
     brand: blankToNull(input.brand),
     category: input.category.trim() || "Supplies",
     offerLabel: blankToNull(input.offerLabel),
+    ...(input.royaltyPayee !== undefined ? { royaltyPayee: blankToNull(input.royaltyPayee) } : {}),
   };
 }
 
@@ -44,7 +51,18 @@ export function validateProduct(p: ProductInput): FieldErrors<ProductInput> {
   if (!isCents(p.priceCents)) e.priceCents = "Enter a price like 12.99.";
   else if (p.priceCents < 0) e.priceCents = "Price can't be negative.";
   if (!isCents(p.costCents)) e.costCents = "Enter a cost like 8.50.";
-  else if (p.costCents < 0) e.costCents = "Cost can't be negative.";
+  else if (p.costCents < 0) e.costCents = "Our cost can't be negative.";
+  if (p.wholesaleCents != null) {
+    if (!isCents(p.wholesaleCents)) e.wholesaleCents = "Enter a wholesale price like 15.00.";
+    else if (p.wholesaleCents < 0) e.wholesaleCents = "Wholesale price can't be negative.";
+  }
+  if (
+    p.royaltyMpct !== undefined &&
+    (!Number.isInteger(p.royaltyMpct) || p.royaltyMpct < 0 || p.royaltyMpct > 100_000)
+  )
+    e.royaltyMpct = "Royalty must be 0 to 100%.";
+  if (p.royaltyPayee && p.royaltyPayee.trim().length > 100)
+    e.royaltyPayee = "Royalty payee can be at most 100 characters.";
   if (!Number.isInteger(p.reorderAt) || p.reorderAt < 0) e.reorderAt = "Reorder at must be 0 or more.";
   const hasLabel = !!p.offerLabel?.trim();
   const hasAmount = p.offerCents !== null;

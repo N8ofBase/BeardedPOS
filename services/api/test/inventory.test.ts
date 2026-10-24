@@ -82,11 +82,56 @@ describe("saveProduct", () => {
       {
         action: "product.price_change",
         entity_id: id,
-        before: { price_cents: 1999, cost_cents: 1200 },
-        after: { price_cents: 2199, cost_cents: 1200 },
+        before: { price_cents: 1999, cost_cents: 1200, wholesale_cents: null },
+        after: { price_cents: 2199, cost_cents: 1200, wholesale_cents: null },
         staff_id: manager.staffId,
       },
     ]);
+  });
+
+  it("saves wholesale price and royalty, and audits a wholesale change", async () => {
+    const { id } = await invoke(db, owner, "saveProduct", {
+      ...product,
+      wholesaleCents: 1100,
+      royaltyMpct: 7500,
+      royaltyPayee: "  Ada Designer ",
+    });
+    expect((await invoke(db, owner, "getProduct", { id })).product).toMatchObject({
+      wholesaleCents: 1100,
+      royaltyMpct: 7500,
+      royaltyPayee: "Ada Designer",
+    });
+    // Left out: unchanged.
+    await invoke(db, owner, "saveProduct", { ...product, id, name: "Renamed" });
+    expect((await invoke(db, owner, "getProduct", { id })).product).toMatchObject({
+      wholesaleCents: 1100,
+      royaltyMpct: 7500,
+    });
+    expect(await auditRows()).toEqual([]);
+
+    await invoke(db, owner, "saveProduct", { ...product, id, wholesaleCents: null, royaltyPayee: "" });
+    expect((await invoke(db, owner, "getProduct", { id })).product).toMatchObject({
+      wholesaleCents: null,
+      royaltyPayee: null,
+    });
+    expect(await auditRows()).toEqual([
+      {
+        action: "product.price_change",
+        entity_id: id,
+        before: { price_cents: 1999, cost_cents: 1200, wholesale_cents: 1100 },
+        after: { price_cents: 1999, cost_cents: 1200, wholesale_cents: null },
+        staff_id: owner.staffId,
+      },
+    ]);
+  });
+
+  it("refuses a royalty over 100% or a negative wholesale price", async () => {
+    await expect(invoke(db, owner, "saveProduct", { ...product, royaltyMpct: 100_001 })).rejects.toThrow(
+      "Royalty must be 0 to 100%.",
+    );
+    await expect(invoke(db, owner, "saveProduct", { ...product, wholesaleCents: -1 })).rejects.toThrow(
+      "Wholesale price can't be negative.",
+    );
   });
 
   it("doesn't audit an edit that leaves price and cost alone", async () => {

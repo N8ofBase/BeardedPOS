@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { CATEGORIES, centsToInput, parseMoney, type ProductInput } from "@pet-pos/core";
+import {
+  CATEGORIES,
+  centsToInput,
+  parseMoney,
+  parseTaxPercent,
+  taxPercentInput,
+  type ProductInput,
+} from "@pet-pos/core";
 import type { MoveRow, ProductRow } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
@@ -17,6 +24,9 @@ interface Form {
   category: string;
   price: string;
   cost: string;
+  wholesale: string;
+  royalty: string;
+  royaltyPayee: string;
   taxClass: "standard" | "exempt";
   reorderAt: string;
   onHand: string;
@@ -33,6 +43,9 @@ const EMPTY: Form = {
   category: "Dog food",
   price: "",
   cost: "",
+  wholesale: "",
+  royalty: "",
+  royaltyPayee: "",
   taxClass: "standard",
   reorderAt: "3",
   onHand: "0",
@@ -50,6 +63,9 @@ function toForm(p: ProductRow): Form {
     category: p.category,
     price: centsToInput(p.priceCents),
     cost: p.costCents ? centsToInput(p.costCents) : "",
+    wholesale: p.wholesaleCents === null ? "" : centsToInput(p.wholesaleCents),
+    royalty: p.royaltyMpct ? taxPercentInput(p.royaltyMpct) : "",
+    royaltyPayee: p.royaltyPayee ?? "",
     taxClass: p.taxClass,
     reorderAt: String(p.reorderAt),
     onHand: String(p.onHand),
@@ -66,6 +82,11 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
   if (price === null) errors.priceCents = "Enter a price like 12.99.";
   const cost = f.cost.trim() ? parseMoney(f.cost) : 0;
   if (cost === null) errors.costCents = "Enter a cost like 8.50, or leave it blank.";
+  const wholesale = f.wholesale.trim() ? parseMoney(f.wholesale) : null;
+  if (f.wholesale.trim() && wholesale === null)
+    errors.wholesaleCents = "Enter a wholesale price like 15.00, or leave it blank.";
+  const royalty = f.royalty.trim() ? parseTaxPercent(f.royalty) : 0;
+  if (royalty === null) errors.royaltyMpct = "Enter a percent from 0 to 100, like 10 or 7.5.";
   const offer = f.offerAmount.trim() ? parseMoney(f.offerAmount) : null;
   if (f.offerAmount.trim() && offer === null) errors.offerCents = "Enter an amount like 5.00.";
   const reorder = Number(f.reorderAt || "0");
@@ -84,6 +105,9 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
       astroProgramId: f.astroProgramId || null,
       offerLabel: f.offerLabel,
       offerCents: offer,
+      wholesaleCents: wholesale,
+      royaltyMpct: royalty ?? 0,
+      royaltyPayee: f.royaltyPayee.trim() || null,
     },
   };
 }
@@ -243,7 +267,7 @@ function ProductForm({
             </select>
           </label>
           <label>
-            Price ($)
+            Sell price ($)
             <input
               value={f.price}
               onChange={set("price")}
@@ -254,7 +278,18 @@ function ProductForm({
             {err("priceCents")}
           </label>
           <label>
-            Cost ($)
+            Wholesale price ($)
+            <input
+              value={f.wholesale}
+              onChange={set("wholesale")}
+              inputMode="decimal"
+              placeholder="What a store pays"
+              {...inv("wholesaleCents")}
+            />
+            {err("wholesaleCents")}
+          </label>
+          <label>
+            Our cost ($)
             <input value={f.cost} onChange={set("cost")} inputMode="decimal" {...inv("costCents")} />
             {err("costCents")}
           </label>
@@ -299,6 +334,31 @@ function ProductForm({
             On hand: {product.onHand}. Change stock with Receive or Count stock, so every change is recorded.
           </p>
         )}
+
+        <div className="form">
+          <label>
+            Royalty (% of net profit)
+            <input
+              value={f.royalty}
+              onChange={set("royalty")}
+              inputMode="decimal"
+              placeholder="0"
+              {...inv("royaltyMpct")}
+            />
+            {err("royaltyMpct")}
+          </label>
+          <label>
+            Royalty paid to
+            <input
+              value={f.royaltyPayee}
+              onChange={set("royaltyPayee")}
+              placeholder="e.g. the designer"
+              maxLength={100}
+              {...inv("royaltyPayee")}
+            />
+            {err("royaltyPayee")}
+          </label>
+        </div>
 
         <fieldset className="form" style={{ border: 0, padding: 0, margin: 0 }}>
           <label>

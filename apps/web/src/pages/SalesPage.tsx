@@ -9,6 +9,7 @@ import { SlideOver } from "../ui/SlideOver.tsx";
 import { ReceiptView } from "./register/ReceiptView.tsx";
 import { ReceiptSend } from "./sales/ReceiptSend.tsx";
 import { EndOfDayPage } from "./sales/EndOfDay.tsx";
+import { ProfitPage } from "./sales/ProfitPage.tsx";
 import { RefundPanel } from "./sales/RefundPanel.tsx";
 
 export function SalesRoutes() {
@@ -16,6 +17,7 @@ export function SalesRoutes() {
     <Routes>
       <Route index element={<SalesPage />} />
       <Route path="close" element={<EndOfDayPage />} />
+      <Route path="profit" element={<ProfitPage />} />
     </Routes>
   );
 }
@@ -73,6 +75,7 @@ export function SalesPage() {
             year: label ? undefined : "numeric",
           })}
         </span>
+        <Link to="profit">Profit by game</Link>
         {can(me.staff.role, "drawer.count") && <Link to="close">Close the day</Link>}
       </div>
       <div className="toolbar">

@@ -70,6 +70,20 @@ describe("column matching", () => {
     });
   });
 
+  it("matches the three game prices and the royalty columns", () => {
+    const headers = ["SKU", "Sell price", "Wholesale", "Unit cost", "Royalty %", "Designer"];
+    expect(autoMatch("products", headers)).toEqual({
+      sku: 0,
+      price: 1,
+      wholesale: 2,
+      cost: 3,
+      royalty: 4,
+      royaltyPayee: 5,
+    });
+    // An older file with plain "Cost" still lands on our cost.
+    expect(autoMatch("products", ["SKU", "Price", "Cost"])).toEqual({ sku: 0, price: 1, cost: 2 });
+  });
+
   it("uses each column once", () => {
     // "Phone" fits both the owner phone and nothing else; "Email" is free for owner email.
     expect(autoMatch("pets", ["Phone", "Email", "Name"])).toEqual({
