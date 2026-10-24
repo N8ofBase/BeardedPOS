@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { addressLine, can, formatDate, formatPhone } from "@pet-pos/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
-import { BirthdayTag, Punches } from "./bits.tsx";
+import { BirthdayTag } from "./bits.tsx";
 import { CustomerForm } from "./CustomerForm.tsx";
 import { DeleteCustomer } from "./DeleteCustomer.tsx";
 import { OrderHistory } from "./OrderHistory.tsx";
@@ -73,15 +73,6 @@ export function CustomerProfilePage() {
         <p className="muted small">{c.smsOptIn ? "Text messages OK" : "No text messages"}</p>
         {c.notes && <p>{c.notes}</p>}
       </section>
-
-      {c.punchCards.length > 0 && (
-        <section className="panel">
-          <h2>Astro punch cards</h2>
-          {c.punchCards.map((card) => (
-            <Punches key={card.programId} card={card} />
-          ))}
-        </section>
-      )}
 
       <OrderHistory customerId={c.id} />
 

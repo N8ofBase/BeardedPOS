@@ -9,8 +9,6 @@ export interface StoreSettings {
   locationId: string;
   locationName: string;
   taxRateMpct: number;
-  /** Astro offers and rewards come off before tax (true) or after. */
-  astroDiscountsBeforeTax: boolean;
   /** Managers can refund up to this without the owner's OK. */
   refundApprovalCents: number;
   /** Starting cash left in the drawer each morning. */
@@ -25,14 +23,7 @@ export const getSettings = defineHandler<void, StoreSettings>({
   async run(trx, ctx) {
     const b = await trx
       .selectFrom("businesses")
-      .select([
-        "name",
-        "brand_color",
-        "logo_data",
-        "astro_discounts_before_tax",
-        "refund_approval_cents",
-        "drawer_float_cents",
-      ])
+      .select(["name", "brand_color", "logo_data", "refund_approval_cents", "drawer_float_cents"])
       .where("id", "=", ctx.businessId)
       .executeTakeFirstOrThrow();
     const loc = await trx
@@ -48,7 +39,6 @@ export const getSettings = defineHandler<void, StoreSettings>({
       locationId: loc.id,
       locationName: loc.name,
       taxRateMpct: loc.tax_rate_mpct,
-      astroDiscountsBeforeTax: b.astro_discounts_before_tax,
       refundApprovalCents: b.refund_approval_cents,
       drawerFloatCents: b.drawer_float_cents,
     };
@@ -63,7 +53,6 @@ export interface SettingsInput {
   locationName: string;
   /** As typed: "8.875" or "8.875%". */
   taxPercent: string;
-  astroDiscountsBeforeTax: boolean;
   /** Left out: unchanged. */
   refundApprovalCents?: number;
   /** Left out: unchanged. */
@@ -109,7 +98,6 @@ export const updateSettings = defineHandler<SettingsInput, void>({
         name,
         brand_color: input.brandColor,
         logo_data: input.logo,
-        astro_discounts_before_tax: input.astroDiscountsBeforeTax,
       })
       .where("id", "=", ctx.businessId)
       .execute();

@@ -29,8 +29,6 @@ import {
   removeDiscount,
   saveTicket,
   setQty,
-  toggleOffer,
-  toggleReward,
   toInput,
   type Ticket,
   type TicketDiscountState,
@@ -69,13 +67,13 @@ export function RegisterPage() {
   });
 
   const price = useMemo(
-    () => priceTicket(ticket, me.location?.taxRateMpct ?? 0, me.business.astroDiscountsBeforeTax),
-    [ticket, me.location?.taxRateMpct, me.business.astroDiscountsBeforeTax],
+    () => priceTicket(ticket, me.location?.taxRateMpct ?? 0),
+    [ticket, me.location?.taxRateMpct],
   );
 
   /** Applies a change only if the ticket can still be priced; otherwise says why. */
   function update(next: Ticket) {
-    const p = priceTicket(next, me.location?.taxRateMpct ?? 0, me.business.astroDiscountsBeforeTax);
+    const p = priceTicket(next, me.location?.taxRateMpct ?? 0);
     if (p.problem) return toast(p.problem);
     setTicket(next);
   }
@@ -237,16 +235,6 @@ export function RegisterPage() {
             >
               <span className="nm">{p.name}</span>
               <span className="muted small">{p.brand || p.category}</span>
-              {p.astroProgramId && (
-                <span>
-                  <span className="tag astro">Astro FB</span>
-                </span>
-              )}
-              {p.offerCents && (
-                <span>
-                  <span className="tag astro">Offer {formatMoney(p.offerCents)}</span>
-                </span>
-              )}
               <span className="row">
                 <b className="num">{formatMoney(p.priceCents)}</b>
                 <span className={`tag ${stockStatus(p.onHand, p.reorderAt)}`}>
@@ -331,11 +319,7 @@ export function RegisterPage() {
                     ],
                   };
                   setCashOffer(null);
-                  const p = priceTicket(
-                    next,
-                    me.location?.taxRateMpct ?? 0,
-                    me.business.astroDiscountsBeforeTax,
-                  );
+                  const p = priceTicket(next, me.location?.taxRateMpct ?? 0);
                   if (p.problem) return toast(p.problem);
                   setTicket(next);
                   void pay("cash", next);
@@ -378,19 +362,13 @@ function TicketView({
   const { me } = useSession();
   const p = price.priced;
   const lineDiscounts = (key: string) => p?.discounts.filter((d) => d.lineKey === key) ?? [];
-  const cards = ticket.customer?.card.punchCards ?? [];
-  const programsOnTicket = new Map(
-    ticket.lines
-      .filter((l) => l.product.astroProgramId)
-      .map((l) => [l.product.astroProgramId!, l.product.astroProgramName ?? "Astro program"]),
-  );
 
   return (
     <>
       <CustomerBox
         customer={ticket.customer}
-        onAttach={(c) => onTicket({ ...ticket, customer: c, rewards: [] })}
-        onDrop={() => onTicket({ ...ticket, customer: null, rewards: [] })}
+        onAttach={(c) => onTicket({ ...ticket, customer: c })}
+        onDrop={() => onTicket({ ...ticket, customer: null })}
         onAddProduct={(prod) => onTicket(addProduct(ticket, prod))}
       />
 
@@ -409,18 +387,8 @@ function TicketView({
                     {l.product.onHand <= 0 ? "None on hand" : `Only ${l.product.onHand} on hand`}
                   </span>
                 )}
-                {l.product.offerCents && (
-                  <label className="check disc">
-                    <input
-                      type="checkbox"
-                      checked={l.applyOffer}
-                      onChange={() => onTicket(toggleOffer(ticket, l.key))}
-                    />
-                    Apply Astro offer: {l.product.offerLabel}
-                  </label>
-                )}
                 {lineDiscounts(l.key).map((d, i) => (
-                  <span key={i} className={`sub ${d.source === "store" ? "store-disc" : "disc"}`}>
+                  <span key={i} className="sub store-disc">
                     {d.name} −{formatMoney(d.amountCents)}
                   </span>
                 ))}
@@ -451,49 +419,6 @@ function TicketView({
         {isEmpty(ticket) && <p className="muted">Scan or tap a product to start a sale.</p>}
       </div>
 
-      {(cards.length > 0 || programsOnTicket.size > 0) && (
-        <div className="astro-box">
-          <h3>Astro</h3>
-          {!ticket.customer && programsOnTicket.size > 0 && (
-            <span className="muted">
-              This sale earns Astro frequent buyer credit. Attach a customer so it counts.
-            </span>
-          )}
-          {ticket.customer &&
-            [...new Set([...cards.map((c) => c.programId), ...programsOnTicket.keys()])].map((pid) => {
-              const card = cards.find((c) => c.programId === pid);
-              const have = card?.balance ?? 0;
-              const adding = p?.earned[pid] ?? 0;
-              const redeeming = ticket.rewards.includes(pid);
-              const buy = card?.buyCount;
-              const full = !!card && have >= card.buyCount;
-              return (
-                <div key={pid}>
-                  <b>{card?.programName ?? programsOnTicket.get(pid)}</b>{" "}
-                  <span className="muted num">
-                    {have}
-                    {buy ? `/${buy}` : ""}
-                    {adding || redeeming ? ` → ${have - (redeeming && buy ? buy : 0) + adding}` : ""}
-                  </span>
-                  {full && programsOnTicket.has(pid) && (
-                    <label className="check disc" style={{ fontWeight: 700 }}>
-                      <input
-                        type="checkbox"
-                        checked={redeeming}
-                        onChange={() => onTicket(toggleReward(ticket, pid))}
-                      />
-                      Redeem: {card!.rewardText}
-                    </label>
-                  )}
-                  {full && !programsOnTicket.has(pid) && (
-                    <span className="sub disc">Reward ready. Add a qualifying item to redeem.</span>
-                  )}
-                </div>
-              );
-            })}
-        </div>
-      )}
-
       {price.problem && <p className="error-box">{price.problem}</p>}
       {p && (
         <div className="totals">
@@ -502,10 +427,10 @@ function TicketView({
             <span className="num">{formatMoney(p.subtotalCents)}</span>
           </div>
           {p.discounts.map((d, i) => (
-            <div key={i} className={d.source === "store" ? "store-disc" : "disc"}>
+            <div key={i} className="store-disc">
               <span>
                 {d.name}
-                {d.lineKey === null && d.source === "store" && (
+                {d.lineKey === null && (
                   <TicketDiscountExtras ticket={ticket} discountId={d.discountId} onTicket={onTicket} />
                 )}
               </span>

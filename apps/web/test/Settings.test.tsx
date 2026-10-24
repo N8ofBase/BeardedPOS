@@ -19,17 +19,13 @@ describe("demo data", () => {
       demoSummary({
         customers: 3,
         products: 4,
-        programs: 1,
-        punches: 2,
         discounts: 0,
       }),
-    ).toBe("3 customers, 4 products, 1 Astro program, and 2 punch balances");
+    ).toBe("3 customers and 4 products");
     expect(
       demoSummary({
         customers: 1,
         products: 0,
-        programs: 0,
-        punches: 0,
         discounts: 0,
       }),
     ).toBe("1 customer");
@@ -37,7 +33,7 @@ describe("demo data", () => {
 
   it("disables Remove when there's nothing left", async () => {
     renderAs("owner", <DemoData />, {
-      demoDataPreview: { customers: 0, products: 0, programs: 0, punches: 0, discounts: 0 },
+      demoDataPreview: { customers: 0, products: 0, discounts: 0 },
     });
     expect(await screen.findByText("No demo records left")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Remove all demo data" }) as HTMLButtonElement).disabled).toBe(
@@ -50,12 +46,10 @@ describe("demo data", () => {
       demoDataPreview: {
         customers: 3,
         products: 4,
-        programs: 1,
-        punches: 2,
         discounts: 0,
       },
     });
-    expect(await screen.findByText(/3 customers, 4 products/)).toBeTruthy();
+    expect(await screen.findByText(/3 customers and 4 products/)).toBeTruthy();
     expect((screen.getByRole("button", { name: "Remove all demo data" }) as HTMLButtonElement).disabled).toBe(
       false,
     );

@@ -11,8 +11,8 @@ function orderTime(iso: string): Date {
 
 /**
  * Past orders file, one row per item. The first row of an order creates it (status
- * paid, source import); later rows add lines and raise its total. No payments, stock
- * moves or punches. An order already imported by an earlier file is skipped.
+ * paid, source import); later rows add lines and raise its total. No payments or stock
+ * moves. An order already imported by an earlier file is skipped.
  */
 export async function orderRow(r: Row, rc: RowCtx): Promise<RowResult> {
   const date = parseLooseDate(r.date ?? "", rc.today);
@@ -101,7 +101,6 @@ export async function orderRow(r: Row, rc: RowCtx): Promise<RowResult> {
         tax_cents: 0,
         total_cents: money.lineTotalCents,
         tax_rate_mpct: 0,
-        discounts_before_tax: true,
         paid_at: at,
         created_at: at,
       })

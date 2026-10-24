@@ -11,14 +11,6 @@ import type { DB } from "@pet-pos/db";
 import { defineHandler } from "../handler.ts";
 import { audit, likePattern } from "../shared.ts";
 
-export interface PunchCard {
-  programId: string;
-  programName: string;
-  balance: number;
-  buyCount: number;
-  rewardText: string;
-}
-
 export interface CustomerCard {
   id: string;
   name: string;
@@ -29,7 +21,6 @@ export interface CustomerCard {
   state: string | null;
   zip: string | null;
   birthday: string | null;
-  punchCards: PunchCard[];
 }
 
 export interface CustomerProfile extends CustomerCard {
@@ -49,40 +40,6 @@ export const CUSTOMER_COLUMNS = [
   "birthday",
 ] as const;
 
-/** Adds punch cards to customer rows (one query, however many customers). */
-export async function toCards(
-  trx: Transaction<DB>,
-  rows: Omit<CustomerCard, "punchCards">[],
-): Promise<CustomerCard[]> {
-  if (!rows.length) return [];
-  const cards = await punchCards(
-    trx,
-    rows.map((r) => r.id),
-  );
-  return rows.map((r) => ({ ...r, punchCards: cards.get(r.id) ?? [] }));
-}
-
-async function punchCards(trx: Transaction<DB>, customerIds: string[]): Promise<Map<string, PunchCard[]>> {
-  const rows = await trx
-    .selectFrom("astro_balances as b")
-    .innerJoin("astro_programs as a", "a.id", "b.program_id")
-    .select([
-      "b.customer_id",
-      "b.program_id as programId",
-      "a.name as programName",
-      "b.balance",
-      "a.buy_count as buyCount",
-      "a.reward_text as rewardText",
-    ])
-    .where("b.customer_id", "in", customerIds)
-    .where("b.balance", ">", 0)
-    .orderBy("a.name")
-    .execute();
-  const map = new Map<string, PunchCard[]>();
-  for (const { customer_id, ...card } of rows) map.set(customer_id, [...(map.get(customer_id) ?? []), card]);
-  return map;
-}
-
 /** Name or email; three or more digits also match anywhere in the phone. */
 export const searchCustomers = defineHandler<{ q: string }, CustomerCard[]>({
   action: "customers.view",
@@ -100,8 +57,7 @@ export const searchCustomers = defineHandler<{ q: string }, CustomerCard[]>({
         ]),
       );
     }
-    const rows = await query.orderBy("c.name").limit(100).execute();
-    return toCards(trx, rows);
+    return query.orderBy("c.name").limit(100).execute();
   },
 });
 
@@ -116,7 +72,7 @@ export const lookupByPhone = defineHandler<{ phone: string }, CustomerCard | nul
       .select(CUSTOMER_COLUMNS)
       .where("phone", "=", digits)
       .executeTakeFirst();
-    return row ? ((await toCards(trx, [row]))[0] ?? null) : null;
+    return row ?? null;
   },
 });
 
@@ -129,14 +85,8 @@ export const getCustomer = defineHandler<{ id: string }, CustomerProfile>({
       .where("id", "=", id)
       .executeTakeFirst();
     if (!c) throw new AppError("not_found", "That customer doesn't exist. They may have been deleted.");
-    const cards = await punchCards(trx, [id]);
     const { sms_opt_in, notes, ...rest } = c;
-    return {
-      ...rest,
-      smsOptIn: sms_opt_in,
-      notes,
-      punchCards: cards.get(id) ?? [],
-    };
+    return { ...rest, smsOptIn: sms_opt_in, notes };
   },
 });
 
@@ -194,17 +144,12 @@ export const saveCustomer = defineHandler<{ id?: string; customer: CustomerInput
 
 export interface DeletePreview {
   name: string;
-  punchCards: number;
 }
 
 async function preview(trx: Transaction<DB>, id: string): Promise<DeletePreview> {
   const c = await trx.selectFrom("customers").select("name").where("id", "=", id).executeTakeFirst();
   if (!c) throw new AppError("not_found", "That customer doesn't exist. They may have been deleted.");
-  const cards = await punchCards(trx, [id]);
-  return {
-    name: c.name,
-    punchCards: cards.get(id)?.length ?? 0,
-  };
+  return { name: c.name };
 }
 
 /** What a delete removes, for the warning before the typed confirmation. */
@@ -216,8 +161,8 @@ export const deletePreview = defineHandler<{ id: string }, DeletePreview>({
 });
 
 /**
- * Deletes the customer and their punch cards. The audit entry
- * keeps the name and counts only, never contact details.
+ * Deletes the customer. Past sales stay, without a customer attached. The audit
+ * entry keeps the name only, never contact details.
  */
 export const deleteCustomer = defineHandler<{ id: string }, void>({
   action: "customers.delete",
@@ -228,10 +173,7 @@ export const deleteCustomer = defineHandler<{ id: string }, void>({
       action: "customer.delete",
       entity: "customer",
       entityId: id,
-      before: {
-        name: p.name,
-        punch_cards: p.punchCards,
-      },
+      before: { name: p.name },
     });
   },
 });

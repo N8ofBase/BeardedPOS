@@ -16,8 +16,6 @@ export interface BusinessesTable {
   /** data:image/… URL, demo mode only (hosted uses logo_key in S3). */
   logo_data: string | null;
   modules: Json<Record<string, boolean>>;
-  /** Spec open question: Astro offers and rewards come off before tax (true) or after. */
-  astro_discounts_before_tax: Generated<boolean>;
   /** Managers can refund up to this without an owner's OK. */
   refund_approval_cents: Generated<number>;
   /** Starting cash left in the drawer each morning. */
@@ -52,20 +50,6 @@ export interface StaffTable {
   updated_at: UpdatedAt;
 }
 
-export interface AstroProgramsTable {
-  id: Generated<string>;
-  business_id: string;
-  name: string;
-  brand: string | null;
-  buy_count: number;
-  reward_text: Generated<string>;
-  astro_program_ref: string | null;
-  active: Generated<boolean>;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
 export interface ProductsTable {
   id: Generated<string>;
   business_id: string;
@@ -83,9 +67,6 @@ export interface ProductsTable {
   royalty_payee: string | null;
   tax_class: Generated<TaxClass>;
   reorder_at: Generated<number>;
-  astro_program_id: string | null;
-  astro_offer_label: string | null;
-  astro_offer_cents: number | null;
   active: Generated<boolean>;
   import_batch_id: string | null;
   is_demo: Generated<boolean>;
@@ -144,34 +125,10 @@ export interface CustomersTable {
   birthday: DateString | null;
   sms_opt_in: Generated<boolean>;
   notes: string | null;
-  astro_customer_id: string | null;
   import_batch_id: string | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
-}
-
-export type PunchKind = "earn" | "redeem" | "opening_balance" | "refund_reversal" | "reward_return";
-
-export interface AstroPunchesTable {
-  id: Generated<string>;
-  business_id: string;
-  customer_id: string;
-  program_id: string;
-  sale_id: string | null;
-  refund_id: string | null;
-  qty: number;
-  kind: PunchKind;
-  import_batch_id: string | null;
-  is_demo: Generated<boolean>;
-  created_at: CreatedAt;
-}
-
-export interface AstroBalancesView {
-  business_id: string;
-  customer_id: string;
-  program_id: string;
-  balance: number;
 }
 
 export interface BusinessCountersTable {
@@ -217,7 +174,6 @@ export interface SalesTable {
   tax_cents: Generated<number>;
   total_cents: number;
   tax_rate_mpct: number;
-  discounts_before_tax: boolean;
   paid_at: Date | null;
   canceled_at: Date | null;
   refunded_cents: Generated<number>;
@@ -243,8 +199,6 @@ export interface SaleLinesTable {
   unit_price_cents: number;
   discount_cents: Generated<number>;
   line_total_cents: number;
-  astro_program_id: string | null;
-  earns_punches: Generated<number>;
   /** The line's share of the sale's tax; null for sales rung before migration 012. */
   tax_cents: number | null;
   /** Our cost per unit when rung; null for lines rung before migration 030. */
@@ -252,14 +206,11 @@ export interface SaleLinesTable {
   created_at: CreatedAt;
 }
 
-export type SaleDiscountSource = "store" | "astro_offer" | "astro_reward";
-
 export interface SaleDiscountsTable {
   id: Generated<string>;
   business_id: string;
   sale_id: string;
   sale_line_id: string | null;
-  source: SaleDiscountSource;
   discount_id: string | null;
   name: string;
   kind: "percent" | "fixed" | null;
@@ -287,22 +238,6 @@ export interface PaymentsTable {
   refunded_cents: Generated<number>;
   staff_id: string | null;
   completed_at: Date | null;
-  created_at: CreatedAt;
-  updated_at: UpdatedAt;
-}
-
-export interface AstroQueueTable {
-  id: Generated<string>;
-  business_id: string;
-  sale_id: string;
-  kind: Generated<"sale" | "refund">;
-  refund_id: string | null;
-  payload: Json<Record<string, unknown>>;
-  status: Generated<"pending" | "entered" | "sent" | "failed">;
-  attempts: Generated<number>;
-  error: string | null;
-  entered_by: string | null;
-  entered_at: Date | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -358,8 +293,8 @@ export interface ReceiptOutboxTable {
   updated_at: UpdatedAt;
 }
 
-export type ImportType = "customers" | "products" | "programs" | "punches" | "orders";
-export type ImportEntity = "customer" | "product" | "program" | "punch" | "stock" | "sale";
+export type ImportType = "customers" | "products" | "orders";
+export type ImportEntity = "customer" | "product" | "stock" | "sale";
 
 export interface CustomerLoginCodesTable {
   id: Generated<string>;
@@ -400,7 +335,7 @@ export interface DrawerCountsTable {
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
 }
-export type ImportOp = "created" | "updated" | "deleted" | "moved";
+export type ImportOp = "created" | "updated" | "moved";
 
 export interface ImportBatchesTable {
   id: Generated<string>;
@@ -446,14 +381,11 @@ export interface DB {
   businesses: BusinessesTable;
   locations: LocationsTable;
   staff: StaffTable;
-  astro_programs: AstroProgramsTable;
   products: ProductsTable;
   inventory_levels: InventoryLevelsTable;
   inventory_moves: InventoryMovesTable;
   audit_log: AuditLogTable;
   customers: CustomersTable;
-  astro_punches: AstroPunchesTable;
-  astro_balances: AstroBalancesView;
   demo_seed_parts: DemoSeedPartsTable;
   import_batches: ImportBatchesTable;
   import_changes: ImportChangesTable;
@@ -463,7 +395,6 @@ export interface DB {
   sale_lines: SaleLinesTable;
   sale_discounts: SaleDiscountsTable;
   payments: PaymentsTable;
-  astro_queue: AstroQueueTable;
   refunds: RefundsTable;
   refund_lines: RefundLinesTable;
   refund_payments: RefundPaymentsTable;
@@ -477,4 +408,3 @@ export type Business = Selectable<BusinessesTable>;
 export type Location = Selectable<LocationsTable>;
 export type Staff = Selectable<StaffTable>;
 export type Product = Selectable<ProductsTable>;
-export type AstroProgram = Selectable<AstroProgramsTable>;

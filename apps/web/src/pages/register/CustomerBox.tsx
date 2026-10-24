@@ -1,13 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
 import { formatDate, formatPhone, normalizePhone } from "@pet-pos/core";
-import type { CustomerCard, ProductRow, RegisterCustomer } from "@pet-pos/api";
+import type { ProductRow, RegisterCustomer } from "@pet-pos/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";
 import { BirthdayTag } from "../customers/bits.tsx";
-
-const rewardsReady = (c: CustomerCard) => c.punchCards.filter((p) => p.balance >= p.buyCount).length;
 
 /** "Customer": find by phone or name, quick add, or show the attached customer. */
 export function CustomerBox({
@@ -34,18 +32,10 @@ function Attached({
   onDrop: () => void;
   onAddProduct: (p: ProductRow) => void;
 }) {
-  const r = rewardsReady(c.card);
   return (
     <div className="cust">
       <div style={{ flex: 1, minWidth: 0, display: "grid", gap: 4 }}>
-        <span>
-          <b>{c.card.name}</b>{" "}
-          {r > 0 && (
-            <span className="tag astro">
-              {r} reward{r > 1 ? "s" : ""} ready
-            </span>
-          )}
-        </span>
+        <b>{c.card.name}</b>
         <span className="muted small">{formatPhone(c.card.phone)}</span>
         <BirthdayTag birthday={c.card.birthday} />
         {c.usuallyBuys.length > 0 && (
@@ -145,25 +135,19 @@ function Lookup({ onAttach }: { onAttach: (c: RegisterCustomer) => void }) {
           autoComplete="off"
         />
       </label>
-      {!query && (
-        <span className="muted small">Type a phone number to find a customer and their Astro cards.</span>
-      )}
-      {list.slice(0, 6).map((c) => {
-        const r = rewardsReady(c);
-        return (
-          <button
-            key={c.id}
-            type="button"
-            style={{ textAlign: "left", display: "flex", justifyContent: "space-between", gap: 8 }}
-            onClick={() => attach.mutate(c.id)}
-          >
-            <span>
-              <b>{c.name}</b> <span className="muted mono">{formatPhone(c.phone)}</span>
-            </span>
-            {r > 0 && <span className="tag astro">{r} ready</span>}
-          </button>
-        );
-      })}
+      {!query && <span className="muted small">Type a phone number or name to find a customer.</span>}
+      {list.slice(0, 6).map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          style={{ textAlign: "left", display: "flex", justifyContent: "space-between", gap: 8 }}
+          onClick={() => attach.mutate(c.id)}
+        >
+          <span>
+            <b>{c.name}</b> <span className="muted mono">{formatPhone(c.phone)}</span>
+          </span>
+        </button>
+      ))}
       {list.length > 6 && (
         <span className="muted small">{list.length - 6} more. Keep typing to narrow it down.</span>
       )}

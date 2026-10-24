@@ -37,7 +37,7 @@ export interface ReceiptData {
     discountCents: number;
     lineTotalCents: number;
   }[];
-  discounts: { name: string; source: string; amountCents: number; note: string | null }[];
+  discounts: { name: string; amountCents: number; note: string | null }[];
   payments: {
     method: "card" | "cash";
     status: string;
@@ -52,7 +52,6 @@ export interface ReceiptData {
   totalCents: number;
   refundedCents: number;
   refunds: ReceiptRefund[];
-  earned: { programName: string; punches: number }[];
 }
 
 const W = 32;
@@ -109,8 +108,6 @@ export function receiptText(r: ReceiptData): string {
   }
   if (r.status === "canceled") out.push("", "*** CANCELED ***");
   if (r.customer) out.push("", `Customer: ${r.customer.name}`);
-  if (r.earned.length)
-    out.push(`Astro credit: ${r.earned.map((e) => `${e.punches} × ${e.programName}`).join(", ")}`);
   if (r.staffName) out.push(`Served by ${r.staffName}`);
   out.push("", "Thank you!");
   return out.join("\n");

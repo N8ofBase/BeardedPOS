@@ -74,7 +74,7 @@ export function ColumnMatcher({
   );
 }
 
-const ACTION_TAG = { new: ["ok", "New"], update: ["astro", "Update"], skip: ["out", "Skip"] } as const;
+const ACTION_TAG = { new: ["ok", "New"], update: ["muted", "Update"], skip: ["out", "Skip"] } as const;
 
 export function PreviewView({ result }: { result: ImportResult }) {
   return (

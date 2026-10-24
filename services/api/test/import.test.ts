@@ -129,22 +129,15 @@ describe("products", () => {
     const { batch, warnings } = await importAll(owner, "products", [
       { sku: "0001", price: "$66.99", onHand: "20" },
       { sku: "", barcode: "", name: "No code" },
-      { sku: "N-1", name: "New Kibble", price: "9.99", cost: "abc", onHand: "5", program: "Mystery Club" },
+      { sku: "N-1", name: "New Kibble", price: "9.99", cost: "abc", onHand: "5" },
       { sku: "N-2", name: "No price" },
       { sku: "N-3", name: "Bad price", price: "twelve" },
     ]);
     expect(batch).toMatchObject({ created: 1, updated: 1, skipped: 3 });
-    expect(warnings.map((w) => w.message)).toEqual([
-      'Cost "abc" isn\'t an amount, left as it was',
-      'Unknown program "Mystery Club", imported without it',
-    ]);
+    expect(warnings.map((w) => w.message)).toEqual(['Cost "abc" isn\'t an amount, left as it was']);
     const all = await products();
     expect(all.find((p) => p.sku === "0001")).toMatchObject({ priceCents: 6699, onHand: 20 });
-    expect(all.find((p) => p.sku === "N-1")).toMatchObject({
-      priceCents: 999,
-      onHand: 5,
-      astroProgramId: null,
-    });
+    expect(all.find((p) => p.sku === "N-1")).toMatchObject({ priceCents: 999, onHand: 5 });
 
     const log = await withBusiness(db, owner.businessId, (trx) =>
       trx.selectFrom("audit_log").select(["action", "before", "after"]).execute(),
@@ -210,41 +203,6 @@ describe("products", () => {
     ]);
     expect(skips).toEqual([{ row: 2, reason: "Another product already has that barcode" }]);
     expect(batch).toMatchObject({ created: 1, skipped: 1 });
-  });
-});
-
-describe("Astro programs and punches", () => {
-  it("matches programs by name in any case", async () => {
-    const { batch, skips } = await importAll(owner, "programs", [
-      { name: "sample DRY food club (demo)", buyCount: "10", reward: "Free bag" },
-      { name: "Cat club", buyCount: "8" },
-      { name: "Bad", buyCount: "1" },
-    ]);
-    expect(batch).toMatchObject({ created: 1, updated: 1, skipped: 1 });
-    expect(skips[0]!.reason).toBe("Buy count missing or under 2");
-    const programs = await invoke(db, owner, "listPrograms", undefined);
-    expect(programs.map((p) => [p.name, p.buyCount, p.rewardText])).toEqual([
-      ["Cat club", 8, "Reward"],
-      ["Sample dry food club (DEMO)", 10, "Free bag"],
-    ]);
-  });
-
-  it("sets punch balances to the file's number", async () => {
-    const { skips } = await importAll(owner, "punches", [
-      { phone: "2125550100", program: "Sample dry food club (DEMO)", count: "5" },
-      { email: "family.demo@example.com", program: "sample dry food club (demo)", count: "0" },
-      { phone: "2125550101", program: "Unknown club", count: "3" },
-      { phone: "2125550101", program: "Sample dry food club (DEMO)", count: "lots" },
-      { phone: "2125559999", program: "Sample dry food club (DEMO)", count: "3" },
-    ]);
-    expect(skips.map((s) => s.reason)).toEqual([
-      'Unknown program "Unknown club"',
-      "Punch count isn't a number",
-      "No customer with that phone or email",
-    ]);
-    const all = await customers();
-    expect(all.find((c) => c.phone === "2125550100")!.punchCards[0]!.balance).toBe(5);
-    expect(all.find((c) => c.phone === "2125550102")!.punchCards).toEqual([]);
   });
 });
 
@@ -371,14 +329,7 @@ describe("undo", () => {
     expect(after).toMatchObject({ street: "5 Edited Ave", city: "Springfield" });
   });
 
-  it("puts back punch balances it replaced and audits deleted customers", async () => {
-    const before = (await customers()).find((c) => c.phone === "2125550100")!.punchCards[0]!.balance;
-    const punches = await importAll(owner, "punches", [
-      { phone: "2125550100", program: "Sample dry food club (DEMO)", count: "2" },
-    ]);
-    await invoke(db, owner, "undoImport", { batchId: punches.batchId });
-    expect((await customers()).find((c) => c.phone === "2125550100")!.punchCards[0]!.balance).toBe(before);
-
+  it("audits customers it deletes", async () => {
     const people = await importAll(owner, "customers", [{ name: "Temp", phone: "2125550155" }]);
     expect(await invoke(db, owner, "undoPreview", { batchId: people.batchId })).toEqual({
       creates: { customer: 1 },

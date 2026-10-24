@@ -19,7 +19,6 @@ export function meFor(role: Role): Me {
       brandColor: null,
       logo: null,
       modules: {},
-      astroDiscountsBeforeTax: true,
     },
     location: { id: "l1", name: "Main store (DEMO)", taxRateMpct: 7000 },
   };

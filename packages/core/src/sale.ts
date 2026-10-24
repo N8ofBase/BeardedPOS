@@ -2,12 +2,9 @@
 // the same function with current prices at checkout. Everything is integer cents.
 //
 // Order of discounts (each works on what's left after the one before):
-//   1. item discounts: Astro offers, then store item discounts
-//   2. Astro rewards (the free item: the cheapest qualifying item)
-//   3. whole-ticket store discounts, spread across lines in proportion
-// Store discounts always lower the taxable amount. Astro offers and rewards do too
-// unless the store's setting says they come off after tax (spec open question).
-// Tax is rounded once per sale, half up.
+//   1. item discounts
+//   2. whole-ticket discounts, spread across lines in proportion
+// Discounts always lower the taxable amount. Tax is rounded once per sale, half up.
 import { AppError } from "./errors.ts";
 import { assertCents } from "./money.ts";
 
@@ -18,9 +15,6 @@ export interface TicketLine {
   unitPriceCents: number;
   qty: number;
   taxClass: "standard" | "exempt";
-  astroProgramId: string | null;
-  offer: { label: string; cents: number } | null;
-  applyOffer: boolean;
 }
 
 export interface DiscountRule {
@@ -40,27 +34,17 @@ export interface AppliedStoreDiscount {
   lineKey: string | null;
 }
 
-export interface RewardRedemption {
-  programId: string;
-  label: string;
-}
-
 export interface PriceInput {
   lines: TicketLine[];
   storeDiscounts: AppliedStoreDiscount[];
-  rewards: RewardRedemption[];
   taxRateMpct: number;
-  /** True: Astro offers and rewards reduce the taxable amount. */
-  astroBeforeTax: boolean;
 }
 
 export interface PricedDiscount {
-  source: "store" | "astro_offer" | "astro_reward";
   name: string;
   amountCents: number;
   lineKey: string | null;
-  discountId: string | null;
-  programId: string | null;
+  discountId: string;
 }
 
 export interface PricedLine {
@@ -69,7 +53,6 @@ export interface PricedLine {
   discountCents: number;
   netCents: number;
   taxBaseCents: number;
-  earnsPunches: number;
 }
 
 export interface PricedSale {
@@ -80,8 +63,6 @@ export interface PricedSale {
   taxableCents: number;
   taxCents: number;
   totalCents: number;
-  /** Punches earned per Astro program (the free item doesn't earn). */
-  earned: Record<string, number>;
 }
 
 /** n × num / den, rounded half up, for non-negative integers. Exact while n × num < 2^53. */
@@ -153,7 +134,7 @@ function checkStacking(applied: AppliedStoreDiscount[]): void {
 }
 
 export function priceSale(input: PriceInput): PricedSale {
-  const { lines, storeDiscounts, rewards, taxRateMpct, astroBeforeTax } = input;
+  const { lines, storeDiscounts, taxRateMpct } = input;
   if (!Number.isSafeInteger(taxRateMpct) || taxRateMpct < 0) throw new TypeError("Bad tax rate");
   checkStacking(storeDiscounts);
 
@@ -166,65 +147,26 @@ export function priceSale(input: PriceInput): PricedSale {
     if (keys.has(l.key)) throw new TypeError(`Duplicate line key ${l.key}`);
     keys.add(l.key);
     const gross = l.unitPriceCents * l.qty;
-    return { line: l, gross, net: gross, astro: 0, rewardUnits: 0 };
+    return { line: l, gross, net: gross };
   });
   const byKey = new Map(work.map((w) => [w.line.key, w]));
   const discounts: PricedDiscount[] = [];
 
-  // 1. Item discounts: Astro offers, then store item discounts.
-  for (const w of work) {
-    const o = w.line.offer;
-    if (w.line.applyOffer && o && o.cents > 0) {
-      const amt = Math.min(o.cents, w.net);
-      w.net -= amt;
-      w.astro += amt;
-      discounts.push({
-        source: "astro_offer",
-        name: o.label,
-        amountCents: amt,
-        lineKey: w.line.key,
-        discountId: null,
-        programId: null,
-      });
-    }
-  }
+  // 1. Item discounts.
   for (const a of storeDiscounts.filter((d) => d.rule.scope === "line")) {
     const w = a.lineKey ? byKey.get(a.lineKey) : undefined;
     if (!w) throw new AppError("invalid", `Pick the item for ${a.rule.name}.`);
     const amt = ruleAmount(a.rule, w.net);
     w.net -= amt;
     discounts.push({
-      source: "store",
       name: a.rule.name,
       amountCents: amt,
       lineKey: w.line.key,
       discountId: a.rule.id,
-      programId: null,
     });
   }
 
-  // 2. Astro rewards: the cheapest qualifying item is free.
-  for (const r of rewards) {
-    const eligible = work
-      .filter((w) => w.line.astroProgramId === r.programId && w.net > 0 && w.rewardUnits < w.line.qty)
-      .sort((a, b) => a.line.unitPriceCents - b.line.unitPriceCents);
-    const w = eligible[0];
-    if (!w) throw new AppError("invalid", `Add a qualifying item to redeem ${r.label}.`);
-    const amt = Math.min(w.line.unitPriceCents, w.net);
-    w.net -= amt;
-    w.astro += amt;
-    w.rewardUnits++;
-    discounts.push({
-      source: "astro_reward",
-      name: r.label,
-      amountCents: amt,
-      lineKey: w.line.key,
-      discountId: null,
-      programId: r.programId,
-    });
-  }
-
-  // 3. Whole-ticket store discounts, each on what's left, spread across lines.
+  // 2. Whole-ticket discounts, each on what's left, spread across lines.
   for (const a of storeDiscounts.filter((d) => d.rule.scope === "ticket")) {
     const base = work.reduce((s, w) => s + w.net, 0);
     const amt = ruleAmount(a.rule, base);
@@ -234,35 +176,27 @@ export function priceSale(input: PriceInput): PricedSale {
     );
     work.forEach((w, i) => (w.net -= shares[i]!));
     discounts.push({
-      source: "store",
       name: a.rule.name,
       amountCents: amt,
       lineKey: null,
       discountId: a.rule.id,
-      programId: null,
     });
   }
 
   const priced: PricedLine[] = work.map((w) => {
-    const taxBase = w.line.taxClass === "standard" ? w.net + (astroBeforeTax ? 0 : w.astro) : 0;
+    const taxBase = w.line.taxClass === "standard" ? w.net : 0;
     return {
       key: w.line.key,
       grossCents: w.gross,
       discountCents: w.gross - w.net,
       netCents: w.net,
       taxBaseCents: taxBase,
-      earnsPunches: w.line.astroProgramId ? w.line.qty - w.rewardUnits : 0,
     };
   });
   const subtotal = priced.reduce((s, l) => s + l.grossCents, 0);
   const discount = priced.reduce((s, l) => s + l.discountCents, 0);
   const taxable = priced.reduce((s, l) => s + l.taxBaseCents, 0);
   const tax = taxOn(taxable, taxRateMpct);
-  const earned: Record<string, number> = {};
-  for (const [i, w] of work.entries()) {
-    const p = w.line.astroProgramId;
-    if (p && priced[i]!.earnsPunches > 0) earned[p] = (earned[p] ?? 0) + priced[i]!.earnsPunches;
-  }
   return {
     lines: priced,
     discounts,
@@ -271,7 +205,6 @@ export function priceSale(input: PriceInput): PricedSale {
     taxableCents: taxable,
     taxCents: tax,
     totalCents: subtotal - discount + tax,
-    earned,
   };
 }
 

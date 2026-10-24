@@ -136,7 +136,6 @@ function InventoryPage() {
             <tr>
               <th>SKU</th>
               <th>Product</th>
-              <th>Astro</th>
               <th className="r">Sell price</th>
               <th className="r">Margin</th>
               <th className="r">On hand</th>
@@ -157,7 +156,7 @@ function InventoryPage() {
             ))}
             {products.data?.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={6} className="muted">
                   {q || category || lowOnly
                     ? "No products match. Clear the filters to see everything."
                     : canEdit
@@ -168,7 +167,7 @@ function InventoryPage() {
             )}
             {products.isPending && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={6} className="muted">
                   Loading products…
                 </td>
               </tr>
@@ -218,10 +217,6 @@ function ProductTableRow({
         <b>{p.name}</b>
         {!p.active && <span className="tag muted"> Archived</span>}
         <span className="sub">{[p.brand, p.category].filter(Boolean).join(" · ")}</span>
-      </td>
-      <td>
-        {p.astroProgramName && <span className="tag astro">{p.astroProgramName}</span>}{" "}
-        {p.offerCents && <span className="tag astro">{formatMoney(p.offerCents)} offer</span>}
       </td>
       <td className="r num">
         {formatMoney(p.priceCents)}

@@ -9,7 +9,6 @@ export interface MoneyTotals {
   grossCents: number;
   discountCents: number;
   taxCents: number;
-  astroDiscountCents: number;
   /** Completed payments taken in the range (cash is what stayed in the drawer, change excluded). */
   cardInCents: number;
   cashInCents: number;
@@ -35,16 +34,6 @@ export async function moneyTotals(trx: Transaction<DB>, from: Date, to: Date): P
     .where("status", "=", "paid")
     .where("created_at", ">=", from)
     .where("created_at", "<", to)
-    .executeTakeFirstOrThrow();
-  const astro = await trx
-    .selectFrom("sale_discounts as d")
-    .innerJoin("sales as s", "s.id", "d.sale_id")
-    .select(sql<number>`coalesce(sum(d.amount_cents), 0)::int`.as("n"))
-    .where("s.source", "=", "register")
-    .where("s.status", "=", "paid")
-    .where("s.created_at", ">=", from)
-    .where("s.created_at", "<", to)
-    .where("d.source", "in", ["astro_offer", "astro_reward"])
     .executeTakeFirstOrThrow();
   // Voided sales' payments are marked refunded, so only money still held counts.
   const taken = await trx
@@ -79,7 +68,6 @@ export async function moneyTotals(trx: Transaction<DB>, from: Date, to: Date): P
     grossCents: sales.gross,
     discountCents: sales.discount,
     taxCents: sales.tax,
-    astroDiscountCents: astro.n,
     cardInCents: by(taken, "card"),
     cashInCents: by(taken, "cash"),
     cardBackCents: by(back, "card"),

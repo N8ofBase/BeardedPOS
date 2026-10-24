@@ -21,7 +21,6 @@ const summary: DrawerSummary = {
     grossCents: 6950,
     discountCents: 0,
     taxCents: 455,
-    astroDiscountCents: 0,
     cardInCents: 2280,
     cashInCents: 4670,
     cardBackCents: 0,

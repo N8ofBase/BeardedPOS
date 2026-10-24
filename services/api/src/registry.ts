@@ -2,7 +2,6 @@ import type { Kysely } from "kysely";
 import { assertCan, AppError, type Ctx } from "@pet-pos/core";
 import { withBusiness, type DB } from "@pet-pos/db";
 import type { Handler } from "./handler.ts";
-import { listAstroQueue, listPrograms, markAstroEntered, saveProgram } from "./handlers/astro.ts";
 import {
   archiveProduct,
   findByCode,
@@ -66,8 +65,6 @@ export const handlers = {
   archiveProduct,
   receiveStock,
   saveCounts,
-  listPrograms,
-  saveProgram,
   searchCustomers,
   lookupByPhone,
   getCustomer,
@@ -96,8 +93,6 @@ export const handlers = {
   refundPreview,
   refundSale,
   sendReceipt,
-  listAstroQueue,
-  markAstroEntered,
   drawerSummary,
   saveDrawerCount,
   listDrawerCounts,

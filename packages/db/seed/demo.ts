@@ -72,7 +72,6 @@ async function seedBusiness(trx: Transaction<DB>): Promise<string> {
       name: "Sample Pet Store (DEMO)",
       slug: "sample-pet-store-demo",
       brand_color: "#0f6e5a",
-      modules: JSON.stringify({ astro: true }),
       is_demo: true,
     })
     .returning("id")
@@ -97,7 +96,7 @@ async function seedBusiness(trx: Transaction<DB>): Promise<string> {
   return business.id;
 }
 
-// The prototype's sample products and program.
+// The prototype's sample products.
 const DEMO_PRODUCTS = [
   {
     sku: "0001",
@@ -108,8 +107,6 @@ const DEMO_PRODUCTS = [
     cost_cents: 4300,
     reorder_at: 6,
     on_hand: 14,
-    program: true,
-    offer: { label: "$5 off 24 lb bag", cents: 500 },
   },
   {
     sku: "0002",
@@ -120,8 +117,6 @@ const DEMO_PRODUCTS = [
     cost_cents: 2500,
     reorder_at: 5,
     on_hand: 4,
-    program: true,
-    offer: null,
   },
   {
     sku: "0003",
@@ -132,8 +127,6 @@ const DEMO_PRODUCTS = [
     cost_cents: 700,
     reorder_at: 10,
     on_hand: 30,
-    program: false,
-    offer: null,
   },
   {
     sku: "0004",
@@ -144,8 +137,6 @@ const DEMO_PRODUCTS = [
     cost_cents: 350,
     reorder_at: 4,
     on_hand: 0,
-    program: false,
-    offer: null,
   },
 ];
 
@@ -155,19 +146,6 @@ async function seedInventory(trx: Transaction<DB>, businessId: string): Promise<
     .select("id")
     .where("business_id", "=", businessId)
     .orderBy("created_at")
-    .executeTakeFirstOrThrow();
-
-  const program = await trx
-    .insertInto("astro_programs")
-    .values({
-      business_id: businessId,
-      name: "Sample dry food club (DEMO)",
-      brand: "Sample Brand",
-      buy_count: 12,
-      reward_text: "Next bag free",
-      is_demo: true,
-    })
-    .returning("id")
     .executeTakeFirstOrThrow();
 
   for (const p of DEMO_PRODUCTS) {
@@ -182,9 +160,6 @@ async function seedInventory(trx: Transaction<DB>, businessId: string): Promise<
         price_cents: p.price_cents,
         cost_cents: p.cost_cents,
         reorder_at: p.reorder_at,
-        astro_program_id: p.program ? program.id : null,
-        astro_offer_label: p.offer?.label ?? null,
-        astro_offer_cents: p.offer?.cents ?? null,
         is_demo: true,
       })
       .returning("id")
@@ -216,13 +191,6 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
     const back = `${Number(d.slice(0, 4)) - n}${d.slice(4)}`;
     return isIsoDate(back) ? back : back.replace(/-02-29$/, "-02-28");
   };
-  const program = await trx
-    .selectFrom("astro_programs")
-    .select("id")
-    .where("business_id", "=", businessId)
-    .where("is_demo", "=", true)
-    .executeTakeFirst();
-
   const customers = [
     {
       name: "Sample Customer (DEMO)",
@@ -234,7 +202,6 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
       zip: "62701",
       birthday: null,
       sms_opt_in: true,
-      punches: 11,
     },
     {
       name: "Sample Cat Parent (DEMO)",
@@ -246,7 +213,6 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
       zip: null,
       birthday: yearsAgo(38, 3),
       sms_opt_in: false,
-      punches: 0,
     },
     {
       name: "Sample Family (DEMO)",
@@ -258,29 +224,13 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
       zip: null,
       birthday: null,
       sms_opt_in: true,
-      punches: 4,
     },
   ];
 
-  for (const { punches, ...c } of customers) {
-    const row = await trx
-      .insertInto("customers")
-      .values({ ...c, business_id: businessId, is_demo: true })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-    if (program && punches > 0)
-      await trx
-        .insertInto("astro_punches")
-        .values({
-          business_id: businessId,
-          customer_id: row.id,
-          program_id: program.id,
-          qty: punches,
-          kind: "opening_balance",
-          is_demo: true,
-        })
-        .execute();
-  }
+  await trx
+    .insertInto("customers")
+    .values(customers.map((c) => ({ ...c, business_id: businessId, is_demo: true })))
+    .execute();
 }
 
 // Example store discounts until the owner's real list is in.
