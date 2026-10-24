@@ -1,21 +1,14 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router";
-import { App } from "../src/App.tsx";
-import { offlineStore, StoreContext, type StoreApi } from "../src/api/store.ts";
+import type { StoreApi } from "../src/api/store.ts";
 import { brand, games } from "../src/content/site.ts";
+import { renderStore } from "./render.tsx";
 
 afterEach(cleanup);
 
-function renderHome(store: StoreApi = offlineStore, path = "/") {
+function renderHome(store: Partial<StoreApi> = {}, path = "/") {
   localStorage.clear();
-  return render(
-    <StoreContext.Provider value={store}>
-      <MemoryRouter initialEntries={[path]}>
-        <App />
-      </MemoryRouter>
-    </StoreContext.Provider>,
-  );
+  return renderStore(path, store);
 }
 
 const shelf = () => document.getElementById("games")!;
@@ -57,7 +50,7 @@ describe("home page", () => {
   });
 
   it("says so when the shop can't load", async () => {
-    renderHome({ ...offlineStore, catalog: () => Promise.reject(new Error("down")) });
+    renderHome({ catalog: () => Promise.reject(new Error("down")) });
     expect(await screen.findByText(/couldn’t load the shop/)).toBeTruthy();
   });
 
@@ -79,16 +72,16 @@ describe("home page", () => {
 describe("VIP signup", () => {
   it("joins with a valid email and shows the code", async () => {
     const joinVip = vi.fn(async () => {});
-    renderHome({ ...offlineStore, joinVip });
+    renderHome({ joinVip });
     fireEvent.change(screen.getByLabelText("Join the VIP list"), { target: { value: " sam@example.com " } });
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
     expect(await screen.findByText(brand.vipThanks)).toBeTruthy();
-    expect(joinVip).toHaveBeenCalledWith("sam@example.com");
+    expect(joinVip).toHaveBeenCalledWith("sam@example.com", "band");
   });
 
   it("catches a mistyped email before sending it", () => {
     const joinVip = vi.fn(async () => {});
-    renderHome({ ...offlineStore, joinVip });
+    renderHome({ joinVip });
     fireEvent.change(screen.getByLabelText("Join the VIP list"), { target: { value: "sam@example" } });
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
     expect(screen.getByText(/Check the email address/)).toBeTruthy();
@@ -96,7 +89,7 @@ describe("VIP signup", () => {
   });
 
   it("lets the visitor try again when the signup fails", async () => {
-    renderHome({ ...offlineStore, joinVip: () => Promise.reject(new Error("down")) });
+    renderHome({ joinVip: () => Promise.reject(new Error("down")) });
     fireEvent.change(screen.getByLabelText("Join the VIP list"), { target: { value: "sam@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
     await waitFor(() => expect(screen.getByText(/didn’t go through/)).toBeTruthy());
@@ -106,7 +99,7 @@ describe("VIP signup", () => {
 
 describe("other pages", () => {
   it("shows a friendly page for a bad link", () => {
-    renderHome(offlineStore, "/nope");
+    renderHome({}, "/nope");
     expect(screen.getByRole("heading", { name: "Rolled a 1." })).toBeTruthy();
   });
 });

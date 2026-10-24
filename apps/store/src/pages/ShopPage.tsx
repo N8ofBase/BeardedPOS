@@ -1,7 +1,7 @@
 import { useProducts } from "../api/data.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { games } from "../content/site.ts";
-import type { Product } from "../catalog/catalog.ts";
+import type { Product } from "@bearded/store-core";
 
 export function ShopPage() {
   const products = useProducts();

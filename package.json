@@ -8,7 +8,9 @@
   "workspaces": [
     "packages/core",
     "packages/db",
+    "packages/store-core",
     "services/api",
+    "services/store-api",
     "apps/web",
     "apps/store",
     "infra"

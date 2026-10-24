@@ -1,6 +1,6 @@
 // Turns the Square catalog into the store's products. Square owns names, prices and stock;
-// site.ts decides which Square items appear and which game they belong to.
-import { extraItems, games, lowStockAt, type ProductKind, type StoreItem } from "../content/site.ts";
+// listing.ts decides which Square items appear and which game they belong to.
+import { extraItems, gameItems, lowStockAt, type ProductKind, type StoreItem } from "./listing.ts";
 
 /** One Square item variation, as the store server returns it (and as the offline snapshot saves it). */
 export interface SquareItem {
@@ -60,13 +60,13 @@ interface Listing extends StoreItem {
 
 const listings = new Map<string, Listing>(
   [
-    ...games.flatMap((g) => g.items.map((i) => ({ ...i, game: g.slug }))),
+    ...gameItems.flatMap((g) => g.items.map((i) => ({ ...i, game: g.game }))),
     ...extraItems.map((i) => ({ ...i, game: null })),
   ].map((l) => [matchKey(l.square), l]),
 );
 
 /**
- * The products the store sells: only Square items listed in site.ts, with a fixed price, in the
+ * The products the store sells: only Square items listed in listing.ts, with a fixed price, in the
  * order they're listed. Items with several variations become one product per variation.
  */
 export function storeProducts(catalog: SquareCatalog): Product[] {

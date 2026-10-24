@@ -1,6 +1,6 @@
 // Reviews: what a reviewer sends, what the site shows, and the checks both sides run.
 // The store server repeats validateReview() and holds every review until the team approves it.
-import { looksLikeEmail } from "../api/email.ts";
+import { looksLikeEmail } from "./email.ts";
 
 export interface Review {
   id: string;

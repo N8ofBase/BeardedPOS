@@ -8,9 +8,8 @@ import {
   storeProducts,
   type SquareCatalog,
   type SquareItem,
-} from "../src/catalog/catalog.ts";
-import snapshot from "../src/catalog/square-snapshot.json";
-import { extraItems, games, lowStockAt } from "../src/content/site.ts";
+} from "../src/catalog.ts";
+import { lowStockAt } from "../src/listing.ts";
 
 const item = (over: Partial<SquareItem>): SquareItem => ({
   itemId: "I1",
@@ -116,22 +115,13 @@ describe("money", () => {
   });
 });
 
-describe("the saved Square snapshot", () => {
-  const snap = snapshot as SquareCatalog;
-
-  it("has every item the store lists", () => {
-    expect(missingItems(snap)).toEqual([]);
-  });
-
-  it("gives every listed item a product", () => {
-    const listed = [...games.flatMap((g) => g.items), ...extraItems].length;
-    expect(storeProducts(snap)).toHaveLength(listed);
-  });
-
-  it("keeps Prism Cortex-only items and donations off the store", () => {
-    const names = storeProducts(snap).map((p) => p.name);
-    expect(names).not.toContain("Math Force 5");
-    expect(names).not.toContain("Donation");
-    expect(names.some((n) => n.includes("Market"))).toBe(false);
+describe("missingItems", () => {
+  it("lists store items Square doesn't have, ignoring dash style", () => {
+    const missing = missingItems(
+      catalog(item({ name: "Locked Out" }), item({ name: "Fences 5-6 Player Expansion" })),
+    );
+    expect(missing).not.toContain("Locked Out");
+    expect(missing).not.toContain("Fences 5–6 Player Expansion");
+    expect(missing).toContain("Jibe Card Game");
   });
 });

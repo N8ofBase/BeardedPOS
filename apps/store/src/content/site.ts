@@ -48,15 +48,6 @@ export const brand = {
 };
 
 export type GameStatus = "available" | "preorder" | "coming-soon";
-export type ProductKind = "game" | "expansion" | "preorder" | "digital" | "merch";
-
-/** A Square item that belongs in the store. `square` is the item's name in Square, which is how we match it. */
-export interface StoreItem {
-  square: string;
-  kind: ProductKind;
-  /** Shown instead of the Square name, when the Square name reads badly on a shelf. */
-  name?: string;
-}
 
 export interface Game {
   slug: string;
@@ -72,7 +63,6 @@ export interface Game {
   badge?: string;
   designer?: string;
   links: { rules?: string; bgg?: string };
-  items: StoreItem[];
 }
 
 // The order here is the order on the shelf. I Crit You Not! and D20 On The Money are left out,
@@ -94,13 +84,6 @@ export const games: Game[] = [
       rules: "https://beardedboardgames.com/s/Fences-Instructions.pdf",
       bgg: "https://boardgamegeek.com/boardgame/246409/fences",
     },
-    items: [
-      { square: "Fences", kind: "game" },
-      { square: "Fences 5–6 Player Expansion", kind: "expansion" },
-      { square: "Fences: The Ranch", kind: "expansion" },
-      { square: "Fences: Seasons", kind: "expansion" },
-      { square: "Fences Premium Print & Play", kind: "digital" },
-    ],
   },
   {
     slug: "locked-out",
@@ -116,7 +99,6 @@ export const games: Game[] = [
     badge: "Hidden gem",
     designer: "René Uittenbogaard",
     links: {},
-    items: [{ square: "Locked Out", kind: "game" }],
   },
   {
     slug: "soccer-blocker",
@@ -131,13 +113,6 @@ export const games: Game[] = [
     facts: ["2 players", "15–30 min", "Ages 12+"],
     badge: "New",
     links: { bgg: "https://boardgamegeek.com/boardgame/466697/soccer-blocker" },
-    items: [
-      {
-        square: "Soccer Blocker Version Zero Limited Edition",
-        kind: "game",
-        name: "Soccer Blocker Version Zero (Limited)",
-      },
-    ],
   },
   {
     slug: "mine-and-find",
@@ -152,7 +127,6 @@ export const games: Game[] = [
     facts: ["1–4 players", "20–30 min", "Ages 8+"],
     badge: "New",
     links: { bgg: "https://boardgamegeek.com/boardgame/468088/mine-and-find" },
-    items: [{ square: "Mine Find", kind: "preorder", name: "Mine & Find (Pre-order)" }],
   },
   {
     slug: "pack-lash",
@@ -167,7 +141,6 @@ export const games: Game[] = [
     facts: ["2 players", "5–15 min", "Ages 10+"],
     badge: "New",
     links: { bgg: "https://boardgamegeek.com/boardgame/407307/pack-lash" },
-    items: [{ square: "Pack Lash VIP Reservation", kind: "preorder" }],
   },
   {
     slug: "fences-roll-and-write",
@@ -181,15 +154,7 @@ export const games: Game[] = [
     art: `${SQ}/438619b3-3536-4a20-8824-702e8097c809/Rolling+Acres+Mock+Up+Web_2.jpg`,
     facts: ["Coming 2027"],
     links: {},
-    items: [],
   },
-];
-
-/** Square items sold in the store that don't belong to one game. Anything not listed here or on a game stays off the site. */
-export const extraItems: StoreItem[] = [
-  { square: "Jibe Card Game", kind: "game" },
-  { square: "Future Board Gamer Onesie", kind: "merch" },
-  { square: "Board Gamer in Training Kids Tee", kind: "merch" },
 ];
 
 export const statusLabel: Record<GameStatus, string> = {
@@ -238,6 +203,3 @@ export const team: TeamMember[] = [
 
 export const about =
   "We are firm in our belief that board games build bridges, so we publish games that are quick, fun and easy for everyone to enjoy. Help the board game community grow by supporting us and other independent designers, publishers and retailers.";
-
-/** "Only N left" shows at or below this count. */
-export const lowStockAt = 5;

@@ -1218,3 +1218,226 @@ body {
     padding-right: 44px;
   }
 }
+
+/* ---------- Step 3: checkout preview, Behind the Beard ---------- */
+.order-number {
+  font-size: 1.15rem;
+}
+.checkout-preview .preview-order {
+  max-width: 640px;
+  margin-top: 24px;
+}
+.checkout-preview .cart-lines li {
+  grid-template-columns: 1fr auto;
+}
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.bbg button.link {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin-top: 12px;
+  font: 700 15px var(--text);
+  color: var(--felt);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.staff {
+  min-height: 60vh;
+}
+.staff h2 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.staff-signin {
+  max-width: 560px;
+}
+.staff-signin label {
+  display: block;
+  font-weight: 800;
+  margin: 16px 0 6px;
+}
+.staff-signin .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.staff-signin input {
+  flex: 1 1 220px;
+  min-width: 0;
+  font: 600 16px var(--text);
+  padding: 11px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+}
+.staff-signin #staff-code {
+  letter-spacing: 0.3em;
+  font-variant-numeric: tabular-nums;
+}
+.dev-code {
+  background: var(--butter);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+.staff-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.staff-bar p {
+  margin: 0;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 20px;
+}
+.tabs [role="tab"] {
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: var(--mint);
+  padding: 8px 18px;
+  font: 800 16px var(--text);
+  color: var(--ink);
+  cursor: pointer;
+  margin-bottom: -2px;
+}
+.tabs [aria-selected="true"] {
+  background: #fff;
+  padding-bottom: 10px;
+}
+.staff .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+.staff-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+.staff-review .top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.staff-review .game {
+  font-weight: 800;
+  color: var(--felt);
+}
+.staff-review .who a {
+  color: inherit;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0 0 32px;
+}
+.tiles div {
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: #fff;
+}
+.tiles dt {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.tiles dd {
+  margin: 4px 0 0;
+  font: 400 1.8rem var(--display);
+  font-variant-numeric: tabular-nums;
+}
+.left-carts {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+  font-size: 0.95rem;
+}
+.left-carts th,
+.left-carts td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1.5px solid #d9dfdc;
+  vertical-align: top;
+}
+.left-carts th {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ranks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 28px 32px;
+  margin-bottom: 24px;
+}
+.ranked ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ranked li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  font-size: 0.95rem;
+}
+.ranked .label {
+  overflow-wrap: anywhere;
+}
+.ranked .count {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ranked .bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  min-width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--felt);
+}
+.pairs {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  margin: 0;
+}
+.pairs dd {
+  margin: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 760px) {
+  .left-carts thead {
+    display: none;
+  }
+  .left-carts tr {
+    display: grid;
+    border-bottom: 1.5px solid #d9dfdc;
+    padding: 8px 0;
+  }
+  .left-carts td {
+    border: 0;
+    padding: 2px 0;
+  }
+}
