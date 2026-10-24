@@ -1,8 +1,8 @@
 import type { Kysely, Selectable } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Ctx } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import type { Ctx } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import type { RefundSaleInput } from "../src/handlers/refunds.ts";
 import { invoke } from "../src/registry.ts";
 
@@ -134,7 +134,7 @@ describe("refund money", () => {
   });
 
   it("uses the same tax shares for older sales that didn't store them", async () => {
-    // $12.99 + $8.99 = $21.98, tax 7% = $1.54; the rope toy's share is 63¢.
+    // $12.99 + $8.99 = $21.98, tax 7% = $1.54; the card sleeves' share is 63¢.
     const s = await paidSale([
       ["0003", 1],
       ["0004", 1],

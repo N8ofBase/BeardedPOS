@@ -111,7 +111,7 @@ const receipt: ReceiptData = {
   status: "paid",
   createdAt: new Date("2026-10-19T14:00:00"),
   paidAt: new Date("2026-10-19T14:00:00"),
-  storeName: "Sample Pet Shop",
+  storeName: "Sample Game Shop",
   locationName: "Main St",
   staffName: "Sam",
   customer: { id: "c1", name: "Ana", email: "ana@example.com", phone: "5551234567" },
@@ -163,9 +163,9 @@ describe("receipt text", () => {
   });
 
   it("builds the email and the short text", () => {
-    expect(receiptEmail(receipt).subject).toBe("Your receipt from Sample Pet Shop (#1001)");
+    expect(receiptEmail(receipt).subject).toBe("Your receipt from Sample Game Shop (#1001)");
     expect(receiptSms(receipt)).toBe(
-      "Sample Pet Shop: receipt #1001, total $32.66, refunded $10.89 (net $21.77). Thank you!",
+      "Sample Game Shop: receipt #1001, total $32.66, refunded $10.89 (net $21.77). Thank you!",
     );
   });
 });

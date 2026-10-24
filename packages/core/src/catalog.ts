@@ -1,13 +1,15 @@
-// Product categories and stock status, as in the prototype's Inventory tab.
+// Product categories and stock status, for a board game shop.
 
 export const CATEGORIES = [
-  "Dog food",
-  "Cat food",
-  "Treats",
-  "Supplies",
-  "Small animal",
-  "Fish",
-  "Bird",
+  "Strategy games",
+  "Family games",
+  "Party games",
+  "Card games",
+  "Cooperative games",
+  "Kids' games",
+  "Puzzles",
+  "Accessories",
+  "Other",
 ] as const;
 
 /**

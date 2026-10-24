@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Route, Routes, useLocation, useNavigate } from "react-router";
-import { can, CATEGORIES, formatMoney, marginPercent, stockLabel, stockStatus } from "@pet-pos/core";
-import type { ProductRow } from "@pet-pos/api";
+import { can, CATEGORIES, formatMoney, marginPercent, stockLabel, stockStatus } from "@bearded/core";
+import type { ProductRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { CameraButton } from "../../ui/scanner/CameraScanner.tsx";

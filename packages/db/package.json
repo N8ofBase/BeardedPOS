@@ -1,5 +1,5 @@
 {
-  "name": "@pet-pos/db",
+  "name": "@bearded/db",
   "private": true,
   "type": "module",
   "exports": {
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",
-    "@pet-pos/core": "*",
+    "@bearded/core": "*",
     "kysely": "^0.29.6"
   },
   "scripts": {

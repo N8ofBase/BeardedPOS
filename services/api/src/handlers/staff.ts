@@ -1,6 +1,6 @@
 import { sql, type Transaction } from "kysely";
-import { AppError, isRole, isUniqueViolation, type Role } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import { AppError, isRole, isUniqueViolation, type Role } from "@bearded/core";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 
 export interface Me {

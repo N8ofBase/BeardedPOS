@@ -1,5 +1,7 @@
 # Phase 1 plan: foundation
 
+> Written for the pet store this repo started as. Grooming, online booking, pets and Astro Loyalty have since been removed for Bearded Board Games; skip those parts.
+
 Status: **1a–1e done 2026-10-16** (see each session's plan for what changed). 1f (hosted mode) is on hold until the owner, or a first paying client, says yes.
 
 Things 1f must handle, found while building 1a–1e:

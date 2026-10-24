@@ -1,13 +1,13 @@
 {
-  "name": "@pet-pos/api",
+  "name": "@bearded/api",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@pet-pos/core": "*",
-    "@pet-pos/db": "*",
+    "@bearded/core": "*",
+    "@bearded/db": "*",
     "kysely": "^0.29.6"
   },
   "scripts": {

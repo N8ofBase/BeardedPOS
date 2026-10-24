@@ -2,7 +2,7 @@
 // staff registry is never reachable from here, and every handler that needs a
 // customer gets one only from a valid session token.
 import type { Transaction } from "kysely";
-import type { DB } from "@pet-pos/db";
+import type { DB } from "@bearded/db";
 
 export interface PublicCtx {
   businessId: string;

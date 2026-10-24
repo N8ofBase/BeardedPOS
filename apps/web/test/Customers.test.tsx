@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { CustomerCard } from "@pet-pos/api";
+import type { CustomerCard } from "@bearded/api";
 import { CustomerForm } from "../src/pages/customers/CustomerForm.tsx";
 import { CustomersRoutes } from "../src/pages/customers/CustomersPage.tsx";
 import { ConfirmTyped } from "../src/ui/ConfirmTyped.tsx";

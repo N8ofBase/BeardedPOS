@@ -1,9 +1,9 @@
 import type { Kysely } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Ctx, ProductInput } from "@pet-pos/core";
+import type { Ctx, ProductInput } from "@bearded/core";
 import type { PGlite } from "@electric-sql/pglite";
-import { ensureDemo, listDemoStaff, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import { ensureDemo, listDemoStaff, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { invoke } from "../src/registry.ts";
 
 let pg: PGlite;
@@ -19,7 +19,7 @@ const fences: ProductInput = {
   barcode: null,
   name: "Fences",
   brand: "Bearded Board Games",
-  category: "Supplies",
+  category: "Accessories",
   priceCents: 2500,
   costCents: 1900,
   wholesaleCents: 1250,

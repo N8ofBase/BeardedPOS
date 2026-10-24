@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { CheckoutResult, ProductRow } from "@pet-pos/api";
+import type { CheckoutResult, ProductRow } from "@bearded/api";
 import { PaymentPanel } from "../src/pages/register/PaymentPanel.tsx";
-import { receiptText } from "@pet-pos/core";
+import { receiptText } from "@bearded/core";
 import { addProduct, EMPTY_TICKET, priceTicket, setQty, toInput } from "../src/pages/register/ticket.ts";
 import { todayRange } from "../src/pages/SalesPage.tsx";
 import { CameraButton, cameraErrorMessage } from "../src/ui/scanner/CameraScanner.tsx";
@@ -18,9 +18,9 @@ const food: ProductRow = {
   id: "p1",
   sku: "0001",
   barcode: "012345678905",
-  name: "Adult Dog Food 24 lb",
+  name: "Strategy Game",
   brand: "Sample Brand",
-  category: "Dog food",
+  category: "Strategy games",
   priceCents: 6499,
   costCents: 4300,
   wholesaleCents: null,
@@ -194,14 +194,14 @@ describe("receipt", () => {
       status: "paid",
       createdAt: new Date("2026-10-19T15:04:00"),
       paidAt: new Date("2026-10-19T15:05:00"),
-      storeName: "Sample Pet Store (DEMO)",
+      storeName: "Sample Game Shop (DEMO)",
       locationName: "Main store (DEMO)",
       staffName: "Sam",
       customer: { id: "c1", name: "Pat Lee", email: null, phone: null },
       lines: [
         {
           id: "l1",
-          name: "Adult Dog Food 24 lb",
+          name: "Strategy Game",
           sku: "0001",
           qty: 2,
           unitPriceCents: 6499,
@@ -222,7 +222,7 @@ describe("receipt", () => {
       refunds: [],
     });
     for (const line of text.split("\n")) expect(line.length).toBeLessThanOrEqual(32);
-    expect(text).toContain("2× Adult Dog Food 24 lb");
+    expect(text).toContain("2× Strategy Game");
     expect(text).toMatch(/Tax 7%\s+\$8\.75/);
     expect(text).toMatch(/TOTAL\s+\$133\.73/);
     expect(text).toMatch(/Change\s+\$6\.27/);

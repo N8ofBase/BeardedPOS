@@ -1,6 +1,6 @@
 // The column-matching table and the preview, kept separate so they can be tested.
-import { fieldsFor, type ColumnMapping, type ImportType } from "@pet-pos/core";
-import type { ImportResult } from "@pet-pos/api";
+import { fieldsFor, type ColumnMapping, type ImportType } from "@bearded/core";
+import type { ImportResult } from "@bearded/api";
 import type { Sheet } from "./readSheet.ts";
 
 export function ColumnMatcher({

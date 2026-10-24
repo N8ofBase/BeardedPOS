@@ -1,6 +1,6 @@
-# Pet store POS & grooming system
+# Bearded POS
 
-Register, inventory and customers for an independent pet store.
+Register, inventory, customers and an online store for Bearded Board Games, an independent board game shop.
 
 - `docs/SPEC.md` — the full spec (exported from the spec doc)
 - `docs/prototype.html` — working prototype; open it in a browser to see the screens and flows
@@ -15,7 +15,7 @@ Status: **Phases 1, 2 (except 2d, real Square) and 3 are done** in demo mode.
 
 - Customer sign-in with a one-time code (kept from Phase 4a, the pet store's online booking) for the coming online store.
 
-Grooming, online booking and the groomer role came from the pet store this started as and have been removed for the board game shop. They're in the git history before this change if they're ever needed.
+This started as a pet store POS. Grooming, online booking, the groomer role, pets and vaccinations, and Astro Loyalty have been removed for the board game shop; they're in the git history if they're ever needed. The spec and prototype in `docs/` still describe the pet store.
 
 ## Run it
 

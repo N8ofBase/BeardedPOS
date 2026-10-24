@@ -1,5 +1,5 @@
 {
-  "name": "@pet-pos/web",
+  "name": "@bearded/web",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,9 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@pet-pos/api": "*",
-    "@pet-pos/core": "*",
-    "@pet-pos/db": "*",
+    "@bearded/api": "*",
+    "@bearded/core": "*",
+    "@bearded/db": "*",
     "@tanstack/react-query": "^5.104.3",
     "barcode-detector": "3.2.2",
     "kysely": "^0.29.6",

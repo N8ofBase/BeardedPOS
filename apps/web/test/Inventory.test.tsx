@@ -1,6 +1,6 @@
 import { cleanup, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ProductRow } from "@pet-pos/api";
+import type { ProductRow } from "@bearded/api";
 import { diffLabel } from "../src/pages/inventory/CountPage.tsx";
 import { InventoryRoutes } from "../src/pages/inventory/InventoryPage.tsx";
 import { renderAs } from "./render.tsx";
@@ -11,9 +11,9 @@ const food: ProductRow = {
   id: "p1",
   sku: "0001",
   barcode: null,
-  name: "Sample Adult Dog Food 24 lb (DEMO)",
+  name: "Sample Strategy Game (DEMO)",
   brand: "Sample Brand",
-  category: "Dog food",
+  category: "Strategy games",
   priceCents: 6499,
   costCents: 4300,
   wholesaleCents: null,
@@ -28,7 +28,7 @@ const food: ProductRow = {
 describe("Inventory", () => {
   it("shows price, margin and a low-stock tag", async () => {
     renderAs("owner", <InventoryRoutes />, { listProducts: [food] });
-    expect(await screen.findByText("Sample Adult Dog Food 24 lb (DEMO)")).toBeTruthy();
+    expect(await screen.findByText("Sample Strategy Game (DEMO)")).toBeTruthy();
     expect(screen.getByText("$64.99")).toBeTruthy();
     expect(screen.getByText("34%")).toBeTruthy();
     expect(screen.getByText("4 left")).toBeTruthy();
@@ -39,7 +39,7 @@ describe("Inventory", () => {
 
   it("is read-only for a cashier", async () => {
     renderAs("cashier", <InventoryRoutes />, { listProducts: [food] });
-    expect(await screen.findByText("Sample Adult Dog Food 24 lb (DEMO)")).toBeTruthy();
+    expect(await screen.findByText("Sample Strategy Game (DEMO)")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "New product" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Receive" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();

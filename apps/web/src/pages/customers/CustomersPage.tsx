@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
 import { Link, Route, Routes } from "react-router";
-import { addressLine, can, formatDate, formatPhone } from "@pet-pos/core";
-import type { CustomerCard } from "@pet-pos/api";
+import { addressLine, can, formatDate, formatPhone } from "@bearded/core";
+import type { CustomerCard } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { BirthdayTag } from "./bits.tsx";

@@ -2,8 +2,8 @@
 // fields it changed (unless someone has changed them since), and reverses stock it
 // moved with a new move.
 import { sql, type Transaction } from "kysely";
-import { AppError, type Ctx } from "@pet-pos/core";
-import type { DB, ImportEntity } from "@pet-pos/db";
+import { AppError, type Ctx } from "@bearded/core";
+import type { DB, ImportEntity } from "@bearded/db";
 import { audit, currentLocationId } from "../shared.ts";
 import { sameValue } from "./base.ts";
 

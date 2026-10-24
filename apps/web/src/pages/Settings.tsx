@@ -12,8 +12,8 @@ import {
   ROLES,
   taxPercentInput,
   type Role,
-} from "@pet-pos/core";
-import type { DemoCounts, StaffListItem, StoreSettings } from "@pet-pos/api";
+} from "@bearded/core";
+import type { DemoCounts, StaffListItem, StoreSettings } from "@bearded/api";
 import { useSession } from "../session.tsx";
 import { ConfirmTyped } from "../ui/ConfirmTyped.tsx";
 import { errorMessage, fieldErrors } from "../ui/errors.ts";

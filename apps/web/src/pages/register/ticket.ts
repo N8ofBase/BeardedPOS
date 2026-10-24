@@ -1,8 +1,8 @@
 // The ticket being rung up: lines, customer and discounts. Priced in the
 // browser with the same priceSale() the server reruns at checkout, and kept in this
 // browser so a reload doesn't lose a sale in progress.
-import { priceSale, type PricedSale, type TicketLine } from "@pet-pos/core";
-import type { DiscountRow, ProductRow, RegisterCustomer, TicketInput } from "@pet-pos/api";
+import { priceSale, type PricedSale, type TicketLine } from "@bearded/core";
+import type { DiscountRow, ProductRow, RegisterCustomer, TicketInput } from "@bearded/api";
 
 export interface TicketLineState {
   key: string;
@@ -112,7 +112,7 @@ export function priceTicket(t: Ticket, taxRateMpct: number): TicketPrice {
   }
 }
 
-const KEY = (staffId: string) => `petpos.ticket.${staffId}`;
+const KEY = (staffId: string) => `bearded.ticket.${staffId}`;
 
 export function loadTicket(staffId: string): Ticket {
   try {

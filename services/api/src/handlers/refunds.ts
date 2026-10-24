@@ -13,8 +13,8 @@ import {
   type LineRefund,
   type PaymentRefund,
   type RefundReasonCode,
-} from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+} from "@bearded/core";
+import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { terminal } from "../payments/terminal.ts";
 import { audit, currentLocationId } from "../shared.ts";

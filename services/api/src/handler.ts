@@ -1,6 +1,6 @@
 import type { Transaction } from "kysely";
-import type { Action, Ctx } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import type { Action, Ctx } from "@bearded/core";
+import type { DB } from "@bearded/db";
 
 /**
  * A handler is a plain function: the demo transport calls it directly, and in hosted

@@ -83,7 +83,7 @@ export class DemoSiteStack extends Stack {
     if (props.budgetEmail) {
       new CfnBudget(this, "MonthlyBudget", {
         budget: {
-          budgetName: "prismcortex-monthly",
+          budgetName: "bearded-pos-monthly",
           budgetType: "COST",
           timeUnit: "MONTHLY",
           budgetLimit: { amount: props.budgetMonthlyUsd, unit: "USD" },

@@ -64,7 +64,7 @@ describe("upgrading a demo browser from session 1a", () => {
     // What 1a's seed created: the business, a location and staff only.
     const biz = await old
       .insertInto("businesses")
-      .values({ name: "Sample Pet Store (DEMO)", slug: "sample-pet-store-demo", is_demo: true })
+      .values({ name: "Sample Game Shop (DEMO)", slug: "sample-game-shop-demo", is_demo: true })
       .returning("id")
       .executeTakeFirstOrThrow();
     await old

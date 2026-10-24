@@ -1,6 +1,6 @@
 import type { Transaction } from "kysely";
-import { AppError, type Ctx } from "@pet-pos/core";
-import type { DB } from "@pet-pos/db";
+import { AppError, type Ctx } from "@bearded/core";
+import type { DB } from "@bearded/db";
 
 /** The business's first location. One store for now; the data model allows more. */
 export async function currentLocationId(trx: Transaction<DB>): Promise<string> {

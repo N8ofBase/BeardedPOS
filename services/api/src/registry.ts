@@ -1,6 +1,6 @@
 import type { Kysely } from "kysely";
-import { assertCan, AppError, type Ctx } from "@pet-pos/core";
-import { withBusiness, type DB } from "@pet-pos/db";
+import { assertCan, AppError, type Ctx } from "@bearded/core";
+import { withBusiness, type DB } from "@bearded/db";
 import type { Handler } from "./handler.ts";
 import {
   archiveProduct,

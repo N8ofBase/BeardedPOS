@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { CustomerHistory, DrawerSummary } from "@pet-pos/api";
+import type { CustomerHistory, DrawerSummary } from "@bearded/api";
 import { OrderHistory } from "../src/pages/customers/OrderHistory.tsx";
 import { countedFrom, EndOfDayPage, overShortTone } from "../src/pages/sales/EndOfDay.tsx";
 import { renderAs } from "./render.tsx";
@@ -77,14 +77,14 @@ describe("order history", () => {
       totalSpentCents: 4598,
       firstVisit: new Date("2025-03-14T12:00:00"),
       lastVisit: new Date("2026-10-20T12:00:00"),
-      mostBought: [{ name: "Treats", qty: 4 }],
+      mostBought: [{ name: "Card games", qty: 4 }],
       page: [
         {
           id: "s1",
           source: "register",
           label: "#1001",
           date: new Date("2026-10-20T12:00:00"),
-          items: "1× Treats",
+          items: "1× Card games",
           totalCents: 1390,
           refundedCents: 1390,
         },
@@ -93,7 +93,7 @@ describe("order history", () => {
           source: "import",
           label: "Imported #A-1",
           date: new Date("2025-03-14T12:00:00"),
-          items: "3× Treats",
+          items: "3× Card games",
           totalCents: 3208,
           refundedCents: 0,
         },
@@ -105,7 +105,7 @@ describe("order history", () => {
     expect(screen.getByText("Imported #A-1")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Imported #A-1" })).toBeNull();
     expect(screen.getByText("Fully refunded")).toBeTruthy();
-    expect(screen.getByText("Treats (4)")).toBeTruthy();
+    expect(screen.getByText("Card games (4)")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
   });
 });

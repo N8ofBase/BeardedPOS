@@ -1,5 +1,5 @@
 import type { Kysely } from "kysely";
-import type { Ctx } from "@pet-pos/core";
+import type { Ctx } from "@bearded/core";
 import {
   invoke,
   invokePublic,
@@ -9,8 +9,8 @@ import {
   type PublicInput,
   type PublicName,
   type PublicOutput,
-} from "@pet-pos/api";
-import type { DB } from "@pet-pos/db";
+} from "@bearded/api";
+import type { DB } from "@bearded/db";
 
 /** How screens talk to the back end. Demo mode calls handlers directly; hosted mode (1f) will use HTTPS. */
 export interface Api {

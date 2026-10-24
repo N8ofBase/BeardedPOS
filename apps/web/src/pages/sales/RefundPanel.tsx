@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { formatMoney, REFUND_REASON_LABEL, REFUND_REASONS, type RefundReasonCode } from "@pet-pos/core";
-import type { RefundPlan } from "@pet-pos/api";
+import { formatMoney, REFUND_REASON_LABEL, REFUND_REASONS, type RefundReasonCode } from "@bearded/core";
+import type { RefundPlan } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";

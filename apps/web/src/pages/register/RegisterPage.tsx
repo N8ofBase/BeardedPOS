@@ -9,8 +9,8 @@ import {
   formatTaxPercent,
   stockLabel,
   stockStatus,
-} from "@pet-pos/core";
-import type { CheckoutResult, DiscountRow, ProductRow } from "@pet-pos/api";
+} from "@bearded/core";
+import type { CheckoutResult, DiscountRow, ProductRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { CameraButton } from "../../ui/scanner/CameraScanner.tsx";

@@ -1,7 +1,7 @@
 // Receipts by email or text. Demo mode never sends: the message is saved in
 // receipt_outbox with status "preview" and shown on screen exactly as it would go.
 // In hosted mode an SQS worker sends "queued" rows (Amazon SES / Amazon SMS).
-import { AppError, normalizePhone, receiptEmail, receiptSms } from "@pet-pos/core";
+import { AppError, normalizePhone, receiptEmail, receiptSms } from "@bearded/core";
 import { defineHandler } from "../handler.ts";
 import { getSale } from "./register.ts";
 

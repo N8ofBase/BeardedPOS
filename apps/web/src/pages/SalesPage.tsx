@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router";
-import { can, formatMoney, REFUND_REASON_LABEL, todayIso } from "@pet-pos/core";
-import type { SaleListRow } from "@pet-pos/api";
+import { can, formatMoney, REFUND_REASON_LABEL, todayIso } from "@bearded/core";
+import type { SaleListRow } from "@bearded/api";
 import { useSession } from "../session.tsx";
 import { errorMessage } from "../ui/errors.ts";
 import { SlideOver } from "../ui/SlideOver.tsx";

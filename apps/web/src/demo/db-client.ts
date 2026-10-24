@@ -1,4 +1,4 @@
-import type { QueryClient } from "@pet-pos/db";
+import type { QueryClient } from "@bearded/db";
 import type { DbRequest, DbResponse } from "./protocol.ts";
 
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void };

@@ -1,6 +1,6 @@
 // A customer's order history: register sales and orders imported from the old system.
 import { sql } from "kysely";
-import { AppError, importedLabel } from "@pet-pos/core";
+import { AppError, importedLabel } from "@bearded/core";
 import { defineHandler } from "../handler.ts";
 
 export interface HistoryOrder {

@@ -1,7 +1,7 @@
 // The day's money, used by both the Sales page KPIs and end of day, so they can't disagree.
 // Imported orders (source import) are never counted: that money was taken in the old system.
 import { sql, type Transaction } from "kysely";
-import type { DB } from "@pet-pos/db";
+import type { DB } from "@bearded/db";
 
 export interface MoneyTotals {
   /** Paid register sales rung in the range. */

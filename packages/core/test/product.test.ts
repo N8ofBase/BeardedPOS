@@ -5,9 +5,9 @@ import { cleanProduct, validateProduct, type ProductInput } from "../src/product
 const base: ProductInput = {
   sku: "0001",
   barcode: null,
-  name: "Dog food",
+  name: "Strategy game",
   brand: null,
-  category: "Dog food",
+  category: "Strategy games",
   priceCents: 6499,
   costCents: 4300,
   taxClass: "standard",
@@ -61,7 +61,7 @@ describe("cleanProduct", () => {
       sku: "0001",
       barcode: null,
       brand: null,
-      category: "Supplies",
+      category: "Other",
     });
   });
 });

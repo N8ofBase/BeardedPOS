@@ -7,8 +7,8 @@ import {
   parseTaxPercent,
   taxPercentInput,
   type ProductInput,
-} from "@pet-pos/core";
-import type { MoveRow, ProductRow } from "@pet-pos/api";
+} from "@bearded/core";
+import type { MoveRow, ProductRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";
@@ -37,7 +37,7 @@ const EMPTY: Form = {
   barcode: "",
   name: "",
   brand: "",
-  category: "Dog food",
+  category: "Strategy games",
   price: "",
   cost: "",
   wholesale: "",

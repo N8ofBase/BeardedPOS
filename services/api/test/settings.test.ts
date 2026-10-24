@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Ctx } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import type { Ctx } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { invoke } from "../src/registry.ts";
 
 let db: Kysely<DB>;
@@ -54,7 +54,7 @@ describe("store settings", () => {
     ]);
 
     // Saving again with the same rate isn't another tax change.
-    await invoke(db, owner, "updateSettings", { ...settings, name: "Happy Tails Pet Supply" });
+    await invoke(db, owner, "updateSettings", { ...settings, name: "Meeple Corner Games" });
     expect(await auditActions("settings.tax_rate")).toHaveLength(1);
   });
 
@@ -158,7 +158,7 @@ describe("remove demo data", () => {
       barcode: null,
       name: "My product",
       brand: null,
-      category: "Treats",
+      category: "Card games",
       priceCents: 500,
       costCents: 0,
       taxClass: "standard",

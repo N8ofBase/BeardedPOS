@@ -1,8 +1,8 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router";
-import type { Role } from "@pet-pos/core";
-import type { Me } from "@pet-pos/api";
+import type { Role } from "@bearded/core";
+import type { Me } from "@bearded/api";
 import { AdminShell } from "../src/layout/AdminShell.tsx";
 import { meFor } from "./render.tsx";
 
@@ -55,6 +55,6 @@ describe("sidebar branding", () => {
     const header = screen.getByTestId("store-header");
     expect(header.style.background).toMatch(/#ffeb3b|rgb\(255, 235, 59\)/);
     expect(header.style.color).toMatch(/#18211e|rgb\(24, 33, 30\)/);
-    expect(screen.getByRole("img", { name: "Sample Pet Store (DEMO) logo" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Sample Game Shop (DEMO) logo" })).toBeTruthy();
   });
 });

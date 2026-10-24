@@ -1,8 +1,8 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router";
 import { ErrorBoundary } from "../ui/ErrorBoundary.tsx";
 import { StoreMark } from "../ui/StoreMark.tsx";
-import { isHexColor, readableOn, ROLE_LABEL } from "@pet-pos/core";
-import type { Me } from "@pet-pos/api";
+import { isHexColor, readableOn, ROLE_LABEL } from "@bearded/core";
+import type { Me } from "@bearded/api";
 import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
 import { RegisterPage } from "../pages/register/RegisterPage.tsx";

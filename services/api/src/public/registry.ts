@@ -1,6 +1,6 @@
 import type { Kysely } from "kysely";
-import { AppError } from "@pet-pos/core";
-import { withBusiness, type DB } from "@pet-pos/db";
+import { AppError } from "@bearded/core";
+import { withBusiness, type DB } from "@bearded/db";
 import { customerForToken, myAccount, requestCode, signOut, storeInfo, verifyCode } from "./account.ts";
 import type { PublicHandler } from "./handler.ts";
 

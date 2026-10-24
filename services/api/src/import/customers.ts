@@ -1,5 +1,5 @@
 import { sql } from "kysely";
-import { normalizePhone, normalizeZip, parseLooseDate, parseYesNo } from "@pet-pos/core";
+import { normalizePhone, normalizeZip, parseLooseDate, parseYesNo } from "@bearded/core";
 import { diff, Skip, text, type Row, type RowCtx, type RowResult } from "./base.ts";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

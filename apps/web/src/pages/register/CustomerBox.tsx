@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
-import { formatDate, formatPhone, normalizePhone } from "@pet-pos/core";
-import type { ProductRow, RegisterCustomer } from "@pet-pos/api";
+import { formatDate, formatPhone, normalizePhone } from "@bearded/core";
+import type { ProductRow, RegisterCustomer } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";

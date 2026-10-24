@@ -6,8 +6,8 @@ import {
   isUniqueViolation,
   validateProduct,
   type ProductInput,
-} from "@pet-pos/core";
-import type { DB, MoveReason, TaxClass } from "@pet-pos/db";
+} from "@bearded/core";
+import type { DB, MoveReason, TaxClass } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
 

@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Ctx, ImportType } from "@pet-pos/core";
-import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@pet-pos/db";
-import { createTestDb, insertBusiness } from "@pet-pos/db/test-db";
+import type { Ctx, ImportType } from "@bearded/core";
+import { ensureDemo, listDemoStaff, withBusiness, type DB } from "@bearded/db";
+import { createTestDb, insertBusiness } from "@bearded/db/test-db";
 import { CHUNK_SIZE } from "../src/handlers/import.ts";
 import { invoke } from "../src/registry.ts";
 
@@ -129,7 +129,7 @@ describe("products", () => {
     const { batch, warnings } = await importAll(owner, "products", [
       { sku: "0001", price: "$66.99", onHand: "20" },
       { sku: "", barcode: "", name: "No code" },
-      { sku: "N-1", name: "New Kibble", price: "9.99", cost: "abc", onHand: "5" },
+      { sku: "N-1", name: "New Game", price: "9.99", cost: "abc", onHand: "5" },
       { sku: "N-2", name: "No price" },
       { sku: "N-3", name: "Bad price", price: "twelve" },
     ]);
