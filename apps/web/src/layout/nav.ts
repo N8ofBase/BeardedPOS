@@ -11,6 +11,7 @@ export const NAV: NavItem[] = [
   { path: "/register", label: "Register", action: "register.use" },
   { path: "/inventory", label: "Inventory", action: "products.view" },
   { path: "/customers", label: "Customers", action: "customers.view" },
+  { path: "/email", label: "Email", action: "email.send" },
   { path: "/sales", label: "Sales", action: "sales.view" },
   { path: "/settings", label: "Settings", action: "settings.view" },
 ];

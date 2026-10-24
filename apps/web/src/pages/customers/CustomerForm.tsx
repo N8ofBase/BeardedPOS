@@ -6,6 +6,7 @@ import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
 import { SlideOver } from "../../ui/SlideOver.tsx";
 import { useToast } from "../../ui/Toast.tsx";
+import { TagPicker } from "./crm.tsx";
 
 const EMPTY: CustomerInput = {
   name: "",
@@ -18,6 +19,10 @@ const EMPTY: CustomerInput = {
   birthday: "",
   smsOptIn: false,
   notes: "",
+  kind: "person",
+  company: "",
+  wholesaleTerms: "",
+  emailOptIn: false,
 };
 
 /** Add or edit a customer in one form, as in the prototype. */
@@ -62,6 +67,10 @@ function toInput(p: CustomerProfile): CustomerInput {
     birthday: p.birthday ?? "",
     smsOptIn: p.smsOptIn,
     notes: p.notes ?? "",
+    kind: p.kind,
+    company: p.company ?? "",
+    wholesaleTerms: p.wholesaleTerms ?? "",
+    emailOptIn: p.emailOptIn,
   };
 }
 
@@ -79,14 +88,16 @@ function Form({
   const toast = useToast();
   const [c, setC] = useState<CustomerInput>(profile ? toInput(profile) : EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [tags, setTags] = useState<string[]>(profile?.tags.map((t) => t.name) ?? []);
 
   const save = useMutation({
-    mutationFn: () =>
-      api.call("saveCustomer", {
-        id: profile?.id,
-        customer: c,
-      }),
+    mutationFn: async () => {
+      const r = await api.call("saveCustomer", { id: profile?.id, customer: c });
+      await api.call("setCustomerTags", { customerId: r.id, tags });
+      return r;
+    },
     onSuccess: ({ id }) => {
+      void qc.invalidateQueries({ queryKey: ["tags"] });
       toast(profile ? "Customer saved" : "Customer added");
       void qc.invalidateQueries({ queryKey: ["customers"] });
       void qc.invalidateQueries({ queryKey: ["customer", id] });
@@ -135,8 +146,26 @@ function Form({
   return (
     <SlideOver title={profile ? `Edit ${profile.name}` : "New customer"} onClose={onClose}>
       <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+        <fieldset className="kind-pick">
+          <legend>Type</legend>
+          {(["person", "retailer"] as const).map((k) => (
+            <label key={k} className="check">
+              <input
+                type="radio"
+                name="kind"
+                checked={c.kind === k}
+                onChange={() => setC({ ...c, kind: k })}
+              />
+              {k === "person" ? "Person" : "Retailer (a store that buys wholesale)"}
+            </label>
+          ))}
+        </fieldset>
         <div className="form">
-          {field("name", "Name", { required: true, autoFocus: !profile })}
+          {c.kind === "retailer" && field("company", "Store name", { required: true })}
+          {field("name", c.kind === "retailer" ? "Contact person" : "Name", {
+            required: true,
+            autoFocus: !profile,
+          })}
           {field("phone", "Phone", { inputMode: "tel" })}
           {field("email", "Email", { type: "email" })}
           {field("street", "Street address")}
@@ -153,6 +182,31 @@ function Form({
           />
           Text messages OK (order and pickup alerts)
         </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={!!c.emailOptIn}
+            onChange={(e) => setC({ ...c, emailOptIn: e.target.checked })}
+          />
+          Email OK (news, new games and VIP offers)
+        </label>
+        {c.kind === "retailer" && (
+          <label>
+            Wholesale terms
+            <textarea
+              rows={2}
+              maxLength={500}
+              placeholder="50% off MSRP, 6-unit minimum, net 30"
+              value={c.wholesaleTerms}
+              onChange={set("wholesaleTerms")}
+            />
+            {errors.wholesaleTerms && <span className="field-error">{errors.wholesaleTerms}</span>}
+          </label>
+        )}
+        <div>
+          <span className="label">Tags</span>
+          <TagPicker value={tags} onChange={setTags} />
+        </div>
         <label>
           Notes
           <textarea rows={2} value={c.notes} onChange={set("notes")} />

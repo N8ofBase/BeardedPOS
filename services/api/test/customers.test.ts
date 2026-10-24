@@ -41,6 +41,7 @@ describe("demo seed", () => {
   it("adds sample customers", async () => {
     const cards = await invoke(db, cashier, "searchCustomers", { q: "" });
     expect(cards.map((c) => c.name)).toEqual([
+      "Sample Buyer (DEMO)",
       "Sample Cat Parent (DEMO)",
       "Sample Customer (DEMO)",
       "Sample Family (DEMO)",
@@ -59,7 +60,7 @@ describe("demo seed after deletes", () => {
   it("records a part already loaded by an older version without loading it twice", async () => {
     await db.deleteFrom("demo_seed_parts").execute();
     await ensureDemo(db);
-    expect(await invoke(db, owner, "searchCustomers", { q: "" })).toHaveLength(3);
+    expect(await invoke(db, owner, "searchCustomers", { q: "" })).toHaveLength(4);
     expect(await invoke(db, owner, "listProducts", {})).toHaveLength(4);
   });
 });

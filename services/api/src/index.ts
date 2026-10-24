@@ -31,7 +31,34 @@ export type { MoneyTotals } from "./handlers/totals.ts";
 export { CHUNK_SIZE, MAX_ROWS, type ImportBatchRow } from "./handlers/import.ts";
 export type { ImportResult, RowOutcome } from "./import/engine.ts";
 export type { UndoResult } from "./import/undo.ts";
-export type { CustomerCard, CustomerProfile, DeletePreview } from "./handlers/customers.ts";
+export type { CustomerCard, CustomerProfile, DeletePreview, TagChip } from "./handlers/customers.ts";
+export {
+  recordStoreContact,
+  sqlClient,
+  VIP_TAG,
+  type CustomerProfit,
+  type FollowUpRow,
+  type SqlClient,
+  type StoreContact,
+  type TagRow,
+  type TimelineEntry,
+  type TimelineKind,
+} from "./handlers/crm.ts";
+export {
+  deliverBatch,
+  queueCampaign,
+  recordSesEvent,
+  type AudienceCount,
+  type CampaignDetail,
+  type CampaignEmailRow,
+  type CampaignInput,
+  type CampaignRow,
+  type EmailSetup,
+  type SendResult,
+  type SesEvent,
+  type UnsubscribeInfo,
+} from "./handlers/email.ts";
+export { mailer, PreviewMailer, sesSendEmailInput, type Mailer } from "./email/mailer.ts";
 export type { DiscountInput, DiscountRow } from "./handlers/discounts.ts";
 export type {
   CheckoutResult,

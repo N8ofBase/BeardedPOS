@@ -6,6 +6,7 @@ import { createDemoApi } from "./api/client.ts";
 import { RolePicker } from "./auth/RolePicker.tsx";
 import { bootDemo, OtherTabError, type DemoRuntime } from "./demo/boot.ts";
 import { AdminShell } from "./layout/AdminShell.tsx";
+import { UnsubscribePage } from "./pages/public/UnsubscribePage.tsx";
 import { loadPicked, savePicked, SessionContext, type PickedStaff } from "./session.tsx";
 
 type Boot = { state: "loading" } | { state: "ready"; rt: DemoRuntime } | { state: "error"; message: string };
@@ -31,6 +32,9 @@ export function App() {
 
   if (boot.state === "loading") return <Center>Setting up the demo register…</Center>;
   if (boot.state === "error") return <Center>{boot.message}</Center>;
+  // The link in every bulk email; no staff sign-in.
+  if (window.location.pathname === "/unsubscribe")
+    return <UnsubscribePage db={boot.rt.db} search={window.location.search} />;
   return <Signed rt={boot.rt} />;
 }
 

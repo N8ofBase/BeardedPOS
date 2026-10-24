@@ -1,5 +1,6 @@
 import { App } from "aws-cdk-lib";
 import { DemoSiteStack } from "../lib/demo-site-stack.js";
+import { MailStack } from "../lib/mail-stack.js";
 
 const app = new App();
 
@@ -18,4 +19,12 @@ new DemoSiteStack(app, "BeardedDemoSite", {
   // Passed at deploy time: npx cdk deploy BeardedDemoSite -c budgetEmail=you@example.com
   budgetEmail: app.node.tryGetContext("budgetEmail"),
   description: "Bearded POS demo site (static, no backend)",
+});
+
+// Bulk email (SES). Deploy on its own: npx cdk deploy BeardedMail
+new MailStack(app, "BeardedMail", {
+  env: { account, region: "us-east-1" },
+  domainName: app.node.getContext("domainName"),
+  mailSubdomain: app.node.getContext("mailSubdomain"),
+  description: "Bearded Board Games bulk email: SES identity, DNS records and bounce/complaint events",
 });

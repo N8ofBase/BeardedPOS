@@ -16,3 +16,4 @@ export * from "./receipt.ts";
 export * from "./drawer.ts";
 export * from "./signin.ts";
 export * from "./profit.ts";
+export * from "./crm.ts";

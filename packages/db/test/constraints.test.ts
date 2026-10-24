@@ -81,7 +81,8 @@ describe("upgrading a demo browser from session 1a", () => {
     const count = async (t: "products" | "customers") =>
       (await old.selectFrom(t).select("id").where("business_id", "=", biz.id).execute()).length;
     expect(await count("products")).toBe(4);
-    expect(await count("customers")).toBe(3);
+    // Three people and the sample retailer.
+    expect(await count("customers")).toBe(4);
   });
 });
 
