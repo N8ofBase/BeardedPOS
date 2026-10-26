@@ -13,6 +13,12 @@ export function VideoCard({ video, heading = "h3" }: { video: Video; heading?: "
   const H = heading;
   return (
     <figure className="video" id={video.slug}>
+      <figcaption>
+        <H>{video.title}</H>
+        <p>
+          {video.blurb} <span className="len">{length(video.seconds)}</span>
+        </p>
+      </figcaption>
       <video
         className="song"
         src={video.src}
@@ -25,12 +31,6 @@ export function VideoCard({ video, heading = "h3" }: { video: Video; heading?: "
         aria-label={`${video.title}, ${length(video.seconds)}`}
         onPlay={pauseOthers}
       />
-      <figcaption>
-        <H>{video.title}</H>
-        <p>
-          {video.blurb} <span className="len">{length(video.seconds)}</span>
-        </p>
-      </figcaption>
     </figure>
   );
 }

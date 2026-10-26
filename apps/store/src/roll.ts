@@ -80,15 +80,15 @@ const SOCIAL_ROLLS = [
 
 const VIDEO_ROLLS: Record<string, string[]> = {
   "bearded-board-games": [
-    "You rolled our theme song. Turn it up and sing along.",
-    "You rolled “Bearded Board Games”. Bass, beards and a meeple on the guitar.",
+    "You rolled “Beer-ded Board Games”. Turn it up and sing along.",
+    "You rolled a song. Reel Big Fish, but make it board games.",
   ],
   "everybody-loves-some-board-games": [
     "You rolled “Everybody Loves Some Board Games”. Dean Martin would understand.",
     "You rolled a crooner. Everybody loves some board games, sometime.",
   ],
   "my-games": [
-    "You rolled “My Games”. One minute. Plenty of bass.",
+    "You rolled “My Games”. Sunshine on a cloudy day, and a box of meeples.",
     "You rolled a song. N8 wrote it about our games, so you have to listen.",
   ],
 };

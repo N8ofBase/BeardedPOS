@@ -221,8 +221,8 @@ export interface Video {
 export const videos: Video[] = [
   {
     slug: "bearded-board-games",
-    title: "Bearded Board Games",
-    blurb: "Our theme song, played on a bass with a meeple on it.",
+    title: "Beer-ded Board Games",
+    blurb: "A parody of “Beer” by Reel Big Fish.",
     src: "/videos/bearded-board-games.mp4",
     poster: posterBeardedBoardGames,
     seconds: 156,
@@ -230,7 +230,7 @@ export const videos: Video[] = [
   {
     slug: "everybody-loves-some-board-games",
     title: "Everybody Loves Some Board Games",
-    blurb: "With apologies to Dean Martin.",
+    blurb: "A parody of “Everybody Loves Somebody” by Dean Martin.",
     src: "/videos/everybody-loves-some-board-games.mp4",
     poster: posterEverybodyLoves,
     seconds: 121,
@@ -238,7 +238,7 @@ export const videos: Video[] = [
   {
     slug: "my-games",
     title: "My Games",
-    blurb: "A one-minute song about the games we make.",
+    blurb: "A parody of “My Girl” by The Temptations.",
     src: "/videos/my-games.mp4",
     poster: posterMyGames,
     seconds: 64,
