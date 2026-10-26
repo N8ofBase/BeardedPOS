@@ -977,6 +977,24 @@ body {
   gap: 8px 20px;
   font-weight: 700;
 }
+.about-game .clip {
+  margin: 24px 0;
+  max-width: 640px;
+}
+.about-game .clip video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 4px 4px 0 var(--c, var(--mustard));
+}
+.about-game .clip figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+}
 .about-game .by {
   color: var(--muted);
   font-style: italic;

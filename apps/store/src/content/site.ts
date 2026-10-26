@@ -11,6 +11,7 @@ import teamN8 from "../assets/team-n8.webp";
 import posterBeardedBoardGames from "../assets/video-bearded-board-games.webp";
 import posterEverybodyLoves from "../assets/video-everybody-loves-some-board-games.webp";
 import posterMyGames from "../assets/video-my-games.webp";
+import posterSoccerBlockerPrototype from "../assets/video-soccer-blocker-prototype.webp";
 
 export const brand = {
   name: "Bearded Board Games",
@@ -68,6 +69,8 @@ export interface Game {
   when?: string;
   /** More about the game, under the blurb on its page. */
   story?: string[];
+  /** A short silent clip that loops on the game's page, from public/videos. */
+  clip?: { src: string; poster: string; caption: string };
   links: { rules?: string; bgg?: string };
 }
 
@@ -125,13 +128,18 @@ export const games: Game[] = [
       "A 2-player tactical card game that delivers the tension of a soccer match in about 20 minutes. Each round, both players secretly pick an action card at the same time, then roll to see who wins the clash and where the ball goes on a 10-space field. The first to 3 goals or 3 saves takes the match. Inspired by St. Louis CITY SC.",
     color: "#C8102E",
     art: coverSoccerBlocker,
-    facts: ["2 players", "About 20 min", "Ages 12+"],
+    facts: ["2 players", "15–30 min", "Ages 12+"],
     badge: "New",
     story: [
       "Each player has four offense cards (Pass, Strike, Fake, Break) and four defense cards (Block, Steal, Tackle, Wait). Pick one face down, flip together, and resolve the clash with d10 rolls that move the ball across five zones. Even when you pick the right card, your dice roll may betray you.",
       "Possession shifts constantly, building toward goalie showdowns: back-to-back d20 rolls where a player must win twice in a row to score or save. Crowd cards drawn at the start of each possession add bonuses to your rolls.",
       "It’s easy to teach, quick to play, and has the kind of bluff-and-counter depth that keeps players coming back for “one more round.”",
     ],
+    clip: {
+      src: "/videos/soccer-blocker-prototype.mp4",
+      poster: posterSoccerBlockerPrototype,
+      caption: "Our homemade prototype, out of the box.",
+    },
     links: { bgg: "https://boardgamegeek.com/boardgame/466697/soccer-blocker" },
   },
   {

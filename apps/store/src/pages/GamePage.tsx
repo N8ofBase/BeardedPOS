@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { Link, useParams } from "react-router";
 import { useProducts, useReviewsFor } from "../api/data.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
@@ -8,6 +8,36 @@ import { Stars } from "../components/Stars.tsx";
 import { brand, games, statusText } from "../content/site.ts";
 import { averageStars } from "@bearded/store-core";
 import { NotFound } from "./NotFound.tsx";
+
+/** A short silent clip on a loop. It stays still, with controls, for people who ask for less motion. */
+function LoopClip({ src, poster, caption }: { src: string; poster: string; caption: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const still =
+    typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || still) return;
+    // React sets `muted` as a property after the element exists, so autoplay alone can be blocked.
+    video.muted = true;
+    video.play().catch(() => {});
+  }, [still]);
+  return (
+    <figure className="clip">
+      <video
+        ref={ref}
+        src={src}
+        poster={poster}
+        controls={still}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-label={caption}
+      />
+      <figcaption>{caption}</figcaption>
+    </figure>
+  );
+}
 
 export function GamePage() {
   const { slug } = useParams();
@@ -86,6 +116,7 @@ export function GamePage() {
               .join(", ")}
           </p>
         )}
+        {game.clip && <LoopClip {...game.clip} />}
         <p className="links">
           {game.links.rules && (
             <a href={game.links.rules} target="_blank" rel="noopener">
