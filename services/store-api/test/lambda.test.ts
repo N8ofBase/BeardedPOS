@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Database } from "../src/db.ts";
 import { serve, type HttpEvent } from "../src/lambda.ts";
@@ -66,5 +67,14 @@ describe("Lambda adapter", () => {
         },
       },
     ]);
+  });
+});
+
+describe("files the Lambda bundle copies", () => {
+  it("has the RDS certificate bundle in the repo", () => {
+    // *.pem is ignored for keys; this public bundle must still be committed or deploys fail.
+    const pem = readFileSync(new URL("../certs/rds-global-bundle.pem", import.meta.url), "utf8");
+    expect(pem.match(/BEGIN CERTIFICATE/g)?.length).toBeGreaterThan(10);
+    expect(pem).not.toMatch(/PRIVATE KEY/);
   });
 });
