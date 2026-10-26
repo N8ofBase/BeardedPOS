@@ -11,8 +11,9 @@ import teamN8 from "../assets/team-n8.webp";
 import posterBeardedBoardGames from "../assets/video-bearded-board-games.webp";
 import posterEverybodyLoves from "../assets/video-everybody-loves-some-board-games.webp";
 import posterMyGames from "../assets/video-my-games.webp";
-
-const SQ = "https://images.squarespace-cdn.com/content/v1/5a4d3057f6576ef69d4c551d";
+import posterLearnMineAndFind from "../assets/video-learn-mine-and-find.webp";
+import posterLearnSoccerBlocker from "../assets/video-learn-soccer-blocker.webp";
+import posterSoccerBlockerPrototype from "../assets/video-soccer-blocker-prototype.webp";
 
 export const brand = {
   name: "Bearded Board Games",
@@ -70,6 +71,10 @@ export interface Game {
   when?: string;
   /** More about the game, under the blurb on its page. */
   story?: string[];
+  /** A short silent clip that loops on the game's page, from public/videos. */
+  clip?: { src: string; poster: string; caption: string };
+  /** A how-to-play video, shown under "Learn to play" on the game's page. */
+  tutorial?: Video;
   links: { rules?: string; bgg?: string };
 }
 
@@ -94,7 +99,7 @@ export const games: Game[] = [
       "Fences was funded on Kickstarter in January 2019. Every Farmer Profile card in the game is a real backer from the campaign who pledged at that level.",
     ],
     links: {
-      rules: "https://beardedboardgames.com/s/Fences-Instructions.pdf",
+      rules: "/old-site/Fences-Instructions.pdf",
       bgg: "https://boardgamegeek.com/boardgame/246409/fences",
     },
   },
@@ -122,13 +127,31 @@ export const games: Game[] = [
     name: "Soccer Blocker",
     labels: ["Bearded Board Games", "Prism Cortex"],
     status: "coming-soon",
-    tagline: "A 1-v-1 soccer duel. First to three points wins. No flopping.",
+    tagline: "A 1-v-1 soccer duel. First to three goals or three saves wins. No flopping.",
     blurb:
-      "A 1-v-1 soccer duel. Out-guess, out-think and out-maneuver your opponent to work the ball down the field and take a shot on goal. The first player to score three points wins. Inspired by St. Louis CITY SC.",
+      "A 2-player tactical card game that delivers the tension of a soccer match in about 20 minutes. Each round, both players secretly pick an action card at the same time, then roll to see who wins the clash and where the ball goes on a 10-space field. The first to 3 goals or 3 saves takes the match. Inspired by St. Louis CITY SC.",
     color: "#C8102E",
     art: coverSoccerBlocker,
     facts: ["2 players", "15–30 min", "Ages 12+"],
     badge: "New",
+    story: [
+      "Each player has four offense cards (Pass, Strike, Fake, Break) and four defense cards (Block, Steal, Tackle, Wait). Pick one face down, flip together, and resolve the clash with d10 rolls that move the ball across five zones. Even when you pick the right card, your dice roll may betray you.",
+      "Possession shifts constantly, building toward goalie showdowns: back-to-back d20 rolls where a player must win twice in a row to score or save. Crowd cards drawn at the start of each possession add bonuses to your rolls.",
+      "It’s easy to teach, quick to play, and has the kind of bluff-and-counter depth that keeps players coming back for “one more round.”",
+    ],
+    clip: {
+      src: "/videos/soccer-blocker-prototype.mp4",
+      poster: posterSoccerBlockerPrototype,
+      caption: "Our homemade prototype, out of the box.",
+    },
+    tutorial: {
+      slug: "learn-soccer-blocker",
+      title: "Learn Soccer Blocker",
+      blurb: "A Lettuce Talk Games tutorial.",
+      src: "/videos/learn-soccer-blocker.mp4",
+      poster: posterLearnSoccerBlocker,
+      seconds: 318,
+    },
     links: { bgg: "https://boardgamegeek.com/boardgame/466697/soccer-blocker" },
   },
   {
@@ -138,11 +161,24 @@ export const games: Game[] = [
     status: "preorder",
     tagline: "Dig for gems. Ride the mine carts. Yell “mine!” a lot.",
     blurb:
-      "A quick and easy card game for all ages. Search the mine for your color and shape, find carts to help you get through the mine faster, and be the first to find all your gems to win.",
+      "A quick and easy card game for all ages, the game where you mine and find! Each Miner searches the mine for treasure in their own color and shape. Flip the face-down cards in the mine, pick up a Lamp and a Cart to move faster, and the player with the most treasure wins.",
     color: "#8E5BC2",
     art: coverMineAndFind,
     facts: ["1–4 players", "20–30 min", "Ages 8+"],
     badge: "New",
+    story: [
+      "Miners start in the four corners with the treasure chests down the middle. On your turn, move one space (never diagonally) and flip the card there. If it matches your Miner, it goes under your treasure chest. Land on another Miner and you bump them back to their starting corner.",
+      "Find your Miner’s Lamp and you can move diagonally. Find your Cart and you can roll any distance in a straight line. Collect both for 3 bonus points, and everyone else gets one last move.",
+      "Play with 4 players, team up 2 against 2, or try Solo Mode and collect every treasure before a Lamp and Cart set turns up. Advanced Mode flips cards back face down, so you have to remember where everything is.",
+    ],
+    tutorial: {
+      slug: "learn-mine-and-find",
+      title: "Learn Mine & Find",
+      blurb: "A Lettuce Talk Games tutorial.",
+      src: "/videos/learn-mine-and-find.mp4",
+      poster: posterLearnMineAndFind,
+      seconds: 142,
+    },
     links: { bgg: "https://boardgamegeek.com/boardgame/468088/mine-and-find" },
   },
   {
@@ -170,7 +206,7 @@ export const games: Game[] = [
     blurb:
       "A new game in the Fences universe. Roll the dice, draft one and mark your sheet. Plan your farm by grouping the results in just the right ways.",
     color: "#B5832F",
-    art: `${SQ}/438619b3-3536-4a20-8824-702e8097c809/Rolling+Acres+Mock+Up+Web_2.jpg`,
+    art: "/old-site/438619b3-3536-Rolling-Acres-Mock-Up-Web_2.jpg",
     facts: ["Coming 2027"],
     when: "Coming 2027",
     designer: "Darren Reckner and Jason Hager of Durdle Games",
