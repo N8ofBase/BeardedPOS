@@ -129,7 +129,7 @@ export const oldSite: OldSitePage[] = [
         id: "fences-story",
         title: "About Fences",
         text: "In Fences: Farmers compete to build fields for their animals. Each tile will expand your farm, but also your neighbors, so play strategically. Each player has a unique farmer profile that can change how they score points, so every game is very different! The game was funded on Kickstarter in January of 2019. Each of the Farmer Profile cards in the game are actual backers from the campaign who donated at that level.",
-        suggestion: "The Fences game page, under “How it plays”.",
+        suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
       {
         id: "fences-press",
@@ -194,8 +194,7 @@ export const oldSite: OldSitePage[] = [
         id: "locked-out-story",
         title: "About Locked Out",
         text: "Locked Out is the winner of the Game Crafter's competition sponsered by Eat Lunch and Board Game and Bearded Board Games. It is the year 2368. You and your gang of criminals stole a spacecraft to return to your hideout with your latest score of loot. Unfortunately, the on-board computer detected the tampering and has locked you out. You will surely get caught unless you regain control of the ship and escape; and your resources are running out. There are tools on board to help, but if greedy companions steal these, will you be able to make it? Your Gang's objective is to gain access to the on-board computer before any resources run out. Your personal objective is to get the biggest financial gain, but beware: this may jeopardize the gang's objective. If the gang fails to escape, the player who pocketed the smallest amount wins! Make your way through the ship gathering resources, tools, and loot. Make sure that you find enough resources (like Fuel and Oxygen) to keep the ship working. Use the tools to access new areas of the ship and get closer to regaining control of the ship. Search the rooms to find more items. Share some of the items with your gang. Accuse your teammates of hoarding all the good stuff. Can you make it to the control room before running out of resources?",
-        suggestion:
-          "The Locked Out game page. Its story differs from the new site’s, which says the crew robbed a bank.",
+        suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
       {
         id: "locked-out-gallery",
@@ -233,7 +232,7 @@ export const oldSite: OldSitePage[] = [
         text: "COMING SOON! A fast paced, head to head, assymetric card game with variable player winning conditions. Try to achieve your victory condition while preventhing your opponent from achieving theirs. Designed by Craig Hughes with art by Hailey Fetting.",
         images: [{ src: `${SQ}/54d043c8-ee85-44cc-9195-5df0380ae3a7/packlash.png`, alt: "Pack Lash" }],
         links: [{ label: "BGG page", href: "https://boardgamegeek.com/boardgame/407307/pack-lash" }],
-        suggestion: "Already on the Pack Lash game page in new words.",
+        suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
     ],
   },
@@ -246,8 +245,7 @@ export const oldSite: OldSitePage[] = [
         title: "About Mine & Find",
         text: "COMING SOON! A quick and easy card game for all ages. Search the mine for your color and shape. Find carts to help you traverse the mine quicker. Be the first to find all your gems to win!",
         images: [{ src: `${SQ}/bbeac02c-d9b8-4b09-a6f2-818b7e3f9c40/MFLogo.png`, alt: "Mine & Find logo" }],
-        suggestion:
-          "The Mine & Find game page. Its rules differ from the new site’s (gems and carts, not helmet and cart).",
+        suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
     ],
   },
@@ -262,7 +260,7 @@ export const oldSite: OldSitePage[] = [
         images: [
           { src: `${SQ}/189a7658-1e58-44bd-a461-e7e0e2f3cc50/SBBoxLogo.png`, alt: "Soccer Blocker box" },
         ],
-        suggestion: "Already on the Soccer Blocker game page in new words.",
+        suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
     ],
   },
@@ -296,8 +294,7 @@ export const oldSite: OldSitePage[] = [
             alt: "Rolling Acres mock-up",
           },
         ],
-        suggestion:
-          "The game page. The old site says both “Winter of 2026” and “Coming 2027”; the new site says 2027. The mock-up is the new site’s cover for now.",
+        suggestion: "Done: new description, and “Coming 2027” everywhere, as N8 decided (Oct 26).",
       },
     ],
   },

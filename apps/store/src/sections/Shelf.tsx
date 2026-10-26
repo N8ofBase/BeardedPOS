@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { Link } from "react-router";
 import { gamePath } from "../roll.ts";
-import { games, statusLabel, type Game, type GameStatus } from "../content/site.ts";
+import { games, statusLabel, statusText, type Game, type GameStatus } from "../content/site.ts";
 
 type Filter = "all" | GameStatus;
 const FILTERS: { id: Filter; label: string }[] = [
@@ -36,7 +36,7 @@ function GameCard({ game }: { game: Game }) {
               {l}
             </span>
           ))}
-          {game.status !== "available" && <span className="tag soon">{statusLabel[game.status]}</span>}
+          {game.status !== "available" && <span className="tag soon">{statusText(game)}</span>}
           {game.badge && <span className="tag hot">{game.badge}</span>}
         </div>
         <h3>

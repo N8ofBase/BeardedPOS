@@ -5,7 +5,7 @@ import { ProductCard } from "../components/ProductCard.tsx";
 import { ReviewForm } from "../components/ReviewForm.tsx";
 import { ReviewList } from "../components/ReviewList.tsx";
 import { Stars } from "../components/Stars.tsx";
-import { brand, games, statusLabel } from "../content/site.ts";
+import { brand, games, statusText } from "../content/site.ts";
 import { averageStars } from "@bearded/store-core";
 import { NotFound } from "./NotFound.tsx";
 
@@ -51,7 +51,7 @@ export function GamePage() {
                   {l}
                 </span>
               ))}
-              {game.status !== "available" && <span className="tag soon">{statusLabel[game.status]}</span>}
+              {game.status !== "available" && <span className="tag soon">{statusText(game)}</span>}
               {game.badge && <span className="tag hot">{game.badge}</span>}
             </div>
             <h1>{game.name}</h1>
@@ -76,7 +76,16 @@ export function GamePage() {
       <section className="wrap pad about-game">
         <h2>How it plays</h2>
         <p>{game.blurb}</p>
-        {game.designer && <p className="by">Designed by {game.designer}</p>}
+        {game.story?.map((para) => (
+          <p key={para}>{para}</p>
+        ))}
+        {(game.designer || game.artist) && (
+          <p className="by">
+            {[game.designer && `Designed by ${game.designer}`, game.artist && `art by ${game.artist}`]
+              .filter(Boolean)
+              .join(", ")}
+          </p>
+        )}
         <p className="links">
           {game.links.rules && (
             <a href={game.links.rules} target="_blank" rel="noopener">

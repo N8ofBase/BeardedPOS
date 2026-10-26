@@ -39,6 +39,13 @@ describe("home page", () => {
     expect(shelfNames()).toHaveLength(games.length);
   });
 
+  it("says Coming 2027 for Fences: The Roll & Write", () => {
+    renderHome();
+    const card = document.getElementById("game-fences-roll-and-write")!;
+    expect(within(card).getByText("Coming 2027", { selector: ".tag" })).toBeTruthy();
+    expect(within(card).queryByText("Coming soon", { selector: ".tag" })).toBeNull();
+  });
+
   it("lists the games for sale with prices from Square", async () => {
     renderHome();
     const shop = document.getElementById("shop")!;
