@@ -1,9 +1,9 @@
 // Everything on the old Squarespace site (beardedboardgames.com), copied on 2026-10-26 so the team
 // can decide what to keep before the domain moves to this store. Text is as it was on the old site,
-// typos included. Images and files still load from Squarespace until they're downloaded.
+// typos included. Its images and PDFs were downloaded on 2026-10-26 and are served from the store's
+// public/old-site folder, so they keep working after Squarespace is cancelled.
 
-const SQ = "https://images.squarespace-cdn.com/content/v1/5a4d3057f6576ef69d4c551d";
-const SQ_FILES = "https://beardedboardgames.com/s";
+const OLD = "/old-site";
 
 export type OldSiteDecision = "keep" | "update" | "drop";
 export const OLD_SITE_DECISIONS: OldSiteDecision[] = ["keep", "update", "drop"];
@@ -38,7 +38,7 @@ export interface OldSiteChoice {
 export const NOTE_MAX = 1000;
 
 const gallery = (paths: string[], alt: (i: number) => string) =>
-  paths.map((p, i) => ({ src: `${SQ}/${p}`, alt: alt(i + 1) }));
+  paths.map((p, i) => ({ src: `${OLD}/${p}`, alt: alt(i + 1) }));
 
 export const oldSite: OldSitePage[] = [
   {
@@ -50,16 +50,16 @@ export const oldSite: OldSitePage[] = [
         title: "Pack Lash photo gallery",
         images: gallery(
           [
-            "1774467681418-PNKLMWPWI8WN298ZYUR6/IMG_0901.JPG",
-            "1774467664573-Y1927AWCWAPD9TYCH21B/IMG_0905.JPG",
-            "1774467664385-LRPW8IPA3TW64SOSKH8U/IMG_0907.JPG",
-            "1774467669405-V80N8PMBV35W1U6T8PDA/IMG_0918.JPG",
-            "1774467669726-CNMWX2SCB5REGXGQLPI2/IMG_0935.JPG",
-            "1774467672834-B8DTSVOF72X8C7HJVUK4/IMG_0936.JPG",
-            "1774467673174-9VZPBE24XVWP7C3DAZQ7/IMG_0937.JPG",
-            "1774467676824-OKEIW9DQGCR4WEA7ST1C/IMG_0939.JPG",
-            "1774467677168-51XCPC53NVSH9C3GVGFY/IMG_0940.JPG",
-            "1774467680873-6EM36M8WWABH7U0SGUO9/IMG_0941.JPG",
+            "1774467681418-IMG_0901.JPG",
+            "1774467664573-IMG_0905.JPG",
+            "1774467664385-IMG_0907.JPG",
+            "1774467669405-IMG_0918.JPG",
+            "1774467669726-IMG_0935.JPG",
+            "1774467672834-IMG_0936.JPG",
+            "1774467673174-IMG_0937.JPG",
+            "1774467676824-IMG_0939.JPG",
+            "1774467677168-IMG_0940.JPG",
+            "1774467680873-IMG_0941.JPG",
           ],
           (i) => `Pack Lash photo ${i}`,
         ),
@@ -69,9 +69,7 @@ export const oldSite: OldSitePage[] = [
         id: "footer-badges",
         title: "Member badges in the footer",
         text: "Every page ends with a GAMA member icon and an Indie Game Alliance logo that links to indiegamealliance.com.",
-        images: [
-          { src: `${SQ}/731dc39c-863d-4d89-bb5b-86574cc195bf/gama_member_icon.png`, alt: "GAMA member" },
-        ],
+        images: [{ src: `${OLD}/731dc39c-863d-gama_member_icon.png`, alt: "GAMA member" }],
         links: [{ label: "Indie Game Alliance", href: "https://www.indiegamealliance.com/" }],
         suggestion: "The new site's footer.",
       },
@@ -90,9 +88,7 @@ export const oldSite: OldSitePage[] = [
       {
         id: "adam-photo",
         title: "Adam’s photo",
-        images: [
-          { src: `${SQ}/1625753652499-ZVJHG7D339MPAQ5FVMG2/Adam+-+Shark+Hunt.PNG`, alt: "Adam - Shark Hunt" },
-        ],
+        images: [{ src: `${OLD}/1625753652499-Adam---Shark-Hunt.PNG`, alt: "Adam - Shark Hunt" }],
         suggestion: "“Meet the beards” already has a photo of Adam. Use this one instead?",
       },
     ],
@@ -161,10 +157,10 @@ export const oldSite: OldSitePage[] = [
         title: "Rules and print-and-play files",
         text: "PDFs hosted on Squarespace. They stop working when Squarespace is cancelled.",
         links: [
-          { label: "Instructions", href: `${SQ_FILES}/Fences-Instructions.pdf` },
-          { label: "B&W Print&play", href: `${SQ_FILES}/pnp_bw_fences.pdf` },
-          { label: "Farmer Cards", href: `${SQ_FILES}/Farmer-Cards.pdf` },
-          { label: "Instructions - The Ranch", href: `${SQ_FILES}/Tha-Ranch-Rules.pdf` },
+          { label: "Instructions", href: `${OLD}/Fences-Instructions.pdf` },
+          { label: "B&W Print&play", href: `${OLD}/pnp_bw_fences.pdf` },
+          { label: "Farmer Cards", href: `${OLD}/Farmer-Cards.pdf` },
+          { label: "Instructions - The Ranch", href: `${OLD}/Tha-Ranch-Rules.pdf` },
         ],
         suggestion: "Downloads on the Fences game page. The rules link is already on the site.",
       },
@@ -172,15 +168,15 @@ export const oldSite: OldSitePage[] = [
         id: "fences-gallery",
         title: "Fences photos",
         images: [
-          { src: `${SQ}/1605540054950-5376EW4FY90FFADBJDQ2/Fences.jpg`, alt: "Photo by Daniel Blackbourne" },
-          { src: `${SQ}/1605475747795-LGCSFGF6IQSW4I7RMB2L/gameplay.jpg`, alt: "4-player finished game" },
-          { src: `${SQ}/1605475808037-T3Q8BYVY0X3AK4Q7331W/steep.jpg`, alt: "Painted wooden components" },
-          { src: `${SQ}/1605476059942-FAV3507RAI91S2FZBZUJ/zoom.jpg`, alt: "High-quality artwork" },
+          { src: `${OLD}/1605540054950-Fences.jpg`, alt: "Photo by Daniel Blackbourne" },
+          { src: `${OLD}/1605475747795-gameplay.jpg`, alt: "4-player finished game" },
+          { src: `${OLD}/1605475808037-steep.jpg`, alt: "Painted wooden components" },
+          { src: `${OLD}/1605476059942-zoom.jpg`, alt: "High-quality artwork" },
           {
-            src: `${SQ}/1605476170914-MB427U4R3SAH9VYDQGR8/IMG_2117.png`,
+            src: `${OLD}/1605476170914-IMG_2117.png`,
             alt: "The Ranch - Kickstarter expected Spring 2021",
           },
-          { src: `${SQ}/1579623253324-SESLKQHJYQTN0WD11GNN/Review+Top.png`, alt: "Review Top" },
+          { src: `${OLD}/1579623253324-Review-Top.png`, alt: "Review Top" },
         ],
         suggestion: "A photo gallery on the Fences game page.",
       },
@@ -200,21 +196,21 @@ export const oldSite: OldSitePage[] = [
         id: "locked-out-gallery",
         title: "Locked Out tin, board and cards",
         images: [
-          { src: `${SQ}/bf196b96-523c-43cb-b98e-042b32935650/sticker-0.20a-tin-top.jpg`, alt: "Tin top" },
+          { src: `${OLD}/bf196b96-523c-sticker-0.20a-tin-top.jpg`, alt: "Tin top" },
           {
-            src: `${SQ}/cd6a8264-41ab-4445-a423-736def21afaa/Screenshot+2023-09-15+162420.png`,
+            src: `${OLD}/cd6a8264-41ab-Screenshot-2023-09-15-162420.png`,
             alt: "Board",
           },
           {
-            src: `${SQ}/1694814101493-O21RTUQ7RSBW4363P37V/card-A-programmable-keycard.png`,
+            src: `${OLD}/1694814101493-card-A-programmable-keycard.png`,
             alt: "Programmable keycard",
           },
-          { src: `${SQ}/1694814101493-PQXU4A5L4XODJZTC6YUO/card-E-fuel.png`, alt: "Fuel" },
-          { src: `${SQ}/1694814102409-OSEO8KQ6ECPWKKJB4OWL/card-H-memory-module.png`, alt: "Memory module" },
-          { src: `${SQ}/1694814339677-RPR7STZE3AMOARBRPFAV/card-E-oxygen.png`, alt: "Oxygen" },
-          { src: `${SQ}/1694814102573-G0VEX8CMEX6MYQDZ47UI/card-M-plasma-gun.png`, alt: "Plasma gun" },
+          { src: `${OLD}/1694814101493-card-E-fuel.png`, alt: "Fuel" },
+          { src: `${OLD}/1694814102409-card-H-memory-module.png`, alt: "Memory module" },
+          { src: `${OLD}/1694814339677-card-E-oxygen.png`, alt: "Oxygen" },
+          { src: `${OLD}/1694814102573-card-M-plasma-gun.png`, alt: "Plasma gun" },
           {
-            src: `${SQ}/1694814103445-KO5QT587W15XPV83QR1Y/card-M-share-of-the-booty-3.png`,
+            src: `${OLD}/1694814103445-card-M-share-of-the-booty-3.png`,
             alt: "Share of the booty",
           },
         ],
@@ -230,7 +226,7 @@ export const oldSite: OldSitePage[] = [
         id: "pack-lash-text",
         title: "About Pack Lash",
         text: "COMING SOON! A fast paced, head to head, assymetric card game with variable player winning conditions. Try to achieve your victory condition while preventhing your opponent from achieving theirs. Designed by Craig Hughes with art by Hailey Fetting.",
-        images: [{ src: `${SQ}/54d043c8-ee85-44cc-9195-5df0380ae3a7/packlash.png`, alt: "Pack Lash" }],
+        images: [{ src: `${OLD}/54d043c8-ee85-packlash.png`, alt: "Pack Lash" }],
         links: [{ label: "BGG page", href: "https://boardgamegeek.com/boardgame/407307/pack-lash" }],
         suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
@@ -244,7 +240,7 @@ export const oldSite: OldSitePage[] = [
         id: "mine-and-find-text",
         title: "About Mine & Find",
         text: "COMING SOON! A quick and easy card game for all ages. Search the mine for your color and shape. Find carts to help you traverse the mine quicker. Be the first to find all your gems to win!",
-        images: [{ src: `${SQ}/bbeac02c-d9b8-4b09-a6f2-818b7e3f9c40/MFLogo.png`, alt: "Mine & Find logo" }],
+        images: [{ src: `${OLD}/bbeac02c-d9b8-MFLogo.png`, alt: "Mine & Find logo" }],
         suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
     ],
@@ -257,9 +253,7 @@ export const oldSite: OldSitePage[] = [
         id: "soccer-blocker-text",
         title: "About Soccer Blocker",
         text: "COMING SOON! A 1 v 1 soccer duel. try to out guess, out think, out maneuver your opponent to work the ball down the field to take a shot on goal. First player to score three points in this fast-paced game is the winner!",
-        images: [
-          { src: `${SQ}/189a7658-1e58-44bd-a461-e7e0e2f3cc50/SBBoxLogo.png`, alt: "Soccer Blocker box" },
-        ],
+        images: [{ src: `${OLD}/189a7658-1e58-SBBoxLogo.png`, alt: "Soccer Blocker box" }],
         suggestion: "Done: the new game page now uses this description (Oct 26).",
       },
     ],
@@ -273,8 +267,8 @@ export const oldSite: OldSitePage[] = [
         title: "Rules sheet, front and back",
         text: "This page only shows the two sides of the rules sheet. If a QR code on the box points here, the address needs to keep working.",
         images: [
-          { src: `${SQ}/1789706068856-N87QFIQCQTQ0NBKXFQPI/RulesFront2.png`, alt: "Rules, front" },
-          { src: `${SQ}/1789706068852-B4CG81AT503ZYRRHSD8J/RulesBack2.png`, alt: "Rules, back" },
+          { src: `${OLD}/1789706068856-RulesFront2.png`, alt: "Rules, front" },
+          { src: `${OLD}/1789706068852-RulesBack2.png`, alt: "Rules, back" },
         ],
         suggestion: "A rules page at the same address, linked from the Soccer Blocker game page.",
       },
@@ -290,7 +284,7 @@ export const oldSite: OldSitePage[] = [
         text: "A new game in the Fences universe! Roll the dice, draft one, mark your sheet. Try to plan your farm by grouping outcomes in specific ways! From designers Darren Reckner and Jason Hager of Durdle Games. Coming in the Winter of 2026!",
         images: [
           {
-            src: `${SQ}/438619b3-3536-4a20-8824-702e8097c809/Rolling+Acres+Mock+Up+Web_2.jpg`,
+            src: `${OLD}/438619b3-3536-Rolling-Acres-Mock-Up-Web_2.jpg`,
             alt: "Rolling Acres mock-up",
           },
         ],
@@ -318,10 +312,10 @@ export const oldSite: OldSitePage[] = [
         id: "retailers-images",
         title: "Sell sheet pictures",
         images: [
-          { src: `${SQ}/1776873479919-RU5JMHPLTHYZMDACDETL/Fences+Box+Art.jpg`, alt: "Fences box art" },
-          { src: `${SQ}/1776873492340-9ZK9JNSF046OSKCG2EVF/lockedoutbox.png`, alt: "Locked Out box" },
-          { src: `${SQ}/1776876544035-P0VB3FAN0MYYYAT5EBTN/MFLogo.png`, alt: "Mine & Find logo" },
-          { src: `${SQ}/1776876553762-GSBN5FWGNCN8VCPZ12TK/SBBoxLogo.png`, alt: "Soccer Blocker box" },
+          { src: `${OLD}/1776873479919-Fences-Box-Art.jpg`, alt: "Fences box art" },
+          { src: `${OLD}/1776873492340-lockedoutbox.png`, alt: "Locked Out box" },
+          { src: `${OLD}/1776876544035-MFLogo.png`, alt: "Mine & Find logo" },
+          { src: `${OLD}/1776876553762-SBBoxLogo.png`, alt: "Soccer Blocker box" },
         ],
         suggestion: "Pictures for each sell sheet on the Wholesale page.",
       },
@@ -342,7 +336,7 @@ export const oldSite: OldSitePage[] = [
         title: "VIP page picture",
         images: [
           {
-            src: `${SQ}/b5d96166-2bd1-47b0-b738-73990b768da6/BB2026+VIP+LP+Hero+Image.jpg`,
+            src: `${OLD}/b5d96166-2bd1-BB2026-VIP-LP-Hero-Image.jpg`,
             alt: "Bearded Bundle 2026",
           },
         ],
