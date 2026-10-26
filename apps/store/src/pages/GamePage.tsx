@@ -4,6 +4,7 @@ import { useProducts, useReviewsFor } from "../api/data.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { ReviewForm } from "../components/ReviewForm.tsx";
 import { ReviewList } from "../components/ReviewList.tsx";
+import { VideoCard } from "../components/VideoCard.tsx";
 import { Stars } from "../components/Stars.tsx";
 import { brand, games, statusText } from "../content/site.ts";
 import { averageStars } from "@bearded/store-core";
@@ -135,6 +136,15 @@ export function GamePage() {
           )}
         </p>
       </section>
+
+      {game.tutorial && (
+        <section className="wrap pad learn">
+          <h2>Learn to play</h2>
+          <div className="videos">
+            <VideoCard video={game.tutorial} />
+          </div>
+        </section>
+      )}
 
       <section className="shop">
         <div className="wrap pad">

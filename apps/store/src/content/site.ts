@@ -11,6 +11,8 @@ import teamN8 from "../assets/team-n8.webp";
 import posterBeardedBoardGames from "../assets/video-bearded-board-games.webp";
 import posterEverybodyLoves from "../assets/video-everybody-loves-some-board-games.webp";
 import posterMyGames from "../assets/video-my-games.webp";
+import posterLearnMineAndFind from "../assets/video-learn-mine-and-find.webp";
+import posterLearnSoccerBlocker from "../assets/video-learn-soccer-blocker.webp";
 import posterSoccerBlockerPrototype from "../assets/video-soccer-blocker-prototype.webp";
 
 export const brand = {
@@ -71,6 +73,8 @@ export interface Game {
   story?: string[];
   /** A short silent clip that loops on the game's page, from public/videos. */
   clip?: { src: string; poster: string; caption: string };
+  /** A how-to-play video, shown under "Learn to play" on the game's page. */
+  tutorial?: Video;
   links: { rules?: string; bgg?: string };
 }
 
@@ -140,6 +144,14 @@ export const games: Game[] = [
       poster: posterSoccerBlockerPrototype,
       caption: "Our homemade prototype, out of the box.",
     },
+    tutorial: {
+      slug: "learn-soccer-blocker",
+      title: "Learn Soccer Blocker",
+      blurb: "A Lettuce Talk Games tutorial.",
+      src: "/videos/learn-soccer-blocker.mp4",
+      poster: posterLearnSoccerBlocker,
+      seconds: 318,
+    },
     links: { bgg: "https://boardgamegeek.com/boardgame/466697/soccer-blocker" },
   },
   {
@@ -159,6 +171,14 @@ export const games: Game[] = [
       "Find your Miner’s Lamp and you can move diagonally. Find your Cart and you can roll any distance in a straight line. Collect both for 3 bonus points, and everyone else gets one last move.",
       "Play with 4 players, team up 2 against 2, or try Solo Mode and collect every treasure before a Lamp and Cart set turns up. Advanced Mode flips cards back face down, so you have to remember where everything is.",
     ],
+    tutorial: {
+      slug: "learn-mine-and-find",
+      title: "Learn Mine & Find",
+      blurb: "A Lettuce Talk Games tutorial.",
+      src: "/videos/learn-mine-and-find.mp4",
+      poster: posterLearnMineAndFind,
+      seconds: 142,
+    },
     links: { bgg: "https://boardgamegeek.com/boardgame/468088/mine-and-find" },
   },
   {

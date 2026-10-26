@@ -995,6 +995,10 @@ body {
   margin-top: 8px;
   color: var(--muted);
 }
+/* Follows "How it plays", so it doesn't need a second top gap. */
+.learn {
+  padding-top: 0;
+}
 .about-game .by {
   color: var(--muted);
   font-style: italic;
