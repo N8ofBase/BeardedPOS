@@ -226,6 +226,37 @@ describe("checkout through Square", () => {
     });
   });
 
+  it("puts a Beard Bucks reward on the order as one fixed discount, and fills in the email", async () => {
+    const square = fakeSquare({
+      "POST /v2/online-checkout/payment-links": () => ({
+        payment_link: { id: "PL2", url: "https://x", order_id: "O2" },
+      }),
+    });
+    const store = new SquareApiStore({ mode: "sandbox", token: "t", locationId: LOC, fetch: square.fetch });
+    await store.createPaymentLink({
+      id: "11111111-2222-4333-8444-666666666666",
+      lines: [{ productId: "V1", qty: 1 }],
+      redirectUrl: "https://store.test/thanks",
+      discountCents: 1000,
+      buyerEmail: "rae@example.com",
+      currency: "USD",
+    });
+    expect(square.calls[0]!.body).toMatchObject({
+      order: {
+        discounts: [
+          {
+            uid: "beard-bucks",
+            name: "Beard Bucks reward",
+            type: "FIXED_AMOUNT",
+            amount_money: { amount: 1000, currency: "USD" },
+            scope: "ORDER",
+          },
+        ],
+      },
+      pre_populated_data: { buyer_email: "rae@example.com" },
+    });
+  });
+
   it("counts an order as paid only when Square took the money", () => {
     expect(orderIsPaid({ id: "o", state: "COMPLETED" })).toBe(true);
     expect(orderIsPaid({ id: "o", state: "OPEN", tenders: [{}], net_amount_due_money: { amount: 0 } })).toBe(

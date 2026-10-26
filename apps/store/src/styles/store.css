@@ -1280,20 +1280,24 @@ body {
   font-size: 1.3rem;
   margin: 0 0 8px;
 }
-.staff-signin {
+.staff-signin,
+.code-signin {
   max-width: 560px;
 }
-.staff-signin label {
+.staff-signin label,
+.code-signin label {
   display: block;
   font-weight: 800;
   margin: 16px 0 6px;
 }
-.staff-signin .row {
+.staff-signin .row,
+.code-signin .row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
-.staff-signin input {
+.staff-signin input,
+.code-signin input {
   flex: 1 1 220px;
   min-width: 0;
   font: 600 16px var(--text);
@@ -1301,7 +1305,8 @@ body {
   border: 2px solid var(--ink);
   border-radius: 6px;
 }
-.staff-signin #staff-code {
+.staff-signin #staff-code,
+.code-signin .code {
   letter-spacing: 0.3em;
   font-variant-numeric: tabular-nums;
 }
@@ -1584,4 +1589,104 @@ body {
 .old-item.is-drop {
   box-shadow: 4px 4px 0 var(--tomato);
   opacity: 0.8;
+}
+
+/* ---------- Beard Buddy ---------- */
+.buddy-link .bucks {
+  font-weight: 800;
+}
+.bucks-card {
+  background: var(--butter);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.bucks-card p {
+  margin: 0;
+}
+.bucks-card .balance {
+  font-size: 1.6rem;
+}
+.account h2 {
+  font-size: 1.3rem;
+  margin: 24px 0 8px;
+}
+.account-details {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+  margin-bottom: 28px;
+  justify-items: start;
+}
+.account-details label {
+  font-weight: 800;
+  margin-top: 8px;
+}
+.account-details input {
+  font: 600 16px var(--text);
+  padding: 9px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  width: 100%;
+}
+.ledger {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  max-width: 560px;
+}
+.ledger li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line, #ddd);
+}
+.ledger .when {
+  color: var(--muted);
+}
+.ledger .plus {
+  color: var(--felt);
+}
+.ledger .minus {
+  color: var(--tomato, #e8463a);
+}
+.bucks-reward {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--butter);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+.bucks-reward p {
+  margin: 0;
+  font-weight: 700;
+}
+.subtotal.reward {
+  font-size: 1rem;
+  color: var(--felt);
+}
+.cart .earns {
+  margin: 0;
+  font-weight: 700;
+  color: var(--felt);
+}
+.checkout-choice {
+  display: grid;
+  gap: 8px;
+}
+.checkout-choice .fine {
+  margin: 0;
+  text-align: center;
+}
+.buddy .balance {
+  margin-left: auto;
 }

@@ -1,18 +1,13 @@
 // Behind the Beard: one-time-code sign-in for the team, and review moderation.
-import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
-import { looksLikeEmail, type CodeResponse, type ReviewAction, type StaffReview } from "@bearded/store-core";
+import type { CodeResponse, ReviewAction, StaffReview } from "@bearded/store-core";
 import type { StoreConfig, StoreCtx } from "../context.ts";
 import { withBusiness } from "../db.ts";
 import { asObject, HttpError, ok, type ApiRequest, type ApiResponse } from "../http.ts";
+import { CODE_MINUTES, issueCode, newToken, readEmail, sha256, useCode, wrongCode } from "./codes.ts";
 import { REVIEW_COLUMNS, toReview, type ReviewRow } from "./people.ts";
 
 export const STAFF_COOKIE = "bbg_staff";
-const CODE_MINUTES = 10;
-const CODE_TRIES = 5;
-const CODES_PER_HOUR = 5;
 const SESSION_HOURS = 12;
-
-const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 export function isStaffEmail(config: StoreConfig, email: string): boolean {
   const e = email.trim().toLowerCase();
@@ -22,31 +17,14 @@ export function isStaffEmail(config: StoreConfig, email: string): boolean {
   });
 }
 
-const readEmail = (body: Record<string, unknown>) => {
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  if (!looksLikeEmail(email)) throw new HttpError(400, "Check the email address, like name@example.com.");
-  return email;
-};
-
 /** Sends a sign-in code. The answer is the same for any email, so it can't be used to find staff addresses. */
 export async function requestCode(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
   const email = readEmail(asObject(req.body));
   const sent: CodeResponse = { sent: true };
   if (!isStaffEmail(ctx.config, email)) return ok(sent);
-  const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
-  await withBusiness(ctx.db, ctx.config.businessId, async (sql) => {
-    const { rows } = await sql.query<{ n: number }>(
-      "SELECT count(*)::int AS n FROM store_staff_codes WHERE email = $1 AND created_at > now() - interval '1 hour'",
-      [email],
-    );
-    if ((rows[0]?.n ?? 0) >= CODES_PER_HOUR)
-      throw new HttpError(429, "That’s a lot of codes. Wait an hour, or use the last one we sent.");
-    await sql.query(
-      `INSERT INTO store_staff_codes (business_id, email, code_hash, expires_at)
-       VALUES ($1, $2, $3, now() + make_interval(mins => $4))`,
-      [ctx.config.businessId, email, sha256(code), CODE_MINUTES],
-    );
-  });
+  const code = await withBusiness(ctx.db, ctx.config.businessId, (sql) =>
+    issueCode(sql, "store_staff_codes", ctx.config.businessId, email),
+  );
   await ctx.mailer.send(
     email,
     `Your Behind the Beard code: ${code}`,
@@ -70,30 +48,11 @@ export function sessionCookie(ctx: StoreCtx, token: string, maxAgeSeconds: numbe
 export async function signIn(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
   const body = asObject(req.body);
   const email = readEmail(body);
-  const code = typeof body.code === "string" ? body.code.replace(/\s/g, "") : "";
-  const wrong = new HttpError(401, "That code didn’t match or has expired. Ask for a new one.");
-  const token = randomBytes(32).toString("base64url");
+  const token = newToken();
   // A wrong try must be counted even though sign-in fails, so the transaction returns the outcome
   // and the error is thrown after it commits.
   const signedIn = await withBusiness(ctx.db, ctx.config.businessId, async (sql) => {
-    const { rows } = await sql.query<{ id: string; code_hash: string; attempts: number }>(
-      `SELECT id, code_hash, attempts FROM store_staff_codes
-       WHERE email = $1 AND used_at IS NULL AND expires_at > now()
-       ORDER BY created_at DESC LIMIT 1`,
-      [email],
-    );
-    const row = rows[0];
-    if (!row || row.attempts >= CODE_TRIES || !/^\d{6}$/.test(code)) {
-      if (row)
-        await sql.query("UPDATE store_staff_codes SET attempts = attempts + 1 WHERE id = $1", [row.id]);
-      return false;
-    }
-    const match = timingSafeEqual(Buffer.from(sha256(code)), Buffer.from(row.code_hash));
-    if (!match) {
-      await sql.query("UPDATE store_staff_codes SET attempts = attempts + 1 WHERE id = $1", [row.id]);
-      return false;
-    }
-    await sql.query("UPDATE store_staff_codes SET used_at = now() WHERE id = $1", [row.id]);
+    if (!(await useCode(sql, "store_staff_codes", email, body.code))) return false;
     await sql.query(
       `INSERT INTO store_staff_sessions (business_id, email, token_hash, expires_at)
        VALUES ($1, $2, $3, now() + make_interval(hours => $4))`,
@@ -101,7 +60,7 @@ export async function signIn(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespons
     );
     return true;
   });
-  if (!signedIn) throw wrong;
+  if (!signedIn) throw wrongCode();
   return {
     status: 200,
     body: { email },

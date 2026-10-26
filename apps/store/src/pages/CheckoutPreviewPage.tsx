@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { formatCents, type OrderView } from "@bearded/store-core";
+import { formatCents, REWARD_NAME, type OrderView } from "@bearded/store-core";
 import { errorText, useStore, type Loadable } from "../api/store.ts";
 
 /**
@@ -67,9 +67,15 @@ export function CheckoutPreviewPage() {
               </li>
             ))}
           </ul>
+          {order.value.discountCents > 0 && (
+            <p className="subtotal reward">
+              <span>{REWARD_NAME}</span>
+              <strong>−{formatCents(order.value.discountCents)}</strong>
+            </p>
+          )}
           <p className="subtotal">
             <span>Subtotal</span>
-            <strong>{formatCents(order.value.subtotalCents)}</strong>
+            <strong>{formatCents(order.value.subtotalCents - order.value.discountCents)}</strong>
           </p>
           {order.value.status === "paid" ? (
             <p>This order is already paid.</p>

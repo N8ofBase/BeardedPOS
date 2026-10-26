@@ -11,6 +11,12 @@ export interface SquareStore {
     id: string;
     lines: { productId: string; qty: number }[];
     redirectUrl: string;
+    /** The Beard Bucks reward, as one discount on the whole order (0 when none). */
+    discountCents?: number;
+    /** A signed-in shopper's email, filled in on Square's page for them. */
+    buyerEmail?: string;
+    /** The catalog's currency, for the discount. */
+    currency?: string;
   }): Promise<{ url: string; squareOrderId: string | null; paymentLinkId: string | null }>;
   /** Whether Square's order for a checkout has been paid. */
   orderPaid(squareOrderId: string): Promise<boolean>;

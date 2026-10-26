@@ -1,14 +1,11 @@
 // Offline Square: the catalog from a saved read-only copy, and checkout through our own preview page.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { SquareCatalog } from "@bearded/store-core";
+// Imported rather than read from disk, so the Lambda bundle carries it.
+import saved from "./snapshot.json" with { type: "json" };
 import type { SquareStore } from "./types.ts";
 
 export function loadSnapshot(): SquareCatalog {
-  return JSON.parse(
-    readFileSync(join(fileURLToPath(import.meta.url), "../snapshot.json"), "utf8"),
-  ) as SquareCatalog;
+  return structuredClone(saved) as SquareCatalog;
 }
 
 export class SnapshotStore implements SquareStore {

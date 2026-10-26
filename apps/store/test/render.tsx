@@ -28,6 +28,15 @@ export function fakeStore(over: Partial<StoreApi> = {}): StoreApi {
       stats: () => Promise.reject(new Error("no server")),
       oldSite: async () => [],
       chooseOldSite: () => Promise.reject(new Error("no server")),
+      buddies: async () => [],
+      buddyHistory: async () => [],
+    },
+    buddy: {
+      requestCode: async () => ({ sent: true }),
+      signIn: () => Promise.reject(new Error("no server")),
+      account: async () => null,
+      save: () => Promise.reject(new Error("no server")),
+      signOut: async () => {},
     },
     ...over,
   };

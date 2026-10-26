@@ -3,11 +3,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { StaffMe } from "@bearded/store-core";
 import { errorText, looksLikeEmail, useStore, type Loadable } from "../api/store.ts";
+import { BuddiesTab } from "./BuddiesTab.tsx";
 import { OldSiteTab } from "./OldSiteTab.tsx";
 import { ReviewsTab } from "./ReviewsTab.tsx";
 import { StatsTab } from "./StatsTab.tsx";
 
-type Tab = "reviews" | "stats" | "old-site";
+type Tab = "reviews" | "stats" | "buddies" | "old-site";
 
 export function BehindTheBeard() {
   const store = useStore();
@@ -55,6 +56,7 @@ function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void })
   const tabs: [Tab, string][] = [
     ["reviews", "Reviews"],
     ["stats", "Stats"],
+    ["buddies", "Beard Buddies"],
     ["old-site", "Old site"],
   ];
   return (
@@ -83,7 +85,15 @@ function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void })
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "reviews" ? <ReviewsTab /> : tab === "stats" ? <StatsTab /> : <OldSiteTab />}
+        {tab === "reviews" ? (
+          <ReviewsTab />
+        ) : tab === "stats" ? (
+          <StatsTab />
+        ) : tab === "buddies" ? (
+          <BuddiesTab />
+        ) : (
+          <OldSiteTab />
+        )}
       </div>
     </>
   );

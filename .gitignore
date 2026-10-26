@@ -13,6 +13,8 @@ infra/.site/
 .env.*
 !.env.example
 *.pem
+# Public CA bundle, not a key: the store Lambda needs it to check the database's TLS certificate.
+!services/store-api/certs/rds-global-bundle.pem
 # editors and OS
 .DS_Store
 .vscode/
