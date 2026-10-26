@@ -50,10 +50,16 @@ describe("cart", () => {
     localStorage.setItem(CART_KEY, JSON.stringify([{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }]));
     renderStore("/cart", { checkout });
     fireEvent.click(await screen.findByRole("button", { name: "Check out" }));
+    const guest = screen.getByRole("button", { name: "Check out as a guest" });
+    expect(guest.getAttribute("aria-describedby")).toBeTruthy();
+    expect(screen.getByText("Guest orders don’t earn Beard Bucks.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sign in and earn 40 Beard Bucks" })).toBeTruthy();
+    fireEvent.click(guest);
     expect(await screen.findByRole("heading", { name: "Thanks for your order!" })).toBeTruthy();
     expect(checkout).toHaveBeenCalledWith(
       [{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }],
       expect.any(String),
+      0,
     );
     expect(screen.getByText(/no payment was taken/)).toBeTruthy();
     await waitFor(() => expect(localStorage.getItem(CART_KEY)).toBeNull());
@@ -63,6 +69,7 @@ describe("cart", () => {
     localStorage.setItem(CART_KEY, JSON.stringify([{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 1 }]));
     renderStore("/cart", { checkout: () => Promise.reject(new Error("down")) });
     fireEvent.click(await screen.findByRole("button", { name: "Check out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Check out as a guest" }));
     expect(await screen.findByText(/Checkout didn’t open/)).toBeTruthy();
     expect(localStorage.getItem(CART_KEY)).not.toBeNull();
   });

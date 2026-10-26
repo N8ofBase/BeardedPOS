@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import type { OrderStatus } from "@bearded/store-core";
+import { bucksLabel, type OrderBucks, type OrderStatus } from "@bearded/store-core";
 import { useStore } from "../api/store.ts";
+import { useBuddy } from "../buddy/BuddyProvider.tsx";
 import { useCart } from "../cart/CartProvider.tsx";
 
 /** "BBG-" and the start of the order id: enough for a shopper to quote, and for staff to find it. */
@@ -13,17 +14,19 @@ export const STATUS_WAIT_MS = 2000;
 
 type Check = "checking" | OrderStatus["status"] | "unknown";
 
-function usePaymentCheck(order: string | null): Check {
+function usePaymentCheck(order: string | null): { check: Check; bucks?: OrderBucks } {
   const store = useStore();
   const [check, setCheck] = useState<Check>("checking");
+  const [bucks, setBucks] = useState<OrderBucks>();
   useEffect(() => {
     if (!order) return;
     let live = true;
     let timer: number | undefined;
     const ask = async (tries: number) => {
       try {
-        const { status } = await store.orderStatus(order);
+        const { status, bucks } = await store.orderStatus(order);
         if (!live) return;
+        setBucks(bucks);
         if (status !== "open" || tries <= 1) return setCheck(status);
       } catch {
         if (!live) return;
@@ -37,7 +40,21 @@ function usePaymentCheck(order: string | null): Check {
       window.clearTimeout(timer);
     };
   }, [store, order]);
-  return check;
+  return { check, bucks };
+}
+
+/** "You earned 33 Beard Bucks. Your balance is 73." and the birthday gift, once paid. */
+function BucksNote({ bucks }: { bucks: OrderBucks }) {
+  return (
+    <div className="bucks-card thanks-bucks" role="status">
+      <p>
+        You earned <strong>{bucksLabel(bucks.earned)}</strong>.
+        {bucks.balance !== undefined && ` Your balance is ${bucks.balance.toLocaleString("en-US")}.`}
+      </p>
+      {bucks.birthday > 0 && <p>Happy birthday! {bucksLabel(bucks.birthday)} added.</p>}
+      <Link to="/account">See your Beard Bucks</Link>
+    </div>
+  );
 }
 
 const MESSAGES: Record<Check, string> = {
@@ -56,8 +73,15 @@ export function ThanksPage() {
   const preview = params.get("preview") === "1";
   const raw = params.get("order");
   const order = raw && /^[0-9a-f-]{36}$/i.test(raw) ? raw : null;
-  const check = usePaymentCheck(preview ? null : order);
+  // Offline the preview page has already marked it paid, so this only reads the Bucks it earned.
+  const { check, bucks } = usePaymentCheck(order);
+  const { refresh } = useBuddy();
+  const paid = check === "paid";
   useEffect(() => clear(), [clear]);
+  // A paid order changes the balance the header and cart show.
+  useEffect(() => {
+    if (paid) refresh();
+  }, [paid, refresh]);
   return (
     <section className="wrap pad thanks">
       <h1>Thanks for your order!</h1>
@@ -80,6 +104,7 @@ export function ThanksPage() {
           Square has emailed your receipt. We’ll email you again when your order ships or is ready for pickup.
         </p>
       )}
+      {paid && bucks && <BucksNote bucks={bucks} />}
       <Link className="btn go" to="/#games">
         Back to the games
       </Link>

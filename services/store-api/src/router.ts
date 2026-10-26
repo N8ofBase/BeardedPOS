@@ -1,6 +1,15 @@
 // Routes /api requests to handlers. Errors come back as { error } with a sentence the site shows as is.
 import type { StoreCtx } from "./context.ts";
 import { HttpError, type ApiRequest, type ApiResponse } from "./http.ts";
+import {
+  buddySignIn,
+  buddySignOut,
+  getAccount,
+  requestBuddyCode,
+  saveAccount,
+  staffBuddies,
+  staffBuddyHistory,
+} from "./handlers/account.ts";
 import { logEvents } from "./handlers/events.ts";
 import { chooseOldSite, oldSiteChoices } from "./handlers/oldSite.ts";
 import { joinVip, listReviews, submitReview } from "./handlers/people.ts";
@@ -17,9 +26,14 @@ type Route = [
 const ROUTES: Route[] = [
   ["GET", /^\/api\/catalog$/, getCatalog],
   ["POST", /^\/api\/checkout$/, checkout],
-  ["GET", /^\/api\/orders\/([^/]+)$/, (ctx, _req, id) => getOrderStatus(ctx, id)],
+  ["GET", /^\/api\/orders\/([^/]+)$/, getOrderStatus],
   ["GET", /^\/api\/checkout-preview\/([^/]+)$/, (ctx, _req, id) => getPreviewOrder(ctx, id)],
   ["POST", /^\/api\/checkout-preview\/([^/]+)\/pay$/, (ctx, _req, id) => payPreviewOrder(ctx, id)],
+  ["POST", /^\/api\/account\/code$/, requestBuddyCode],
+  ["POST", /^\/api\/account\/session$/, buddySignIn],
+  ["POST", /^\/api\/account\/signout$/, buddySignOut],
+  ["GET", /^\/api\/account$/, getAccount],
+  ["POST", /^\/api\/account$/, saveAccount],
   ["POST", /^\/api\/vip$/, joinVip],
   ["GET", /^\/api\/reviews$/, listReviews],
   ["POST", /^\/api\/reviews$/, submitReview],
@@ -32,6 +46,8 @@ const ROUTES: Route[] = [
   ["POST", /^\/api\/staff\/reviews\/([^/]+)$/, moderateReview],
   ["GET", /^\/api\/staff\/stats$/, getStats],
   ["GET", /^\/api\/staff\/old-site$/, oldSiteChoices],
+  ["GET", /^\/api\/staff\/buddies$/, staffBuddies],
+  ["GET", /^\/api\/staff\/buddies\/([^/]+)$/, staffBuddyHistory],
   ["POST", /^\/api\/staff\/old-site\/([^/]+)$/, chooseOldSite],
 ];
 

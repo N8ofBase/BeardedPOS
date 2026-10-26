@@ -28,10 +28,20 @@ describe("thank-you page after Square", () => {
     expect(orderStatus).toHaveBeenCalledTimes(STATUS_TRIES);
   });
 
-  it("doesn't ask Square about preview orders", () => {
-    const orderStatus = vi.fn(async () => ({ status: "paid" as const }));
-    renderStore(`/thanks?order=${ORDER}&preview=1`, { orderStatus });
+  it("says no payment was taken on a preview order", async () => {
+    renderStore(`/thanks?order=${ORDER}&preview=1`);
     expect(screen.getByText(/no payment was taken/)).toBeTruthy();
-    expect(orderStatus).not.toHaveBeenCalled();
+    await screen.findByText("BBG-11111111");
+  });
+
+  it("shows the Beard Bucks a paid order earned, and the birthday gift", async () => {
+    const orderStatus = vi.fn(async () => ({
+      status: "paid" as const,
+      bucks: { earned: 33, used: 200, birthday: 100, balance: 173 },
+    }));
+    renderStore(`/thanks?order=${ORDER}`, { orderStatus });
+    const note = await screen.findByText(/You earned/);
+    expect(note.textContent).toBe("You earned 33 Beard Bucks. Your balance is 173.");
+    expect(screen.getByText("Happy birthday! 100 Beard Bucks added.")).toBeTruthy();
   });
 });

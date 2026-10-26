@@ -30,6 +30,7 @@ describe("checkout", () => {
     localStorage.setItem(CART_KEY, JSON.stringify([{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }]));
     renderStore("/cart", store);
     fireEvent.click(await screen.findByRole("button", { name: "Check out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Check out as a guest" }));
     expect(await screen.findByRole("heading", { name: "Checkout preview" })).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /Pay \(preview/ }));
     expect(document.querySelector(".subtotal")?.textContent).toContain("$40");
@@ -49,6 +50,7 @@ describe("checkout", () => {
       checkout: () => Promise.reject(new ApiError(409, "Locked Out just sold out. Remove it to check out.")),
     });
     fireEvent.click(await screen.findByRole("button", { name: "Check out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Check out as a guest" }));
     expect((await screen.findByRole("alert")).textContent).toBe(
       "Locked Out just sold out. Remove it to check out.",
     );
@@ -135,5 +137,74 @@ describe("Behind the Beard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByLabelText("Work email")).toBeTruthy();
     expect(jar.size).toBe(0);
+  });
+});
+
+describe("Beard Buddy", () => {
+  const LOCKED_OUT = "NJ65T37BVFHTAAFBCEXI7KNX"; // $20
+
+  async function buddySignIn(email: string) {
+    fireEvent.change(await screen.findByLabelText("Email"), { target: { value: email } });
+    fireEvent.click(screen.getByRole("button", { name: "Email me a code" }));
+    const code = (await screen.findByText(/here is the code/)).querySelector("strong")!.textContent!;
+    fireEvent.change(screen.getByLabelText("Code"), { target: { value: code } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+  }
+
+  it("signs in from the cart, earns on the order, then spends Bucks for $5 off", async () => {
+    const { ctx, store } = await realServer();
+    localStorage.setItem(CART_KEY, JSON.stringify([{ productId: LOCKED_OUT, qty: 2 }]));
+    const first = renderStore("/cart", store);
+    fireEvent.click(await screen.findByRole("button", { name: "Check out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in and earn 40 Beard Bucks" }));
+    await buddySignIn("rae@example.com");
+    expect(await screen.findByText("This order earns 40 Beard Bucks.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Check out" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Pay \(preview/ }));
+    expect((await screen.findByText(/You earned/)).textContent).toBe(
+      "You earned 40 Beard Bucks. Your balance is 40.",
+    );
+    await waitFor(() => expect(screen.getByRole("link", { name: /Beard Buddy · 40 Bucks/ })).toBeTruthy());
+    first.unmount();
+
+    // Topped up the way staff would, then a reward on the next order.
+    await withBusiness(ctx.db, BUSINESS, (sql) =>
+      sql.query(
+        `INSERT INTO store_loyalty_ledger (business_id, customer_id, kind, bucks)
+         SELECT business_id, id, 'adjust', 100 FROM store_customers`,
+      ),
+    );
+    localStorage.setItem(CART_KEY, JSON.stringify([{ productId: LOCKED_OUT, qty: 1 }]));
+    renderStore("/cart", store);
+    expect(await screen.findByText("You have 140 Beard Bucks. Use 100 for $5 off?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "One more reward" }));
+    expect(screen.getByText("You have 140 Beard Bucks. Use 100 for $5 off.")).toBeTruthy();
+    expect(screen.getByText("This order earns 15 Beard Bucks.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Check out" }));
+    expect(await screen.findByRole("heading", { name: "Checkout preview" })).toBeTruthy();
+    expect(await screen.findByText("Beard Bucks reward")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Pay \(preview/ }));
+    expect((await screen.findByText(/You earned/)).textContent).toBe(
+      "You earned 15 Beard Bucks. Your balance is 55.",
+    );
+  });
+
+  it("shows the account page and the Beard Buddies tab", async () => {
+    const { store } = await realServer();
+    const account = renderStore("/account", store);
+    await buddySignIn("sam@example.com");
+    expect(await screen.findByText("0 Beard Bucks")).toBeTruthy();
+    expect(screen.getByText("Nothing yet. Your first order earns your first Bucks.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Sam" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    account.unmount();
+
+    renderStore("/behind-the-beard", store);
+    await signIn();
+    fireEvent.click(screen.getByRole("tab", { name: "Beard Buddies" }));
+    const card = (await screen.findByText("Sam")).closest("li")!;
+    expect(within(card).getByText("sam@example.com")).toBeTruthy();
+    expect(within(card).getByText("0 Beard Bucks")).toBeTruthy();
   });
 });

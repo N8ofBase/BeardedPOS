@@ -1,7 +1,7 @@
 // Square over its REST API: the Sandbox for now, the real account once N8 says so. Plain fetch, no
 // SDK. The access token comes from the server's environment and never reaches the browser.
 import { createHash } from "node:crypto";
-import type { SquareCatalog, SquareItem } from "@bearded/store-core";
+import { REWARD_NAME, type SquareCatalog, type SquareItem } from "@bearded/store-core";
 import type { SquareStore } from "./types.ts";
 
 export const SQUARE_VERSION = "2024-12-18";
@@ -226,7 +226,11 @@ export class SquareApiStore implements SquareStore {
     id: string;
     lines: { productId: string; qty: number }[];
     redirectUrl: string;
+    discountCents?: number;
+    buyerEmail?: string;
+    currency?: string;
   }) {
+    const discount = order.discountCents ?? 0;
     const r = await this.call<{ payment_link: { id: string; url: string; order_id?: string } }>(
       "POST",
       "/v2/online-checkout/payment-links",
@@ -238,8 +242,23 @@ export class SquareApiStore implements SquareStore {
           reference_id: order.id,
           line_items: order.lines.map((l) => ({ catalog_object_id: l.productId, quantity: String(l.qty) })),
           pricing_options: { auto_apply_taxes: true },
+          // Beard Bucks: one fixed discount on the whole order, so Square taxes what's left.
+          ...(discount > 0
+            ? {
+                discounts: [
+                  {
+                    uid: "beard-bucks",
+                    name: REWARD_NAME,
+                    type: "FIXED_AMOUNT",
+                    amount_money: { amount: discount, currency: order.currency ?? "USD" },
+                    scope: "ORDER",
+                  },
+                ],
+              }
+            : {}),
         },
         checkout_options: { redirect_url: order.redirectUrl },
+        ...(order.buyerEmail ? { pre_populated_data: { buyer_email: order.buyerEmail } } : {}),
       },
     );
     return {

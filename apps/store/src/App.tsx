@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router";
 import { DataProvider } from "./api/data.tsx";
+import { BuddyProvider } from "./buddy/BuddyProvider.tsx";
 import { CartProvider } from "./cart/CartProvider.tsx";
 import { CartDrawer } from "./components/CartDrawer.tsx";
+import { AccountPage } from "./pages/AccountPage.tsx";
 import { CartPage } from "./pages/CartPage.tsx";
 import { CheckoutPreviewPage } from "./pages/CheckoutPreviewPage.tsx";
 import { GamePage } from "./pages/GamePage.tsx";
@@ -35,31 +37,34 @@ export function App() {
     <TrackerProvider>
       <DataProvider>
         <CartProvider>
-          <div className="bbg">
-            <a className="skip" href="#main">
-              Skip to content
-            </a>
-            <ScrollOnNavigate />
-            <Header />
-            <main id="main">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<ShopPage />} />
-                <Route path="/games/:slug" element={<GamePage />} />
-                <Route path="/reviews" element={<ReviewsPage />} />
-                <Route path="/videos" element={<VideosPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/checkout-preview/:id" element={<CheckoutPreviewPage />} />
-                <Route path="/thanks" element={<ThanksPage />} />
-                <Route path="/wholesale" element={<WholesalePage />} />
-                <Route path="/behind-the-beard" element={<BehindTheBeard />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
-            <CartDrawer />
-            <VipPopup />
-          </div>
+          <BuddyProvider>
+            <div className="bbg">
+              <a className="skip" href="#main">
+                Skip to content
+              </a>
+              <ScrollOnNavigate />
+              <Header />
+              <main id="main">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/shop" element={<ShopPage />} />
+                  <Route path="/games/:slug" element={<GamePage />} />
+                  <Route path="/reviews" element={<ReviewsPage />} />
+                  <Route path="/videos" element={<VideosPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/account" element={<AccountPage />} />
+                  <Route path="/checkout-preview/:id" element={<CheckoutPreviewPage />} />
+                  <Route path="/thanks" element={<ThanksPage />} />
+                  <Route path="/wholesale" element={<WholesalePage />} />
+                  <Route path="/behind-the-beard" element={<BehindTheBeard />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+              <Footer />
+              <CartDrawer />
+              <VipPopup />
+            </div>
+          </BuddyProvider>
         </CartProvider>
       </DataProvider>
     </TrackerProvider>
