@@ -136,6 +136,16 @@ describe("videos", () => {
   });
 });
 
+describe("old Squarespace links", () => {
+  it("land on the matching new page", async () => {
+    renderHome({}, "/mine-find");
+    expect(await screen.findByRole("heading", { level: 1, name: "Mine & Find" })).toBeTruthy();
+    cleanup();
+    renderHome({}, "/for-retailers");
+    expect(screen.queryByRole("heading", { name: "Rolled a 1." })).toBeNull();
+  });
+});
+
 describe("other pages", () => {
   it("shows a friendly page for a bad link", () => {
     renderHome({}, "/nope");

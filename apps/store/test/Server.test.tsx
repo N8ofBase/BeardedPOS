@@ -109,6 +109,25 @@ describe("Behind the Beard", () => {
     ).toBeTruthy();
   });
 
+  it("marks old-site items keep, update or drop, with a note", async () => {
+    const { store } = await realServer();
+    renderStore("/behind-the-beard", store);
+    await signIn();
+    fireEvent.click(screen.getByRole("tab", { name: "Old site" }));
+    const item = (await screen.findByRole("heading", { name: "Tim’s bio" })).closest("li")!;
+    fireEvent.change(within(item).getByLabelText("Note"), { target: { value: "Add his photo too." } });
+    fireEvent.click(within(item).getByRole("button", { name: "Keep" }));
+    expect(await within(item).findByText(/^Keep · adam@beardedboardgames.com/)).toBeTruthy();
+    expect(within(item).getByRole("button", { name: "Keep" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(/1 of \d+ decided/)).toBeTruthy();
+
+    const show = screen.getByRole("group", { name: "Show items" });
+    fireEvent.click(within(show).getByRole("button", { name: "Not decided" }));
+    expect(screen.queryByRole("heading", { name: "Tim’s bio" })).toBeNull();
+    fireEvent.click(within(show).getByRole("button", { name: "Keep" }));
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Tim’s bio"]);
+  });
+
   it("signs out", async () => {
     const { store, jar } = await realServer();
     renderStore("/behind-the-beard", store);

@@ -6,6 +6,8 @@ import type {
   CheckoutResponse,
   CodeResponse,
   EventBatch,
+  OldSiteChoice,
+  OldSiteDecision,
   OrderStatus,
   OrderView,
   Review,
@@ -29,6 +31,9 @@ export interface StaffApi {
   reviews(status: StaffReview["status"]): Promise<StaffReview[]>;
   moderate(id: string, action: ReviewAction): Promise<void>;
   stats(days: number): Promise<StoreStats>;
+  /** The team's calls on what to keep from the old Squarespace site. */
+  oldSite(): Promise<OldSiteChoice[]>;
+  chooseOldSite(itemId: string, decision: OldSiteDecision, note: string): Promise<OldSiteChoice>;
 }
 
 export interface StoreApi {
@@ -108,6 +113,9 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
       moderate: async (reviewId, action) =>
         void (await call("POST", `/staff/reviews/${id(reviewId)}`, { action })),
       stats: (days) => call("GET", `/staff/stats?days=${days}`),
+      oldSite: () => call("GET", "/staff/old-site"),
+      chooseOldSite: (itemId, decision, note) =>
+        call("POST", `/staff/old-site/${id(itemId)}`, { decision, note }),
     },
   };
 }

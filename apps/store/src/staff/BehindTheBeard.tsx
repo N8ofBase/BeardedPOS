@@ -1,12 +1,13 @@
-// Behind the Beard: the staff page. Sign in with a one-time code, then approve reviews and read
-// store stats. Hidden from shoppers: no links to it, no tracking, and search engines are told to skip it.
+// Behind the Beard: the staff page. Sign in with a one-time code, then approve reviews, read store
+// stats and sort through what to keep from the old site. Hidden from shoppers: no links to it, no tracking, and search engines are told to skip it.
 import { useEffect, useState, type FormEvent } from "react";
 import type { StaffMe } from "@bearded/store-core";
 import { errorText, looksLikeEmail, useStore, type Loadable } from "../api/store.ts";
+import { OldSiteTab } from "./OldSiteTab.tsx";
 import { ReviewsTab } from "./ReviewsTab.tsx";
 import { StatsTab } from "./StatsTab.tsx";
 
-type Tab = "reviews" | "stats";
+type Tab = "reviews" | "stats" | "old-site";
 
 export function BehindTheBeard() {
   const store = useStore();
@@ -54,6 +55,7 @@ function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void })
   const tabs: [Tab, string][] = [
     ["reviews", "Reviews"],
     ["stats", "Stats"],
+    ["old-site", "Old site"],
   ];
   return (
     <>
@@ -81,7 +83,7 @@ function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void })
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "reviews" ? <ReviewsTab /> : <StatsTab />}
+        {tab === "reviews" ? <ReviewsTab /> : tab === "stats" ? <StatsTab /> : <OldSiteTab />}
       </div>
     </>
   );

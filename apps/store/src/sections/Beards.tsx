@@ -21,7 +21,7 @@ function Avatar({ member }: { member: TeamMember }) {
 
 export function Beards() {
   return (
-    <section className="team">
+    <section className="team" id="beards">
       <div className="wrap pad">
         <h2>Meet the beards.</h2>
         <p className="lede">{about}</p>
