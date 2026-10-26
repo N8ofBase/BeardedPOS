@@ -5,6 +5,10 @@
     "demoSubdomain": "bearded-pos-demo",
     "mailSubdomain": "mail.bearded.pos",
     "siteDir": "../apps/web/dist",
-    "budgetMonthlyUsd": 5
+    "budgetMonthlyUsd": 5,
+    "storeSubdomain": "bbg",
+    "storeSiteDir": "../apps/store/dist",
+    "storeStaff": ["adam@beardedboardgames.com", "n8gr8@prismcortex.net"],
+    "storeBusinessId": "b0a7dbbb-0000-4000-8000-000000000001"
   }
 }

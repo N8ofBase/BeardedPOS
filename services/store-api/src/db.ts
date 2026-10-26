@@ -1,9 +1,8 @@
-// The store's database access. PGlite in development and tests; Postgres when hosted (step 5)
+// The store's database access. PGlite in development and tests; Postgres when hosted (postgres.ts)
 // through the same small interface. Every app query runs in withBusiness().
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PGlite } from "@electric-sql/pglite";
 
 export interface Sql {
   query<T>(text: string, params?: unknown[]): Promise<{ rows: T[] }>;
@@ -15,7 +14,9 @@ export interface Database extends Sql {
 }
 
 // Paths, not URL objects: under a browser-like test environment the global URL isn't Node's.
-const MIGRATIONS = join(fileURLToPath(import.meta.url), "../../migrations");
+// The Lambda bundle ships the folder next to its code and says where with STORE_MIGRATIONS_DIR.
+const MIGRATIONS =
+  process.env.STORE_MIGRATIONS_DIR ?? join(fileURLToPath(import.meta.url), "../../migrations");
 
 /** Applies migrations/*.sql in name order, once each. */
 export async function migrate(db: Database): Promise<void> {
@@ -38,6 +39,8 @@ export async function migrate(db: Database): Promise<void> {
 
 /** An in-memory database (tests), or one saved in `dataDir` (development). */
 export async function openPglite(dataDir?: string): Promise<Database> {
+  // Loaded only here, so the hosted bundle doesn't carry PGlite.
+  const { PGlite } = await import("@electric-sql/pglite");
   const db = new PGlite(dataDir);
   await migrate(db);
   return db;
