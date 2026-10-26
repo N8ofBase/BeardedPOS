@@ -8,3 +8,22 @@ export const logMailer = (log: (line: string) => void = console.log): Mailer => 
     log(`[store mail] to ${to}: ${subject}`);
   },
 });
+
+/** Sends through Amazon SES (hosted). `send` is the SES call, so tests can pass their own. */
+export function sesMailer(from: string, send: (input: SesEmail) => Promise<unknown>): Mailer {
+  return {
+    async send(to, subject, text) {
+      await send({
+        FromEmailAddress: from,
+        Destination: { ToAddresses: [to] },
+        Content: { Simple: { Subject: { Data: subject }, Body: { Text: { Data: text } } } },
+      });
+    },
+  };
+}
+
+export interface SesEmail {
+  FromEmailAddress: string;
+  Destination: { ToAddresses: string[] };
+  Content: { Simple: { Subject: { Data: string }; Body: { Text: { Data: string } } } };
+}

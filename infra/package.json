@@ -8,7 +8,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "deploy:demo": "cdk deploy BeardedDemoSite",
     "stage:prototype": "node scripts/stage-prototype.mjs",
-    "deploy:prototype": "npm run stage:prototype && cdk deploy BeardedDemoSite -c siteDir=.site"
+    "deploy:prototype": "npm run stage:prototype && cdk deploy BeardedDemoSite -c siteDir=.site",
+    "deploy:store-demo": "cdk deploy BeardedStoreDemo"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.273.0",

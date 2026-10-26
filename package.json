@@ -27,7 +27,8 @@
     "build:store": "npm run build -w apps/store",
     "seed:sandbox": "npm run seed:sandbox -w services/store-api --",
     "deploy:demo": "npm run build:demo && npm run deploy:demo -w infra",
-    "deploy:prototype": "npm run deploy:prototype -w infra"
+    "deploy:prototype": "npm run deploy:prototype -w infra",
+    "deploy:store-demo": "npm run build:store && npm run deploy:store-demo -w infra"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
