@@ -57,7 +57,7 @@ export interface Game {
   tagline: string;
   blurb: string;
   color: string;
-  /** Box art: a local brochure crop when we have one, else the image on the old Squarespace site. */
+  /** Box art: the official cover art when we have it, else the image on the old Squarespace site. */
   art: string;
   facts: string[];
   badge?: string;
