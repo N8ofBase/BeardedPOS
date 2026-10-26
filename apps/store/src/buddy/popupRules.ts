@@ -1,4 +1,4 @@
-// When the VIP popup may appear. Pure, so the rules are easy to test and to change.
+// When the Beard Buddy popup may appear. Pure, so the rules are easy to test and to change.
 
 /** Pages where the popup would get in the way of buying or of staff work. */
 export const QUIET_PATHS = ["/cart", "/checkout", "/thanks", "/behind-the-beard"];

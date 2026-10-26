@@ -7,8 +7,10 @@ import {
   bucksLabel,
   formatCents,
   LEDGER_LABEL,
+  MIN_REWARD_ORDER_CENTS,
   PROGRAM_NAME,
   REWARD_CENTS,
+  WELCOME_BUCKS,
   type Account,
 } from "@bearded/store-core";
 import { errorText, useStore } from "../api/store.ts";
@@ -30,7 +32,9 @@ export function AccountPage() {
         (account.value ? (
           <SignedIn account={account.value} />
         ) : (
-          <BuddySignIn intro="Earn Beard Bucks on every order. Enter your email and we’ll send a 6-digit code." />
+          <BuddySignIn
+            intro={`Join and get ${WELCOME_BUCKS} Beard Bucks (${formatCents(REWARD_CENTS)} off) right away, then earn more on every order. Enter your email and we’ll send a 6-digit code.`}
+          />
         ))}
     </section>
   );
@@ -49,12 +53,18 @@ function SignedIn({ account }: { account: Account }) {
         </button>
       </div>
       <div className="bucks-card">
+        {!!account.welcomeBucks && (
+          <p role="status">
+            Welcome to Beard Buddy! We added {bucksLabel(account.welcomeBucks)} to get you started.
+          </p>
+        )}
         <p className="balance">
           <strong>{bucksLabel(account.balance)}</strong>
         </p>
         <p>
-          {BUCKS_PER_REWARD} Bucks = {formatCents(REWARD_CENTS)} off. You earn 1 Buck for every dollar you
-          spend. Use them in your cart at checkout.
+          {BUCKS_PER_REWARD} Bucks = {formatCents(REWARD_CENTS)} off any order of{" "}
+          {formatCents(MIN_REWARD_ORDER_CENTS)} or more. You earn 1 Buck for every dollar you spend. Use them
+          in your cart at checkout.
         </p>
         {account.held > 0 && (
           <p className="fine">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMemory, popupAllowed, snoozeUntil, SNOOZE_DAYS } from "../src/vip/popupRules.ts";
+import { parseMemory, popupAllowed, snoozeUntil, SNOOZE_DAYS } from "../src/buddy/popupRules.ts";
 
 const now = Date.UTC(2026, 9, 24);
 const base = { path: "/", now, memory: {}, shownThisVisit: false };

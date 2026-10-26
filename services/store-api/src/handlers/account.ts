@@ -1,11 +1,17 @@
 // Beard Buddy accounts for shoppers: sign in with an email code (signing in is joining), see Beard
 // Bucks, and add a name and birthday. Staff sign-in is separate (staff.ts): its own codes, sessions
 // and cookie, so a shopper's session never opens Behind the Beard.
-import type { Account, AccountUpdate, CodeResponse, StaffBuddy } from "@bearded/store-core";
+import {
+  WELCOME_BUCKS,
+  type Account,
+  type AccountUpdate,
+  type CodeResponse,
+  type StaffBuddy,
+} from "@bearded/store-core";
 import type { StoreCtx } from "../context.ts";
 import { withBusiness, type Sql } from "../db.ts";
 import { asObject, HttpError, ok, type ApiRequest, type ApiResponse } from "../http.ts";
-import { bucksBalance, ledgerHistory, storeToday } from "../loyalty.ts";
+import { bucksBalance, giveWelcome, ledgerHistory, storeToday } from "../loyalty.ts";
 import { CODE_MINUTES, issueCode, newToken, readEmail, sha256, useCode, wrongCode } from "./codes.ts";
 import { requireStaff } from "./staff.ts";
 
@@ -48,8 +54,9 @@ export async function buddySignIn(ctx: StoreCtx, req: ApiRequest): Promise<ApiRe
   const token = newToken();
   const { businessId } = ctx.config;
   // A wrong try is counted even though sign-in fails, so the error is thrown after the commit.
+  // Signing in is joining: a shopper's first sign-in also gives the welcome gift.
   const signedIn = await withBusiness(ctx.db, businessId, async (sql) => {
-    if (!(await useCode(sql, "store_customer_codes", email, body.code))) return false;
+    if (!(await useCode(sql, "store_customer_codes", email, body.code))) return null;
     const { rows } = await sql.query<{ id: string }>(
       `INSERT INTO store_customers (business_id, email) VALUES ($1, $2)
        ON CONFLICT (business_id, lower(email)) DO UPDATE SET email = store_customers.email
@@ -61,14 +68,15 @@ export async function buddySignIn(ctx: StoreCtx, req: ApiRequest): Promise<ApiRe
        VALUES ($1, $2, $3, now() + make_interval(days => $4))`,
       [businessId, rows[0]!.id, sha256(token), SESSION_DAYS],
     );
-    return true;
+    return { welcomed: await giveWelcome(sql, businessId, rows[0]!.id) };
   });
   if (!signedIn) throw wrongCode();
+  const account = await withBusiness(ctx.db, businessId, async (sql) =>
+    loadAccount(sql, (await sessionCustomer(sql, token))!, storeToday(ctx.now())),
+  );
   return {
     status: 200,
-    body: await withBusiness(ctx.db, businessId, async (sql) =>
-      loadAccount(sql, (await sessionCustomer(sql, token))!, storeToday(ctx.now())),
-    ),
+    body: signedIn.welcomed ? { ...account, welcomeBucks: WELCOME_BUCKS } : account,
     headers: { "Set-Cookie": buddyCookie(ctx, token, SESSION_DAYS * 86_400) },
   };
 }

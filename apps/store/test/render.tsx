@@ -1,16 +1,28 @@
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { handle, loadSnapshot, openPglite, SnapshotStore, type StoreCtx } from "@bearded/store-api";
+import type { Account } from "@bearded/store-core";
 import { App } from "../src/App.tsx";
 import { httpStore, StoreContext, type StoreApi } from "../src/api/store.ts";
 
 const snapshot = loadSnapshot();
 
+/** A signed-in Beard Buddy, as the server sends it. */
+export const fakeAccount = (over: Partial<Account> = {}): Account => ({
+  email: "sam@example.com",
+  name: null,
+  birthday: null,
+  birthdayLocked: false,
+  balance: 0,
+  held: 0,
+  history: [],
+  ...over,
+});
+
 /** A store with the saved Square catalog where everything else quietly succeeds. */
 export function fakeStore(over: Partial<StoreApi> = {}): StoreApi {
   return {
     catalog: async () => snapshot,
-    joinVip: async () => {},
     checkout: async () => ({ url: "/thanks?preview=1", orderId: "" }),
     reviews: async () => [],
     submitReview: async () => {},

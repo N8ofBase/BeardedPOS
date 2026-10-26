@@ -162,7 +162,7 @@ export async function getStats(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespo
         joined: byType.popup_joined ?? 0,
       },
       rolls: byType.roll ?? 0,
-      vipJoins: await one("SELECT count(*)::int AS n FROM store_vip_signups WHERE created_at >= $1"),
+      buddyJoins: await one("SELECT count(*)::int AS n FROM store_customers WHERE created_at >= $1"),
       reviewsSent: await one("SELECT count(*)::int AS n FROM store_reviews WHERE created_at >= $1"),
     };
   });

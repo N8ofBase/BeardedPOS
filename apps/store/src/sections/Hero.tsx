@@ -97,8 +97,8 @@ export function Hero() {
             <a className="btn go" href="#shop">
               Shop the games
             </a>
-            <a className="btn" href="#vip">
-              Get 10% off the Bearded Bundle
+            <a className="btn" href="#buddy">
+              Join Beard Buddy for $5 off
             </a>
           </div>
         </div>

@@ -20,7 +20,6 @@ export function Header() {
           <Link to="/shop">Shop</Link>
           <Link to="/reviews">Reviews</Link>
           <Link to="/videos">Videos</Link>
-          <Link to="/#vip">VIP list</Link>
           <Link to="/wholesale">Wholesale</Link>
           <Link to="/account" className="buddy-link">
             Beard Buddy

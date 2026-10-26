@@ -2,8 +2,8 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CART_KEY } from "../src/cart/CartProvider.tsx";
 import type { Review } from "@bearded/store-core";
-import { MEMORY_KEY, SHOWN_KEY } from "../src/vip/VipPopup.tsx";
-import { renderStore } from "./render.tsx";
+import { MEMORY_KEY, SHOWN_KEY } from "../src/buddy/BuddyPopup.tsx";
+import { fakeAccount, fakeStore, renderStore } from "./render.tsx";
 
 beforeEach(() => {
   localStorage.clear();
@@ -184,18 +184,18 @@ describe("writing a review", () => {
   });
 });
 
-describe("VIP popup", () => {
+describe("Beard Buddy popup", () => {
   const advance = async (ms: number) => act(async () => void vi.advanceTimersByTime(ms));
 
   it("appears after 20 seconds and stays away 30 days once closed", async () => {
     vi.useFakeTimers();
     renderStore("/");
     await advance(19_000);
-    expect(screen.queryByRole("dialog", { name: /Bearded Bundle/ })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: /Join Beard Buddy/ })).toBeNull();
     await advance(1_500);
-    const popup = screen.getByRole("dialog", { name: /Bearded Bundle/ });
+    const popup = screen.getByRole("dialog", { name: /Join Beard Buddy/ });
     fireEvent.click(within(popup).getByRole("button", { name: "Maybe later" }));
-    expect(screen.queryByRole("dialog", { name: /Bearded Bundle/ })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: /Join Beard Buddy/ })).toBeNull();
     expect(JSON.parse(localStorage.getItem(MEMORY_KEY)!).snoozedUntil).toBeGreaterThan(
       Date.now() + 29 * 864e5,
     );
@@ -206,20 +206,39 @@ describe("VIP popup", () => {
     vi.useFakeTimers();
     renderStore("/cart");
     await advance(25_000);
-    expect(screen.queryByRole("dialog", { name: /Bearded Bundle/ })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: /Join Beard Buddy/ })).toBeNull();
   });
 
   it("never comes back after joining", async () => {
     vi.useFakeTimers();
-    const joinVip = vi.fn(async () => {});
-    renderStore("/", { joinVip });
+    renderStore("/", {
+      buddy: {
+        ...fakeStore().buddy,
+        requestCode: async () => ({ sent: true, devCode: "123456" }),
+        signIn: async () => fakeAccount({ balance: 100, welcomeBucks: 100 }),
+      },
+    });
     await advance(21_000);
-    const popup = screen.getByRole("dialog", { name: /Bearded Bundle/ });
-    fireEvent.change(within(popup).getByLabelText("Your email"), { target: { value: "sam@example.com" } });
-    await act(async () => void fireEvent.click(within(popup).getByRole("button", { name: "Join" })));
-    expect(within(popup).getByText(/BEARDED10/)).toBeTruthy();
+    const popup = screen.getByRole("dialog", { name: /Join Beard Buddy/ });
+    fireEvent.change(within(popup).getByLabelText("Email"), { target: { value: "sam@example.com" } });
+    await act(
+      async () => void fireEvent.click(within(popup).getByRole("button", { name: "Email me a code" })),
+    );
+    fireEvent.change(within(popup).getByLabelText("Code"), { target: { value: "123456" } });
+    await act(async () => void fireEvent.click(within(popup).getByRole("button", { name: "Sign in" })));
+    expect(within(popup).getByText(/100 Beard Bucks are yours/)).toBeTruthy();
     expect(JSON.parse(localStorage.getItem(MEMORY_KEY)!)).toEqual({ joined: true });
     fireEvent.keyDown(document, { key: "Escape" });
     expect(JSON.parse(localStorage.getItem(MEMORY_KEY)!)).toEqual({ joined: true });
+  });
+
+  it("stays away when the shopper is already signed in", async () => {
+    vi.useFakeTimers();
+    renderStore("/", { buddy: { ...fakeStore().buddy, account: async () => fakeAccount({ balance: 40 }) } });
+    // Let the account load first, as it does long before the popup's 20 seconds are up.
+    await advance(1);
+    expect(screen.getByRole("link", { name: /Beard Buddy · 40 Bucks/ })).toBeTruthy();
+    await advance(25_000);
+    expect(screen.queryByRole("dialog", { name: /Join Beard Buddy/ })).toBeNull();
   });
 });

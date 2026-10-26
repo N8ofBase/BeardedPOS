@@ -19,7 +19,7 @@ const GAME_ROLLS: Record<string, string[]> = {
   "soccer-blocker": [
     "You rolled Soccer Blocker. Chant accordingly.",
     "You rolled Soccer Blocker. Fake left, shoot right.",
-    "You rolled Soccer Blocker. It isn’t out yet, so go join the VIP list.",
+    "You rolled Soccer Blocker. It isn’t out yet, so go join Beard Buddy.",
     "You rolled Soccer Blocker. First to three goals buys the next round.",
   ],
   "mine-and-find": [
@@ -29,9 +29,9 @@ const GAME_ROLLS: Record<string, string[]> = {
     "You rolled Mine & Find. Every gem you find is one they don’t.",
   ],
   "pack-lash": [
-    "You rolled Pack Lash. It isn’t out yet, so go join the VIP list.",
+    "You rolled Pack Lash. It isn’t out yet, so go join Beard Buddy.",
     "You rolled Pack Lash. Two players, two ways to win, zero mercy.",
-    "You rolled Pack Lash. It isn’t out yet, but your VIP spot can be.",
+    "You rolled Pack Lash. It isn’t out yet, but your 100 Beard Bucks can be.",
   ],
   "fences-roll-and-write": [
     "You rolled Fences: The Roll & Write. Sharpen a pencil and wait for 2027.",

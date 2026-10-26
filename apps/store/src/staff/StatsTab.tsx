@@ -120,11 +120,11 @@ function Stats({ s }: { s: StoreStats }) {
         <Ranked title="Top pages" rows={s.topPages.map((r) => ({ ...r, label: pageName(r.label) }))} />
         <Ranked title="Where visitors came from" rows={s.sources} />
         <section className="ranked" aria-labelledby="extras">
-          <h2 id="extras">VIP and the rest</h2>
+          <h2 id="extras">Beard Buddy and the rest</h2>
           <dl className="pairs">
-            <dt>VIP signups</dt>
-            <dd>{s.vipJoins}</dd>
-            <dt>VIP popup shown</dt>
+            <dt>Beard Buddy joins</dt>
+            <dd>{s.buddyJoins}</dd>
+            <dt>Popup shown</dt>
             <dd>{s.popup.shown}</dd>
             <dt>Joined from the popup</dt>
             <dd>{s.popup.joined}</dd>

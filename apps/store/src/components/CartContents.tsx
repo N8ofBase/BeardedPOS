@@ -6,6 +6,7 @@ import {
   bucksLabel,
   formatCents,
   maxQty,
+  MIN_REWARD_ORDER_CENTS,
   REWARD_CENTS,
   REWARD_NAME,
   rewardsAllowed,
@@ -103,6 +104,19 @@ export function CartContents({ onLeave }: { onLeave?: () => void }) {
               </li>
             ))}
           </ul>
+          {!!account?.welcomeBucks && (
+            <p className="earns" role="status">
+              Welcome to Beard Buddy! We added {bucksLabel(account.welcomeBucks)}.
+            </p>
+          )}
+          {account &&
+            account.balance >= BUCKS_PER_REWARD &&
+            summary.subtotalCents < MIN_REWARD_ORDER_CENTS && (
+              <p className="fine">
+                Beard Bucks work on orders of {formatCents(MIN_REWARD_ORDER_CENTS)} or more. Add{" "}
+                {formatCents(MIN_REWARD_ORDER_CENTS - summary.subtotalCents)} more to use yours.
+              </p>
+            )}
           {account && maxRewards > 0 && (
             <div className="bucks-reward" role="group" aria-label="Beard Bucks reward">
               <p>

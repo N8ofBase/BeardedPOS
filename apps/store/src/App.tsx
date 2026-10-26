@@ -19,9 +19,9 @@ import { Footer } from "./sections/Footer.tsx";
 import { Header } from "./sections/Header.tsx";
 import { BehindTheBeard } from "./staff/BehindTheBeard.tsx";
 import { TrackerProvider } from "./track/Tracker.tsx";
-import { VipPopup } from "./vip/VipPopup.tsx";
+import { BuddyPopup } from "./buddy/BuddyPopup.tsx";
 
-/** On a new page, start at the top, or at the section a link like /#vip points to. */
+/** On a new page, start at the top, or at the section a link like /#buddy points to. */
 function ScrollOnNavigate() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
@@ -62,7 +62,7 @@ export function App() {
               </main>
               <Footer />
               <CartDrawer />
-              <VipPopup />
+              <BuddyPopup />
             </div>
           </BuddyProvider>
         </CartProvider>
