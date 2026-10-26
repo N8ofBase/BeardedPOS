@@ -107,7 +107,7 @@ export const games: Game[] = [
     slug: "soccer-blocker",
     name: "Soccer Blocker",
     labels: ["Bearded Board Games", "Prism Cortex"],
-    status: "preorder",
+    status: "coming-soon",
     tagline: "A 1-v-1 soccer duel. First to three goals or three saves. No flopping.",
     blurb:
       "A head-to-head, card-flipping, dice-rolling game with all the tension of a soccer match in about 20 minutes. Easy to teach, quick to play, and full of bluff-and-counter moments that keep you coming back for one more round. Inspired by St. Louis CITY SC.",

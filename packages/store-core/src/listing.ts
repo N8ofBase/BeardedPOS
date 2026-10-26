@@ -24,16 +24,7 @@ export const gameItems: { game: string; items: StoreItem[] }[] = [
     ],
   },
   { game: "locked-out", items: [{ square: "Locked Out", kind: "game" }] },
-  {
-    game: "soccer-blocker",
-    items: [
-      {
-        square: "Soccer Blocker Version Zero Limited Edition",
-        kind: "game",
-        name: "Soccer Blocker Version Zero (Limited)",
-      },
-    ],
-  },
+  { game: "soccer-blocker", items: [] },
   {
     game: "mine-and-find",
     items: [{ square: "Mine Find", kind: "preorder", name: "Mine & Find (Pre-order)" }],

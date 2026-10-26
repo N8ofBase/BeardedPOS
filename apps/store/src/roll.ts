@@ -19,7 +19,7 @@ const GAME_ROLLS: Record<string, string[]> = {
   "soccer-blocker": [
     "You rolled Soccer Blocker. Chant accordingly.",
     "You rolled Soccer Blocker. Fake left, shoot right.",
-    "You rolled Soccer Blocker. Only 50 Version Zero copies exist. Move fast.",
+    "You rolled Soccer Blocker. It isn’t out yet, so go join the VIP list.",
     "You rolled Soccer Blocker. First to three goals buys the next round.",
   ],
   "mine-and-find": [

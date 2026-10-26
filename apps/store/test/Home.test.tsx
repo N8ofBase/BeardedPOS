@@ -29,9 +29,9 @@ describe("home page", () => {
     fireEvent.click(within(shelf()).getByRole("button", { name: "Out now" }));
     expect(shelfNames()).toEqual(["Fences", "Locked Out"]);
     fireEvent.click(within(shelf()).getByRole("button", { name: "Pre-order" }));
-    expect(shelfNames()).toEqual(["Soccer Blocker", "Mine & Find"]);
+    expect(shelfNames()).toEqual(["Mine & Find"]);
     fireEvent.click(within(shelf()).getByRole("button", { name: "Coming soon" }));
-    expect(shelfNames()).toEqual(["Pack Lash", "Fences: The Roll & Write"]);
+    expect(shelfNames()).toEqual(["Soccer Blocker", "Pack Lash", "Fences: The Roll & Write"]);
     expect(within(shelf()).getByRole("button", { name: "Coming soon" }).getAttribute("aria-pressed")).toBe(
       "true",
     );
@@ -42,11 +42,12 @@ describe("home page", () => {
   it("lists the games for sale with prices from Square", async () => {
     renderHome();
     const shop = document.getElementById("shop")!;
-    await within(shop).findByText("Soccer Blocker Version Zero (Limited)");
+    await within(shop).findByRole("heading", { name: "Locked Out" });
     expect(within(shop).getByText("Mine & Find (Pre-order)")).toBeTruthy();
     expect(within(shop).queryByText("Math Force 5")).toBeNull();
-    const sb = within(shop).getByText("Soccer Blocker Version Zero (Limited)").closest("article")!;
-    expect(within(sb).getByText("$30")).toBeTruthy();
+    expect(within(shop).queryByText(/Version Zero/)).toBeNull();
+    const lo = within(shop).getByRole("heading", { name: "Locked Out" }).closest("article")!;
+    expect(within(lo).getByText("$20")).toBeTruthy();
   });
 
   it("says so when the shop can't load", async () => {
