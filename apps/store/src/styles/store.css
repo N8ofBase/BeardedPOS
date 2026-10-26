@@ -1496,3 +1496,70 @@ body {
 .video:target {
   box-shadow: 6px 6px 0 var(--tomato);
 }
+
+/* Behind the Beard: Old site */
+.old-page {
+  margin-top: 28px;
+}
+.old-page h2 {
+  font-size: 1.3rem;
+}
+.old-page .path {
+  display: block;
+  font-family: var(--text);
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.old-item blockquote {
+  margin: 8px 0;
+  padding-left: 12px;
+  border-left: 4px solid var(--mint);
+  white-space: pre-line;
+}
+.old-item .thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+.old-item .thumbs img {
+  display: block;
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  background: var(--cream);
+}
+.old-item .links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.old-item .suggest {
+  color: var(--muted);
+}
+.old-item label {
+  display: block;
+  margin-top: 8px;
+  font-weight: 800;
+}
+.old-item textarea {
+  width: 100%;
+  font: inherit;
+  padding: 8px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+.old-item.is-keep {
+  box-shadow: 4px 4px 0 var(--felt);
+}
+.old-item.is-update {
+  box-shadow: 4px 4px 0 var(--mustard);
+}
+.old-item.is-drop {
+  box-shadow: 4px 4px 0 var(--tomato);
+  opacity: 0.8;
+}

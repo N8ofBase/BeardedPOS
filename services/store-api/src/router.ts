@@ -2,6 +2,7 @@
 import type { StoreCtx } from "./context.ts";
 import { HttpError, type ApiRequest, type ApiResponse } from "./http.ts";
 import { logEvents } from "./handlers/events.ts";
+import { chooseOldSite, oldSiteChoices } from "./handlers/oldSite.ts";
 import { joinVip, listReviews, submitReview } from "./handlers/people.ts";
 import { checkout, getCatalog, getOrderStatus, getPreviewOrder, payPreviewOrder } from "./handlers/shop.ts";
 import { me, moderateReview, requestCode, signIn, signOut, staffReviews } from "./handlers/staff.ts";
@@ -30,6 +31,8 @@ const ROUTES: Route[] = [
   ["GET", /^\/api\/staff\/reviews$/, staffReviews],
   ["POST", /^\/api\/staff\/reviews\/([^/]+)$/, moderateReview],
   ["GET", /^\/api\/staff\/stats$/, getStats],
+  ["GET", /^\/api\/staff\/old-site$/, oldSiteChoices],
+  ["POST", /^\/api\/staff\/old-site\/([^/]+)$/, chooseOldSite],
 ];
 
 export async function handle(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {

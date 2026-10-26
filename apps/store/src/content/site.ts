@@ -65,8 +65,15 @@ export interface Game {
   facts: string[];
   badge?: string;
   designer?: string;
+  artist?: string;
+  /** Shown instead of the status label, e.g. "Coming 2027". */
+  when?: string;
+  /** More about the game, under the blurb on its page. */
+  story?: string[];
   links: { rules?: string; bgg?: string };
 }
+
+export const statusText = (g: Game) => g.when ?? statusLabel[g.status];
 
 // The order here is the order on the shelf. I Crit You Not! and D20 On The Money are left out,
 // as in the preview; they are still in the preview folder's content.js.
@@ -78,11 +85,14 @@ export const games: Game[] = [
     status: "available",
     tagline: "A tile-laying game about farmers who are extremely territorial about sheep.",
     blurb:
-      "Lay tiles to grow your farm and herd animals into it. Every tile you place also grows your neighbor’s farm, so placement gets spicy fast. A unique Farmer Profile changes how you score, so no two games play alike.",
+      "Farmers compete to build fields for their animals. Each tile you lay expands your farm, but also your neighbor’s, so play strategically. Every player has a unique Farmer Profile that changes how they score points, so every game is very different.",
     color: "#7BAE4E",
     art: coverFences,
     facts: ["2–6 players", "40–60 min", "Ages 8+"],
     badge: "Best seller",
+    story: [
+      "Fences was funded on Kickstarter in January 2019. Every Farmer Profile card in the game is a real backer from the campaign who pledged at that level.",
+    ],
     links: {
       rules: "https://beardedboardgames.com/s/Fences-Instructions.pdf",
       bgg: "https://boardgamegeek.com/boardgame/246409/fences",
@@ -95,22 +105,26 @@ export const games: Game[] = [
     status: "available",
     tagline: "A co-petitive game of trust and betrayal. Mostly betrayal.",
     blurb:
-      "Your crew robbed a bank and stole a spaceship, but you’ve been locked out of the controls. Search the rooms for the pieces that unlock the ship’s computer before the authorities arrive. If the crew escapes, the highest score wins. If you’re caught, the lowest score wins.",
+      "It is the year 2368. You and your gang stole a spacecraft to get your latest score of loot back to the hideout, but the on-board computer caught the tampering and locked you out. Regain control of the ship before the fuel and oxygen run out. Your gang wins together, but you also want the biggest cut, and if the gang fails to escape, the player who pocketed the least wins.",
     color: "#3B5BA9",
     art: coverLockedOut,
     facts: ["3–6 players", "30–45 min", "Ages 12+"],
     badge: "Hidden gem",
     designer: "René Uittenbogaard",
+    story: [
+      "Winner of The Game Crafter’s design competition, sponsored by Eat Lunch and Board Game and Bearded Board Games.",
+      "Make your way through the ship gathering resources, tools and loot. Use the tools to open new areas and get closer to the control room. Search the rooms for more items, share some with your gang, and accuse your teammates of hoarding all the good stuff.",
+    ],
     links: {},
   },
   {
     slug: "soccer-blocker",
     name: "Soccer Blocker",
     labels: ["Bearded Board Games", "Prism Cortex"],
-    status: "preorder",
-    tagline: "A 1-v-1 soccer duel. First to three goals or three saves. No flopping.",
+    status: "coming-soon",
+    tagline: "A 1-v-1 soccer duel. First to three points wins. No flopping.",
     blurb:
-      "A head-to-head, card-flipping, dice-rolling game with all the tension of a soccer match in about 20 minutes. Easy to teach, quick to play, and full of bluff-and-counter moments that keep you coming back for one more round. Inspired by St. Louis CITY SC.",
+      "A 1-v-1 soccer duel. Out-guess, out-think and out-maneuver your opponent to work the ball down the field and take a shot on goal. The first player to score three points wins. Inspired by St. Louis CITY SC.",
     color: "#C8102E",
     art: coverSoccerBlocker,
     facts: ["2 players", "15–30 min", "Ages 12+"],
@@ -124,7 +138,7 @@ export const games: Game[] = [
     status: "preorder",
     tagline: "Dig for gems. Ride the mine carts. Yell “mine!” a lot.",
     blurb:
-      "A quick, easy card game for all ages. Move your miner around the mine, revealing cards to find the most treasure. The last round starts when a miner finds both their helmet and their mine cart. Built for 4 players, with modes for 2 and solo play.",
+      "A quick and easy card game for all ages. Search the mine for your color and shape, find carts to help you get through the mine faster, and be the first to find all your gems to win.",
     color: "#8E5BC2",
     art: coverMineAndFind,
     facts: ["1–4 players", "20–30 min", "Ages 8+"],
@@ -138,11 +152,13 @@ export const games: Game[] = [
     status: "coming-soon",
     tagline: "Head-to-head, asymmetric, and a little bit feral. Every deck wins a different way.",
     blurb:
-      "A fast card duel where each player chases a different win condition while stopping the other from reaching theirs. Designed by Craig Hughes, art by Hailey Fetting.",
+      "A fast-paced, head-to-head, asymmetric card game where each player has a different way to win. Chase your own victory condition while stopping your opponent from reaching theirs.",
     color: "#2E9C8F",
     art: coverPackLash,
     facts: ["2 players", "5–15 min", "Ages 10+"],
     badge: "New",
+    designer: "Craig Hughes",
+    artist: "Hailey Fetting",
     links: { bgg: "https://boardgamegeek.com/boardgame/407307/pack-lash" },
   },
   {
@@ -152,10 +168,12 @@ export const games: Game[] = [
     status: "coming-soon",
     tagline: "All the farm drama, none of the tiles to lose under the couch.",
     blurb:
-      "Roll, draft a die, mark your sheet. Plan your farm by grouping results just right. Designed by Darren Reckner and Jason Hager of Durdle Games.",
+      "A new game in the Fences universe. Roll the dice, draft one and mark your sheet. Plan your farm by grouping the results in just the right ways.",
     color: "#B5832F",
     art: `${SQ}/438619b3-3536-4a20-8824-702e8097c809/Rolling+Acres+Mock+Up+Web_2.jpg`,
     facts: ["Coming 2027"],
+    when: "Coming 2027",
+    designer: "Darren Reckner and Jason Hager of Durdle Games",
     links: {},
   },
 ];

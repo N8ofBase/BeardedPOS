@@ -78,14 +78,7 @@ describe("shop page", () => {
     renderStore("/shop");
     await screen.findByText("Fences: The Ranch");
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual([
-      "Fences",
-      "Locked Out",
-      "Soccer Blocker",
-      "Mine & Find",
-      "Pack Lash",
-      "More from the beards",
-    ]);
+    expect(headings).toEqual(["Fences", "Locked Out", "Mine & Find", "Pack Lash", "More from the beards"]);
   });
 });
 
@@ -179,7 +172,7 @@ describe("writing a review", () => {
     expect(await screen.findByRole("heading", { name: "What players say." })).toBeTruthy();
     unmount();
     renderStore("/");
-    await screen.findByText("Soccer Blocker Version Zero (Limited)");
+    await screen.findByText("Mine & Find (Pre-order)");
     expect(screen.queryByRole("heading", { name: "What players say." })).toBeNull();
   });
 });

@@ -26,6 +26,8 @@ export function fakeStore(over: Partial<StoreApi> = {}): StoreApi {
       reviews: async () => [],
       moderate: async () => {},
       stats: () => Promise.reject(new Error("no server")),
+      oldSite: async () => [],
+      chooseOldSite: () => Promise.reject(new Error("no server")),
     },
     ...over,
   };
