@@ -17,6 +17,7 @@ export function Header() {
           <Link to="/#games">Games</Link>
           <Link to="/shop">Shop</Link>
           <Link to="/reviews">Reviews</Link>
+          <Link to="/videos">Videos</Link>
           <Link to="/#vip">VIP list</Link>
           <Link to="/wholesale">Wholesale</Link>
           <button type="button" className="cart-btn" onClick={cart.open}>

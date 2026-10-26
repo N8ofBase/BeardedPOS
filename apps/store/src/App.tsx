@@ -11,6 +11,7 @@ import { NotFound } from "./pages/NotFound.tsx";
 import { ReviewsPage } from "./pages/ReviewsPage.tsx";
 import { ShopPage } from "./pages/ShopPage.tsx";
 import { ThanksPage } from "./pages/ThanksPage.tsx";
+import { VideosPage } from "./pages/VideosPage.tsx";
 import { WholesalePage } from "./pages/WholesalePage.tsx";
 import { Footer } from "./sections/Footer.tsx";
 import { Header } from "./sections/Header.tsx";
@@ -46,6 +47,7 @@ export function App() {
                 <Route path="/shop" element={<ShopPage />} />
                 <Route path="/games/:slug" element={<GamePage />} />
                 <Route path="/reviews" element={<ReviewsPage />} />
+                <Route path="/videos" element={<VideosPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/checkout-preview/:id" element={<CheckoutPreviewPage />} />
                 <Route path="/thanks" element={<ThanksPage />} />

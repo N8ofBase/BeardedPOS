@@ -1445,3 +1445,50 @@ body {
     padding: 2px 0;
   }
 }
+
+/* Videos: N8's songs, upright phone videos */
+.songs {
+  background: var(--mint);
+}
+.videos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 340px));
+  gap: 24px;
+  margin: 16px 0 24px;
+}
+.video {
+  margin: 0;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 var(--mustard);
+  scroll-margin-top: 96px;
+}
+.video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  max-height: 78vh;
+  background: var(--ink);
+}
+.video figcaption {
+  padding: 12px 16px 16px;
+}
+.video h2,
+.video h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+.video p {
+  margin: 0;
+  color: var(--muted);
+}
+.video .len {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.video:target {
+  box-shadow: 6px 6px 0 var(--tomato);
+}

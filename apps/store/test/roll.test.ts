@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { games } from "../src/content/site.ts";
-import { roll, SOCIAL_CHANCE, type Random } from "../src/roll.ts";
+import { games, videos } from "../src/content/site.ts";
+import { roll, SOCIAL_CHANCE, VIDEO_CHANCE, type Random } from "../src/roll.ts";
 
 /** Plays back the given numbers in order, then repeats the last. */
 const seq = (...values: number[]): Random => {
@@ -28,7 +28,7 @@ describe("d20 roller", () => {
 
   it("an ordinary roll lands on a game shown on the shelf, linked to its page", () => {
     for (let i = 0; i < games.length; i++) {
-      const r = roll(seq(face(7), SOCIAL_CHANCE, (i + 0.5) / games.length, 0));
+      const r = roll(seq(face(7), SOCIAL_CHANCE + VIDEO_CHANCE, (i + 0.5) / games.length, 0));
       expect(r.kind).toBe("game");
       if (r.kind !== "game") return;
       const game = games.find((g) => g.name === r.name)!;
@@ -44,6 +44,26 @@ describe("d20 roller", () => {
     if (r.kind !== "social") return;
     expect(r.link.external).toBe(true);
     expect(r.link.label).toBe(`Follow us on ${r.name}`);
+  });
+
+  it("sometimes lands on one of N8's songs, linked to it on the Videos page", () => {
+    for (let i = 0; i < videos.length; i++) {
+      const r = roll(seq(face(5), SOCIAL_CHANCE, (i + 0.5) / videos.length, 0));
+      expect(r.kind).toBe("video");
+      if (r.kind !== "video") return;
+      expect(r.name).toBe(videos[i]!.title);
+      expect(r.link).toEqual({ label: `Watch “${videos[i]!.title}”`, href: `/videos#${videos[i]!.slug}` });
+    }
+  });
+
+  it("never lands on the same song twice running", () => {
+    for (const v of videos) {
+      for (const pickAt of [0, 0.5, 0.999]) {
+        const r = roll(seq(face(9), SOCIAL_CHANCE, pickAt, 0), v.title);
+        expect(r.kind).toBe("video");
+        expect(r.kind === "video" && r.name).not.toBe(v.title);
+      }
+    }
   });
 
   it("never lands on the same game twice running", () => {

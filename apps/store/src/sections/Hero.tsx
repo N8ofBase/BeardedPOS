@@ -162,7 +162,7 @@ export function Hero() {
                 </span>
               </>
             )}
-            {(result?.kind === "game" || result?.kind === "social") && (
+            {(result?.kind === "game" || result?.kind === "social" || result?.kind === "video") && (
               <>
                 {result.text} <RollLink link={result.link} />
               </>

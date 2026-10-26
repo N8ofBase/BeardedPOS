@@ -1,5 +1,5 @@
 // The hero's d20: what a roll says. Pure, so tests can pass their own random numbers.
-import { brand, games } from "./content/site.ts";
+import { brand, games, videos } from "./content/site.ts";
 
 export type Random = () => number;
 
@@ -40,8 +40,9 @@ const GAME_ROLLS: Record<string, string[]> = {
   ],
 };
 
-// Ordinary rolls sometimes land on a social account instead of a game.
-export const SOCIAL_CHANCE = 0.25;
+// Ordinary rolls sometimes land on a social account or one of N8's songs instead of a game.
+export const SOCIAL_CHANCE = 0.2;
+export const VIDEO_CHANCE = 0.15;
 const SOCIAL_ROLLS = [
   {
     name: "TikTok",
@@ -77,6 +78,23 @@ const SOCIAL_ROLLS = [
   },
 ];
 
+const VIDEO_ROLLS: Record<string, string[]> = {
+  "bearded-board-games": [
+    "You rolled our theme song. Turn it up and sing along.",
+    "You rolled “Bearded Board Games”. Bass, beards and a meeple on the guitar.",
+  ],
+  "everybody-loves-some-board-games": [
+    "You rolled “Everybody Loves Some Board Games”. Dean Martin would understand.",
+    "You rolled a crooner. Everybody loves some board games, sometime.",
+  ],
+  "my-games": [
+    "You rolled “My Games”. One minute. Plenty of bass.",
+    "You rolled a song. N8 wrote it about our games, so you have to listen.",
+  ],
+};
+
+export const videoPath = (slug: string) => `/videos#${slug}`;
+
 const BOTCH = [
   "The die rolled off the table and the dog ate it. Roll again.",
   "You tripped over the box lid and scattered every meeple. Roll again.",
@@ -99,7 +117,7 @@ export interface Link {
 export type RollResult =
   | { kind: "botch"; face: 1; text: string }
   | { kind: "crit"; face: 20; text: string; links: Link[] }
-  | { kind: "game" | "social"; face: number; text: string; link: Link; name: string };
+  | { kind: "game" | "social" | "video"; face: number; text: string; link: Link; name: string };
 
 const pick = <T>(list: T[], random: Random): T => list[Math.floor(random() * list.length)]!;
 
@@ -117,7 +135,8 @@ export function roll(random: Random = Math.random, last?: string): RollResult {
       links: games.map((g) => ({ label: g.name, href: gamePath(g.slug) })),
     };
   }
-  if (random() < SOCIAL_CHANCE) {
+  const detour = random();
+  if (detour < SOCIAL_CHANCE) {
     const choices = SOCIAL_ROLLS.filter((s) => s.name !== last);
     const s = pick(choices, random);
     return {
@@ -126,6 +145,19 @@ export function roll(random: Random = Math.random, last?: string): RollResult {
       name: s.name,
       text: pick(s.rolls, random),
       link: { label: `Follow us on ${s.name}`, href: s.url, external: true },
+    };
+  }
+  if (detour < SOCIAL_CHANCE + VIDEO_CHANCE) {
+    const v = pick(
+      videos.filter((v) => v.title !== last),
+      random,
+    );
+    return {
+      kind: "video",
+      face,
+      name: v.title,
+      text: pick(VIDEO_ROLLS[v.slug] ?? [`You rolled “${v.title}”.`], random),
+      link: { label: `Watch “${v.title}”`, href: videoPath(v.slug) },
     };
   }
   const choices = games.filter((g) => g.name !== last);

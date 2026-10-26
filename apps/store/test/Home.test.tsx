@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StoreApi } from "../src/api/store.ts";
-import { brand, games } from "../src/content/site.ts";
+import { brand, games, videos } from "../src/content/site.ts";
 import { renderStore } from "./render.tsx";
 
 afterEach(cleanup);
@@ -94,6 +94,44 @@ describe("VIP signup", () => {
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
     await waitFor(() => expect(screen.getByText(/didn’t go through/)).toBeTruthy());
     expect(screen.getByRole("button", { name: "Join" })).toBeTruthy();
+  });
+});
+
+describe("videos", () => {
+  it("plays N8's songs on the home page and links to the Videos page", () => {
+    renderHome();
+    const songs = document.getElementById("songs")!;
+    for (const v of videos.slice(0, 3)) {
+      const player = within(songs).getByLabelText(new RegExp(`^${v.title}, \\d+:\\d\\d$`));
+      expect(player.getAttribute("src")).toBe(v.src);
+      expect(player.getAttribute("preload")).toBe("none");
+    }
+    fireEvent.click(within(songs).getByRole("link", { name: "All the videos" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Songs from the shop." })).toBeTruthy();
+  });
+
+  it("lists every song on /videos, each with its own anchor for the d20 to link to", () => {
+    renderHome({}, "/videos");
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(
+      videos.map((v) => v.title),
+    );
+    for (const v of videos) expect(document.getElementById(v.slug)?.querySelector("video")).toBeTruthy();
+    expect(screen.getByLabelText("My Games, 1:04")).toBeTruthy();
+  });
+
+  it("pauses the other songs when one starts", () => {
+    renderHome({}, "/videos");
+    const players = [...document.querySelectorAll<HTMLVideoElement>("video.song")];
+    const paused = players.map((p) => vi.spyOn(p, "pause").mockImplementation(() => {}));
+    fireEvent.play(players[1]!);
+    expect(paused.map((p) => p.mock.calls.length)).toEqual([1, 0, 1]);
+  });
+
+  it("has a Videos link in the main menu", () => {
+    renderHome();
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    fireEvent.click(within(nav).getByRole("link", { name: "Videos" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Songs from the shop." })).toBeTruthy();
   });
 });
 

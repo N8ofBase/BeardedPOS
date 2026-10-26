@@ -8,6 +8,9 @@ import coverSoccerBlocker from "../assets/cover-soccer-blocker.webp";
 import teamAdam from "../assets/team-adam.webp";
 import teamEdward from "../assets/team-edward.webp";
 import teamN8 from "../assets/team-n8.webp";
+import posterBeardedBoardGames from "../assets/video-bearded-board-games.webp";
+import posterEverybodyLoves from "../assets/video-everybody-loves-some-board-games.webp";
+import posterMyGames from "../assets/video-my-games.webp";
 
 const SQ = "https://images.squarespace-cdn.com/content/v1/5a4d3057f6576ef69d4c551d";
 
@@ -203,3 +206,41 @@ export const team: TeamMember[] = [
 
 export const about =
   "We are firm in our belief that board games build bridges, so we publish games that are quick, fun and easy for everyone to enjoy. Help the board game community grow by supporting us and other independent designers, publishers and retailers.";
+
+export interface Video {
+  slug: string;
+  title: string;
+  blurb: string;
+  /** In public/videos, so it streams as it plays instead of being bundled. */
+  src: string;
+  poster: string;
+  seconds: number;
+}
+
+/** N8's board game parody songs, the shop's commercials. Upright phone videos, 720×1280. */
+export const videos: Video[] = [
+  {
+    slug: "bearded-board-games",
+    title: "Bearded Board Games",
+    blurb: "Our theme song, played on a bass with a meeple on it.",
+    src: "/videos/bearded-board-games.mp4",
+    poster: posterBeardedBoardGames,
+    seconds: 156,
+  },
+  {
+    slug: "everybody-loves-some-board-games",
+    title: "Everybody Loves Some Board Games",
+    blurb: "With apologies to Dean Martin.",
+    src: "/videos/everybody-loves-some-board-games.mp4",
+    poster: posterEverybodyLoves,
+    seconds: 121,
+  },
+  {
+    slug: "my-games",
+    title: "My Games",
+    blurb: "A one-minute song about the games we make.",
+    src: "/videos/my-games.mp4",
+    poster: posterMyGames,
+    seconds: 64,
+  },
+];
