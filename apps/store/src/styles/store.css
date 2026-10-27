@@ -431,6 +431,9 @@ body {
     transform 0.12s,
     box-shadow 0.12s;
 }
+.box.clickable {
+  cursor: pointer;
+}
 .box:hover {
   transform: translate(-2px, -2px) rotate(-0.6deg);
   box-shadow: 8px 8px 0 var(--c, var(--felt));

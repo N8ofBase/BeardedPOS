@@ -39,6 +39,23 @@ describe("home page", () => {
     expect(shelfNames()).toHaveLength(games.length);
   });
 
+  it("opens a game's page from anywhere on its shelf card, but not from How it plays", async () => {
+    renderHome();
+    const card = () => document.getElementById("game-locked-out")!;
+    fireEvent.click(within(card()).getByText("How it plays"));
+    expect(document.getElementById("game-locked-out")).toBeTruthy();
+    fireEvent.click(within(card()).getByAltText("Locked Out box art"));
+    expect(await screen.findByRole("heading", { level: 1, name: "Locked Out" })).toBeTruthy();
+    expect(document.getElementById("games")).toBeNull();
+  });
+
+  it("opens a game's page from its card's tagline", async () => {
+    renderHome();
+    const card = document.getElementById("game-fences")!;
+    fireEvent.click(within(card).getByText(games.find((g) => g.slug === "fences")!.tagline));
+    expect(await screen.findByRole("heading", { level: 1, name: "Fences" })).toBeTruthy();
+  });
+
   it("says Coming 2027 for Fences: The Roll & Write", () => {
     renderHome();
     const card = document.getElementById("game-fences-roll-and-write")!;

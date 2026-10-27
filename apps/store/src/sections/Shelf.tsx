@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { gamePath } from "../roll.ts";
 import { games, statusLabel, statusText, type Game, type GameStatus } from "../content/site.ts";
 
@@ -14,21 +14,33 @@ const FILTERS: { id: Filter; label: string }[] = [
 export const shelfGames = (filter: Filter) =>
   filter === "all" ? games : games.filter((g) => g.status === filter);
 
+/** Clicks on a link, button or the "How it plays" toggle do their own thing; the rest open the game. */
+const OWN_CLICK = "a, button, summary, details[open] > :not(summary)";
+
 function GameCard({ game }: { game: Game }) {
   const [broken, setBroken] = useState(false);
+  const navigate = useNavigate();
   const links = [
     game.links.rules && { label: "Rules (PDF)", href: game.links.rules },
     game.links.bgg && { label: "BoardGameGeek", href: game.links.bgg },
   ].filter((l): l is { label: string; href: string } => Boolean(l));
   return (
-    <article className="box" id={`game-${game.slug}`} style={{ "--c": game.color } as CSSProperties}>
-      <div className="art">
+    // The whole card opens the game's page; keyboard users get the same from the title link.
+    <article
+      className="box clickable"
+      id={`game-${game.slug}`}
+      style={{ "--c": game.color } as CSSProperties}
+      onClick={(e) => {
+        if (!(e.target as Element).closest(OWN_CLICK)) navigate(gamePath(game.slug));
+      }}
+    >
+      <Link className="art" to={gamePath(game.slug)} tabIndex={-1} aria-hidden="true">
         {broken ? (
           <span className="art-fallback">{game.name}</span>
         ) : (
           <img src={game.art} alt={`${game.name} box art`} loading="lazy" onError={() => setBroken(true)} />
         )}
-      </div>
+      </Link>
       <div className="body">
         <div className="tags">
           {game.labels.map((l) => (
