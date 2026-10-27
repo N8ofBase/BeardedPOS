@@ -48,7 +48,6 @@ export const brand = {
       url: "https://drive.google.com/uc?export=download&id=1KBapTt5Wh4aRkpt-V9quUUgsU2C9gK6q",
     },
   ],
-  vipThanks: "You’re in. Use code BEARDED10 for 10% off.",
 };
 
 export type GameStatus = "available" | "preorder" | "coming-soon";

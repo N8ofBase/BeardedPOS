@@ -1,7 +1,9 @@
 // Catalog, checkout and the offline preview of Square's payment page.
 import {
   BUCKS_PER_REWARD,
+  formatCents,
   maxQty,
+  MIN_REWARD_ORDER_CENTS,
   REWARD_CENTS,
   rewardsAllowed,
   storeProducts,
@@ -65,7 +67,7 @@ function readRewards(raw: unknown): number {
 
 /**
  * Starts checkout. A signed-in shopper's order is tied to them so it earns Beard Bucks once paid, and
- * may use rewards: each 100 Bucks takes $5 off, checked against their balance on the server. The
+ * may use rewards on orders of $25 or more: each 100 Bucks takes $5 off, checked against their balance on the server. The
  * Bucks are held while the order is open and only taken from the ledger once Square says it's paid.
  */
 export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
@@ -94,9 +96,11 @@ export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespo
       if (rewards > allowed)
         throw new HttpError(
           409,
-          allowed === 0
-            ? "Your Beard Bucks can’t take anything off this order. Check out without the reward."
-            : `You can use ${allowed} ${allowed === 1 ? "reward" : "rewards"} on this order. Change it and check out again.`,
+          subtotalCents < MIN_REWARD_ORDER_CENTS
+            ? `Beard Bucks work on orders of ${formatCents(MIN_REWARD_ORDER_CENTS)} or more. Check out without the reward.`
+            : allowed === 0
+              ? "Your Beard Bucks can’t take anything off this order. Check out without the reward."
+              : `You can use ${allowed} ${allowed === 1 ? "reward" : "rewards"} on this order. Change it and check out again.`,
         );
     }
     const discountCents = rewards * REWARD_CENTS;

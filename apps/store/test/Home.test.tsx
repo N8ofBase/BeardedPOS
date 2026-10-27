@@ -1,8 +1,8 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StoreApi } from "../src/api/store.ts";
-import { brand, games, videos } from "../src/content/site.ts";
-import { renderStore } from "./render.tsx";
+import { games, videos } from "../src/content/site.ts";
+import { fakeAccount, fakeStore, renderStore } from "./render.tsx";
 
 afterEach(cleanup);
 
@@ -77,31 +77,45 @@ describe("home page", () => {
   });
 });
 
-describe("VIP signup", () => {
-  it("joins with a valid email and shows the code", async () => {
-    const joinVip = vi.fn(async () => {});
-    renderHome({ joinVip });
-    fireEvent.change(screen.getByLabelText("Join the VIP list"), { target: { value: " sam@example.com " } });
-    fireEvent.click(screen.getByRole("button", { name: "Join" }));
-    expect(await screen.findByText(brand.vipThanks)).toBeTruthy();
-    expect(joinVip).toHaveBeenCalledWith("sam@example.com", "band");
+describe("Beard Buddy band", () => {
+  const buddy = (over: Partial<StoreApi["buddy"]>) => ({ ...fakeStore().buddy, ...over });
+  const band = () => document.getElementById("buddy")!;
+
+  it("signs up with an email code and shows the welcome Bucks", async () => {
+    const requestCode = vi.fn(async () => ({ sent: true as const, devCode: "123456" }));
+    const signIn = vi.fn(async () => fakeAccount({ balance: 100, welcomeBucks: 100 }));
+    renderHome({ buddy: buddy({ requestCode, signIn }) });
+    expect(within(band()).getByRole("heading", { name: "Join Beard Buddy. Get $5 off now." })).toBeTruthy();
+    fireEvent.change(within(band()).getByLabelText("Email"), { target: { value: " sam@example.com " } });
+    fireEvent.click(within(band()).getByRole("button", { name: "Email me a code" }));
+    fireEvent.change(await within(band()).findByLabelText("Code"), { target: { value: "123456" } });
+    fireEvent.click(within(band()).getByRole("button", { name: "Sign in" }));
+    expect(await within(band()).findByText(/You’re a Beard Buddy with 100 Beard Bucks/)).toBeTruthy();
+    expect(requestCode).toHaveBeenCalledWith("sam@example.com");
+    expect(signIn).toHaveBeenCalledWith("sam@example.com", "123456");
   });
 
   it("catches a mistyped email before sending it", () => {
-    const joinVip = vi.fn(async () => {});
-    renderHome({ joinVip });
-    fireEvent.change(screen.getByLabelText("Join the VIP list"), { target: { value: "sam@example" } });
-    fireEvent.click(screen.getByRole("button", { name: "Join" }));
-    expect(screen.getByText(/Check the email address/)).toBeTruthy();
-    expect(joinVip).not.toHaveBeenCalled();
+    const requestCode = vi.fn(async () => ({ sent: true as const }));
+    renderHome({ buddy: buddy({ requestCode }) });
+    fireEvent.change(within(band()).getByLabelText("Email"), { target: { value: "sam@example" } });
+    fireEvent.click(within(band()).getByRole("button", { name: "Email me a code" }));
+    expect(within(band()).getByText(/Check the email address/)).toBeTruthy();
+    expect(requestCode).not.toHaveBeenCalled();
   });
 
-  it("lets the visitor try again when the signup fails", async () => {
-    renderHome({ joinVip: () => Promise.reject(new Error("down")) });
-    fireEvent.change(screen.getByLabelText("Join the VIP list"), { target: { value: "sam@example.com" } });
-    fireEvent.click(screen.getByRole("button", { name: "Join" }));
-    await waitFor(() => expect(screen.getByText(/didn’t go through/)).toBeTruthy());
-    expect(screen.getByRole("button", { name: "Join" })).toBeTruthy();
+  it("lets the visitor try again when sending the code fails", async () => {
+    renderHome({ buddy: buddy({ requestCode: () => Promise.reject(new Error("down")) }) });
+    fireEvent.change(within(band()).getByLabelText("Email"), { target: { value: "sam@example.com" } });
+    fireEvent.click(within(band()).getByRole("button", { name: "Email me a code" }));
+    await waitFor(() => expect(within(band()).getByText(/didn’t go through/)).toBeTruthy());
+    expect(within(band()).getByRole("button", { name: "Email me a code" })).toBeTruthy();
+  });
+
+  it("shows a signed-in shopper their Bucks instead of the form", async () => {
+    renderHome({ buddy: buddy({ account: async () => fakeAccount({ balance: 240 }) }) });
+    expect(await within(band()).findByText(/You’re a Beard Buddy with 240 Beard Bucks/)).toBeTruthy();
+    expect(within(band()).queryByLabelText("Email")).toBeNull();
   });
 });
 

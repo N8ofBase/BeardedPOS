@@ -1,6 +1,6 @@
 // Beard Bucks on web orders. The rules are the register's (@bearded/core/loyalty, via store-core);
-// this file is the only place that writes store_loyalty_ledger, always in the transaction that marks
-// an order paid. A balance is the sum of the ledger, less Bucks held by open checkouts.
+// this file is the only place that writes store_loyalty_ledger: the welcome gift when a shopper first
+// signs in, and everything else in the transaction that marks an order paid. A balance is the sum of the ledger, less Bucks held by open checkouts.
 import {
   BIRTHDAY_BUCKS,
   birthdayGiftDue,
@@ -9,6 +9,7 @@ import {
   type LedgerEntry,
   type LedgerKind,
   type OrderBucks,
+  WELCOME_BUCKS,
 } from "@bearded/store-core";
 import type { Sql } from "./db.ts";
 
@@ -35,6 +36,16 @@ export async function bucksBalance(sql: Sql, customerId: string): Promise<Balanc
   );
   const { total, held } = rows[0]!;
   return { balance: total - held, held };
+}
+
+/** Gives the welcome gift if this shopper hasn't had it. True when it was given now. */
+export async function giveWelcome(sql: Sql, businessId: string, customerId: string): Promise<boolean> {
+  const { rows } = await sql.query(
+    `INSERT INTO store_loyalty_ledger (business_id, customer_id, kind, bucks) VALUES ($1, $2, 'welcome', $3)
+     ON CONFLICT (business_id, customer_id) WHERE kind = 'welcome' DO NOTHING RETURNING id`,
+    [businessId, customerId, WELCOME_BUCKS],
+  );
+  return rows.length === 1;
 }
 
 export async function ledgerHistory(sql: Sql, customerId: string, limit = 20): Promise<LedgerEntry[]> {

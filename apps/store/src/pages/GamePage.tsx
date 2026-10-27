@@ -162,7 +162,7 @@ export function GamePage() {
               </div>
             ) : (
               <p>
-                Not on sale yet. <Link to="/#vip">Join the VIP list</Link> to hear first.
+                Not on sale yet. <Link to="/#buddy">Join Beard Buddy</Link> to hear first.
               </p>
             ))}
         </div>

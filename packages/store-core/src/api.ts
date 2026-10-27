@@ -1,5 +1,5 @@
 // What the store's /api endpoints take and return. Shared by the site and the store server.
-import type { LedgerKind } from "@bearded/core/loyalty";
+import type { LedgerKind } from "./bucks.ts";
 import type { CartLine } from "./cart.ts";
 import type { Review } from "./reviews.ts";
 
@@ -95,7 +95,8 @@ export interface StoreStats {
   leftCarts: LeftCart[];
   popup: { shown: number; closed: number; joined: number };
   rolls: number;
-  vipJoins: number;
+  /** Shoppers who joined Beard Buddy (first sign-in). */
+  buddyJoins: number;
   reviewsSent: number;
 }
 
@@ -125,6 +126,8 @@ export interface Account {
   balance: number;
   held: number;
   history: LedgerEntry[];
+  /** Only on the sign-in that joined: the welcome gift just added. */
+  welcomeBucks?: number;
 }
 
 export interface AccountUpdate {

@@ -608,6 +608,12 @@ body {
   font-weight: 700;
   color: #7a1a12;
 }
+/* The sign-in sits on yellow here, where the muted grey is too faint. */
+.vip .code-signin .lede,
+.popup .code-signin .lede {
+  font-size: 1rem;
+  color: var(--ink);
+}
 .vip .joined {
   font-weight: 800;
   font-size: 1.15rem;

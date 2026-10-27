@@ -55,7 +55,6 @@ export interface BuddyApi {
 
 export interface StoreApi {
   catalog(): Promise<SquareCatalog>;
-  joinVip(email: string, source: "band" | "popup"): Promise<void>;
   /** Starts checkout for these lines; resolves to the page to send the shopper to (Square's, once live). */
   checkout(lines: CartLine[], visitorId?: string, rewards?: number): Promise<CheckoutResponse>;
   /** Approved reviews, newest first. */
@@ -110,7 +109,6 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
   const id = (s: string) => encodeURIComponent(s);
   return {
     catalog: () => call("GET", "/catalog"),
-    joinVip: async (email, source) => void (await call("POST", "/vip", { email, source })),
     checkout: (lines, visitorId, rewards) =>
       call("POST", "/checkout", { lines, visitorId, ...(rewards ? { rewards } : {}) }),
     reviews: () => call("GET", "/reviews"),

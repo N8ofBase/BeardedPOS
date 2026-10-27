@@ -3,7 +3,6 @@ import { errorText, useStore } from "../api/store.ts";
 import { games } from "../content/site.ts";
 import { isBot, LIMITS, validateReview, type ReviewErrors, type ReviewInput } from "@bearded/store-core";
 import { useTracker } from "../track/Tracker.tsx";
-import { rememberJoined } from "../vip/VipPopup.tsx";
 
 const blank = (game: string): ReviewInput => ({
   game,
@@ -46,7 +45,6 @@ export function ReviewForm({ game }: { game?: string }) {
           name: input.name.trim(),
           email: input.email.trim(),
         });
-        if (input.joinVip) rememberJoined();
         track({ type: "review_sent", label: input.game });
       }
       setState("sent");
@@ -194,10 +192,6 @@ export function ReviewForm({ game }: { game?: string }) {
           onChange={(e) => set("website", e.target.value)}
         />
       </div>
-      <label className="check">
-        <input type="checkbox" checked={input.joinVip} onChange={(e) => set("joinVip", e.target.checked)} />
-        Join the VIP list too (10% off pre-orders)
-      </label>
       <button className="btn red" type="submit" disabled={state === "sending"}>
         {state === "sending" ? "Sending…" : "Send review"}
       </button>

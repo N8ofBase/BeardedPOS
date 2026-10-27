@@ -1,4 +1,5 @@
-// Beard Bucks on web orders: sign-in, the reward at checkout, the hold, and the ledger once paid.
+// Beard Bucks on web orders: sign-in and the welcome gift, the reward at checkout, the hold, and the
+// ledger once paid.
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Account, CheckoutResponse, OrderStatus, OrderView, StaffBuddy } from "@bearded/store-core";
 import { withBusiness, type Database } from "../src/db.ts";
@@ -69,7 +70,58 @@ describe("Beard Buddy sign-in", () => {
     expect(res.headers!["Set-Cookie"]).toMatch(
       /^bbg_buddy=[\w-]{40,}; Path=\/api; HttpOnly; SameSite=Strict; Max-Age=2592000; Secure$/,
     );
-    expect(res.body).toMatchObject({ email: address, balance: 0, held: 0, history: [], birthday: null });
+    expect(res.body).toMatchObject({
+      email: address,
+      balance: 100,
+      held: 0,
+      history: [{ kind: "welcome", bucks: 100, orderId: null }],
+      birthday: null,
+      welcomeBucks: 100,
+    });
+  });
+
+  it("gives the 100-Buck welcome gift once, on the first sign-in", async () => {
+    const store = makeStore(db);
+    const shopper = await signInBuddy(store);
+    const again = await store.call("POST", "/api/account/session", {
+      email: shopper.email,
+      code: (
+        (await store.call("POST", "/api/account/code", { email: shopper.email })).body as { devCode: string }
+      ).devCode,
+    });
+    expect(again.body).toMatchObject({ balance: 100 });
+    expect(again.body).not.toHaveProperty("welcomeBucks");
+    expect((await account(store, shopper.jar)).history).toMatchObject([{ kind: "welcome", bucks: 100 }]);
+    // Even written by hand, a second welcome gift is refused.
+    await expect(
+      withBusiness(db, store.ctx.config.businessId, async (sql) => {
+        await sql.query(
+          `INSERT INTO store_loyalty_ledger (business_id, customer_id, kind, bucks)
+           SELECT business_id, id, 'welcome', 100 FROM store_customers WHERE email = $1`,
+          [shopper.email],
+        );
+      }),
+    ).rejects.toThrow(/store_loyalty_ledger_welcome_once/);
+  });
+
+  it("lets the welcome Bucks take $5 off right away, on orders of $25 or more", async () => {
+    const store = makeStore(db);
+    const { jar } = await signInBuddy(store);
+    expect(await checkout(store, jar, [{ productId: LOCKED_OUT, qty: 1 }], 1)).toMatchObject({
+      status: 409,
+      body: { error: "Beard Bucks work on orders of $25 or more. Check out without the reward." },
+    });
+    const { orderId } = (await checkout(store, jar, [{ productId: RANCH, qty: 1 }], 1))
+      .body as CheckoutResponse;
+    expect((await store.call("GET", `/api/checkout-preview/${orderId}`)).body).toMatchObject({
+      subtotalCents: 2500,
+      discountCents: 500,
+    });
+    await payOffline(store, orderId);
+    expect((await store.call("GET", `/api/orders/${orderId}`, undefined, jar)).body).toEqual({
+      status: "paid",
+      bucks: { earned: 20, used: 100, birthday: 0, balance: 20 },
+    });
   });
 
   it("never lets a shopper's session open Behind the Beard, or a staff session act as a shopper", async () => {
@@ -127,25 +179,28 @@ describe("earning and spending Beard Bucks", () => {
         { productId: RANCH, qty: 1 },
       ])
     ).body as CheckoutResponse;
-    expect((await account(store, jar)).balance).toBe(0);
+    expect((await account(store, jar)).balance).toBe(100);
     await payOffline(store, orderId);
     expect((await store.call("GET", `/api/orders/${orderId}`, undefined, jar)).body).toEqual({
       status: "paid",
-      bucks: { earned: 85, used: 0, birthday: 0, balance: 85 },
+      bucks: { earned: 85, used: 0, birthday: 0, balance: 185 },
     });
     expect((await store.call("GET", `/api/orders/${orderId}`)).body).toEqual({
       status: "paid",
       bucks: { earned: 85, used: 0, birthday: 0 },
     });
     const acct = await account(store, jar);
-    expect(acct.balance).toBe(85);
-    expect(acct.history).toMatchObject([{ kind: "earn", bucks: 85, orderId }]);
+    expect(acct.balance).toBe(185);
+    expect(acct.history).toMatchObject([
+      { kind: "earn", bucks: 85, orderId },
+      { kind: "welcome", bucks: 100 },
+    ]);
   });
 
   it("takes $5 off per 100 Bucks, holds them while open, and earns on what's left", async () => {
     const store = makeStore(db);
     const shopper = await signInBuddy(store);
-    await give(shopper.email, 250);
+    await give(shopper.email, 150); // 250 with the welcome gift
     const res = await checkout(
       store,
       shopper.jar,
@@ -168,9 +223,10 @@ describe("earning and spending Beard Bucks", () => {
     const acct = await account(store, shopper.jar);
     expect(acct).toMatchObject({ balance: 125, held: 0 });
     expect(acct.history.map((e) => [e.kind, e.bucks]).sort()).toEqual([
-      ["adjust", 250],
+      ["adjust", 150],
       ["earn", 75],
       ["redeem", -200],
+      ["welcome", 100],
     ]);
   });
 
@@ -178,19 +234,18 @@ describe("earning and spending Beard Bucks", () => {
     const store = makeStore(db);
     const shopper = await signInBuddy(store);
     await give(shopper.email, 500);
-    expect(await checkout(store, shopper.jar, [{ productId: LOCKED_OUT, qty: 1 }], 5)).toMatchObject({
+    expect(await checkout(store, shopper.jar, [{ productId: RANCH, qty: 1 }], 6)).toMatchObject({
       status: 409,
-      body: { error: "You can use 4 rewards on this order. Change it and check out again." },
+      body: { error: "You can use 5 rewards on this order. Change it and check out again." },
     });
-    expect((await checkout(store, shopper.jar, [{ productId: LOCKED_OUT, qty: 1 }], 4)).status).toBe(200);
-    expect((await checkout(store, shopper.jar, [{ productId: LOCKED_OUT, qty: 1 }], -1)).status).toBe(400);
-    expect((await checkout(store, shopper.jar, [{ productId: LOCKED_OUT, qty: 1 }], 1.5)).status).toBe(400);
+    expect((await checkout(store, shopper.jar, [{ productId: RANCH, qty: 1 }], 5)).status).toBe(200);
+    expect((await checkout(store, shopper.jar, [{ productId: RANCH, qty: 1 }], -1)).status).toBe(400);
+    expect((await checkout(store, shopper.jar, [{ productId: RANCH, qty: 1 }], 1.5)).status).toBe(400);
   });
 
   it("lets go of held Bucks after 24 hours, or when Square's page can't be made", async () => {
     const store = makeStore(db);
-    const shopper = await signInBuddy(store);
-    await give(shopper.email, 100);
+    const shopper = await signInBuddy(store); // the welcome gift's 100 Bucks
     const { orderId } = (await checkout(store, shopper.jar, [{ productId: RANCH, qty: 1 }], 1))
       .body as CheckoutResponse;
     expect((await account(store, shopper.jar)).balance).toBe(0);
@@ -219,7 +274,6 @@ describe("earning and spending Beard Bucks", () => {
     });
     const store = makeStore(db, { square });
     const shopper = await signInBuddy(store);
-    await give(shopper.email, 100);
     await checkout(store, shopper.jar, [{ productId: RANCH, qty: 1 }], 1);
     await checkout(store, {}, [{ productId: RANCH, qty: 1 }]);
     expect(seen[0]).toMatchObject({ discountCents: 500, buyerEmail: shopper.email, currency: "USD" });
@@ -245,12 +299,12 @@ describe("the birthday gift", () => {
     const first = (await checkout(store, jar, [{ productId: RANCH, qty: 1 }])).body as CheckoutResponse;
     await payOffline(store, first.orderId);
     expect((await store.call("GET", `/api/orders/${first.orderId}`, undefined, jar)).body).toMatchObject({
-      bucks: { earned: 25, birthday: 100, balance: 125 },
+      bucks: { earned: 25, birthday: 100, balance: 225 },
     });
     const second = (await checkout(store, jar, [{ productId: RANCH, qty: 1 }])).body as CheckoutResponse;
     await payOffline(store, second.orderId);
     expect((await store.call("GET", `/api/orders/${second.orderId}`, undefined, jar)).body).toMatchObject({
-      bucks: { earned: 25, birthday: 0, balance: 150 },
+      bucks: { earned: 25, birthday: 0, balance: 250 },
     });
   });
 
@@ -296,8 +350,11 @@ describe("Beard Buddies in Behind the Beard", () => {
     const staff = await signInStaff(store);
     const list = (await store.call("GET", "/api/staff/buddies", undefined, staff)).body as StaffBuddy[];
     const row = list.find((b) => b.email === shopper.email)!;
-    expect(row).toMatchObject({ balance: 40, paidOrders: 0, lastOrderAt: null });
+    expect(row).toMatchObject({ balance: 140, paidOrders: 0, lastOrderAt: null });
     const history = await store.call("GET", `/api/staff/buddies/${row.id}`, undefined, staff);
-    expect(history.body).toMatchObject([{ kind: "adjust", bucks: 40 }]);
+    expect(history.body).toMatchObject([
+      { kind: "adjust", bucks: 40 },
+      { kind: "welcome", bucks: 100 },
+    ]);
   });
 });
