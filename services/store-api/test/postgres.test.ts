@@ -178,5 +178,20 @@ describe.runIf(url)("on a real Postgres", () => {
     );
     expect(rows.map((r) => r.name)).toEqual(storeItems(loadSnapshot()).map((p) => p.name));
     for (const r of rows) expect(r.on_hand).toBe(100);
+
+    // A website purchase takes one off the register's shelf, as the app's role under row-level security.
+    const { orderId } = (
+      await store.call("POST", "/api/checkout", {
+        lines: [{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 1 }],
+      })
+    ).body as { orderId: string };
+    expect((await store.call("POST", `/api/checkout-preview/${orderId}/pay`, {})).status).toBe(200);
+    const after = await withBusiness(postgresDatabase(pool), BIZ_A, (sql) =>
+      sql.query<{ on_hand: number }>(
+        `SELECT l.on_hand FROM products p JOIN inventory_levels l ON l.product_id = p.id
+         WHERE p.active AND p.name = 'Locked Out'`,
+      ),
+    );
+    expect(after.rows[0]!.on_hand).toBe(99);
   });
 });
