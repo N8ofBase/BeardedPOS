@@ -5,8 +5,11 @@ import type { Api } from "./api/client.ts";
 export interface Session {
   api: Api;
   me: Me;
+  /** Demo: back to the role picker. Hosted: sign out. */
   switchRole(): void;
   resetDemo(): Promise<void>;
+  /** Signed in with an email code on the store's server, not the in-browser demo. */
+  hosted?: boolean;
 }
 
 export const SessionContext = createContext<Session | null>(null);

@@ -2,5 +2,6 @@ docs/
 *.md
 package-lock.json
 **/dist/
+**/dist-hosted/
 **/cdk.out/
 infra/.site/

@@ -2,7 +2,8 @@
 
 /**
  * Old Squarespace addresses get a 301 to their new pages; any other path without a file extension
- * loads the single-page app. Runs in CloudFront for the site only, so /api 404s stay JSON.
+ * loads the single-page app: the register's under /register, the store's everywhere else. Runs in
+ * CloudFront for the site only, so /api 404s stay JSON.
  */
 export function viewerRequestCode(redirects: Record<string, string>): string {
   return `
@@ -15,7 +16,8 @@ function handler(event) {
     return { statusCode: 301, statusDescription: "Moved Permanently", headers: { location: { value: to } } };
   }
   var last = req.uri.split("/").pop();
-  if (last.indexOf(".") === -1) req.uri = "/index.html";
+  if (last.indexOf(".") === -1)
+    req.uri = path === "/register" || path.indexOf("/register/") === 0 ? "/register/index.html" : "/index.html";
   return req;
 }`;
 }

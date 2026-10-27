@@ -26,4 +26,12 @@ describe("store site request function", () => {
     expect(run("/videos/beer-ded-board-games.mp4")).toEqual({ uri: "/videos/beer-ded-board-games.mp4" });
     expect(run("/assets/index-abc.js")).toEqual({ uri: "/assets/index-abc.js" });
   });
+
+  it("loads the register's own app under /register", () => {
+    expect(run("/register")).toEqual({ uri: "/register/index.html" });
+    expect(run("/register/")).toEqual({ uri: "/register/index.html" });
+    expect(run("/register/inventory/new")).toEqual({ uri: "/register/index.html" });
+    expect(run("/register/assets/index-abc.js")).toEqual({ uri: "/register/assets/index-abc.js" });
+    expect(run("/registered")).toEqual({ uri: "/index.html" });
+  });
 });

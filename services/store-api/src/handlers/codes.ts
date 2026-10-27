@@ -1,4 +1,4 @@
-// One-time email codes, shared by Behind the Beard and Beard Buddy sign-in. Each keeps its own
+// One-time email codes, shared by Behind the Beard, Beard Buddy and register sign-in. Each keeps its own
 // table, so a shopper's code can never sign anyone in to the staff pages.
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { looksLikeEmail } from "@bearded/store-core";
@@ -10,7 +10,7 @@ const CODE_TRIES = 5;
 const CODES_PER_HOUR = 5;
 
 /** The two code tables. Never a value from a request: it goes into the SQL text. */
-export type CodeTable = "store_staff_codes" | "store_customer_codes";
+export type CodeTable = "store_staff_codes" | "store_customer_codes" | "pos_staff_codes";
 
 export const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 export const newToken = () => randomBytes(32).toString("base64url");

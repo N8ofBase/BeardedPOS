@@ -27,13 +27,30 @@ export async function ensureDemo(db: Kysely<DB>): Promise<string> {
       .where("is_demo", "=", true)
       .executeTakeFirst();
     const businessId = existing?.id ?? (await seedBusiness(trx));
-    await once(trx, businessId, "inventory", "products", seedInventory);
-    await once(trx, businessId, "customers", "customers", seedCustomers);
-    await once(trx, businessId, "discounts", "discounts", seedDiscounts);
-    await once(trx, businessId, "crm", "tags", seedCrm);
-    await once(trx, businessId, "loyalty", "loyalty_ledger", seedLoyalty);
+    await seedDemoParts(trx, businessId);
     return businessId;
   });
+}
+
+export interface DemoPartsOptions {
+  /** Every sample product's opening count, instead of the prototype's mix of low and out of stock. */
+  openingStock?: number;
+}
+
+/**
+ * The sample games, customers, discounts, tags and Beard Bucks, each loaded once. The browser
+ * demo puts them in its own (DEMO) business; the hosted register puts them in the real store's.
+ */
+export async function seedDemoParts(
+  trx: Transaction<DB>,
+  businessId: string,
+  opts: DemoPartsOptions = {},
+): Promise<void> {
+  await once(trx, businessId, "inventory", "products", (t, b) => seedInventory(t, b, opts.openingStock));
+  await once(trx, businessId, "customers", "customers", seedCustomers);
+  await once(trx, businessId, "discounts", "discounts", seedDiscounts);
+  await once(trx, businessId, "crm", "tags", seedCrm);
+  await once(trx, businessId, "loyalty", "loyalty_ledger", seedLoyalty);
 }
 
 /**
@@ -142,7 +159,7 @@ const DEMO_PRODUCTS = [
   },
 ];
 
-async function seedInventory(trx: Transaction<DB>, businessId: string): Promise<void> {
+async function seedInventory(trx: Transaction<DB>, businessId: string, openingStock?: number): Promise<void> {
   const location = await trx
     .selectFrom("locations")
     .select("id")
@@ -166,14 +183,15 @@ async function seedInventory(trx: Transaction<DB>, businessId: string): Promise<
       })
       .returning("id")
       .executeTakeFirstOrThrow();
-    if (p.on_hand !== 0) {
+    const onHand = openingStock ?? p.on_hand;
+    if (onHand !== 0) {
       await trx
         .insertInto("inventory_moves")
         .values({
           business_id: businessId,
           product_id: row.id,
           location_id: location.id,
-          qty_change: p.on_hand,
+          qty_change: onHand,
           reason: "adjust",
           note: "Opening count",
           is_demo: true,

@@ -422,6 +422,30 @@ export interface CustomerLoginCodesTable {
   created_at: CreatedAt;
 }
 
+export interface PosStaffCodesTable {
+  id: Generated<string>;
+  business_id: string;
+  email: string;
+  code_hash: string;
+  expires_at: Date;
+  attempts: Generated<number>;
+  used_at: Date | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface PosStaffSessionsTable {
+  id: Generated<string>;
+  business_id: string;
+  staff_id: string;
+  token_hash: string;
+  expires_at: Date;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface CustomerSessionsTable {
   id: Generated<string>;
   business_id: string;
@@ -496,6 +520,8 @@ export interface DB {
   businesses: BusinessesTable;
   locations: LocationsTable;
   staff: StaffTable;
+  pos_staff_codes: PosStaffCodesTable;
+  pos_staff_sessions: PosStaffSessionsTable;
   products: ProductsTable;
   inventory_levels: InventoryLevelsTable;
   inventory_moves: InventoryMovesTable;

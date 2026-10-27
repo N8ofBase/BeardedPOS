@@ -1,10 +1,14 @@
 // The hosted database adapter. The unit tests use a fake client. The last test runs migrations and a
 // staff flow on a real Postgres when STORE_PG_TEST_URL points at one whose user is an ordinary admin
-// (CREATEROLE, not a superuser), as on Amazon RDS.
+// (CREATEROLE, not a superuser), as on Amazon RDS, then the hosted register beside it.
 import pg from "pg";
 import { afterAll, describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import { Kysely, PostgresDialect } from "kysely";
+import { ensureStore, type DB } from "@bearded/db";
 import { withBusiness } from "../src/db.ts";
 import { migrateLocked, postgresDatabase } from "../src/postgres.ts";
+import { migrateRegister, readMigrations, REGISTER_TYPES, storeSetup } from "../src/register-postgres.ts";
 import { BIZ_A, makeStore, signInStaff } from "./helpers.ts";
 
 function fakePool(failOn?: string) {
@@ -84,5 +88,83 @@ describe.runIf(url)("on a real Postgres", () => {
     await expect(
       withBusiness(db, BIZ_A, (sql) => sql.query("UPDATE store_loyalty_ledger SET bucks = 500")),
     ).rejects.toThrow(/permission denied/);
+  });
+
+  it("hosts the register beside the store: its migrations, the store's setup and a sale", async () => {
+    const pool = new pg.Pool({ connectionString: url, max: 4, types: REGISTER_TYPES });
+    pools.push(pool);
+    // A database with nothing in it, as a new RDS starts.
+    await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
+    const migrations = readMigrations(
+      fileURLToPath(new URL("../../../packages/db/migrations", import.meta.url)),
+    );
+    expect(migrations.length).toBeGreaterThan(10);
+    // The Lambda's order, with two cold starts at once.
+    await Promise.all([migrateRegister(pool, migrations), migrateRegister(pool, migrations)]);
+    await migrateLocked(pool);
+    const pos = new Kysely<DB>({ dialect: new PostgresDialect({ pool }) });
+    const setup = storeSetup({ POS_OWNERS: "N8 <n8gr8@prismcortex.net>", POS_DEMO_STOCK: "100" }, BIZ_A);
+    await ensureStore(pos, setup);
+    await ensureStore(pos, setup);
+
+    const store = makeStore(postgresDatabase(pool));
+    store.ctx.pos = pos;
+    const code = (await store.call("POST", "/api/pos/code", { email: "n8gr8@prismcortex.net" })).body as {
+      devCode: string;
+    };
+    const res = await store.call("POST", "/api/pos/session", {
+      email: "n8gr8@prismcortex.net",
+      code: code.devCode,
+    });
+    const jar = { bbg_pos: /bbg_pos=([^;]+)/.exec(res.headers!["Set-Cookie"]!)![1]! };
+    const call = async <T>(name: string, input: unknown = {}) => {
+      const r = await store.call("POST", `/api/pos/call/${name}`, { input }, jar);
+      expect(r.status, JSON.stringify(r.body)).toBe(200);
+      return (r.body as { output: T }).output;
+    };
+    const products = await call<{ id: string; onHand: number }[]>("listProducts");
+    expect(products.map((p) => p.onHand)).toEqual(products.map(() => 100));
+    const sale = await call<{ saleId: string; totalCents: number }>("startCheckout", {
+      customerId: null,
+      lines: [{ key: "a", productId: products[0]!.id, qty: 2 }],
+      discounts: [],
+    });
+    expect(
+      await call("payCash", { saleId: sale.saleId, amountCents: sale.totalCents, tenderedCents: 10_000 }),
+    ).toMatchObject({
+      paid: true,
+    });
+    // Dates stay "YYYY-MM-DD" here too, as in the browser.
+    const found = await call<{ name: string; birthday: string | null }[]>("searchCustomers", { q: "" });
+    const birthdays = found.map((c) => c.birthday).filter((b) => b !== null);
+    expect(birthdays.length).toBeGreaterThan(0);
+    for (const b of birthdays) expect(b).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // Counts and sums are numbers, as PGlite gives them.
+    expect((await pool.query("SELECT count(*) AS n FROM staff")).rows[0].n).toBeTypeOf("number");
+  });
+
+  it("adds the register to a database where the store already runs, as on the live site", async () => {
+    const pool = new pg.Pool({ connectionString: url, max: 4, types: REGISTER_TYPES });
+    pools.push(pool);
+    await pool.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
+    await migrateLocked(pool);
+    const migrations = readMigrations(
+      fileURLToPath(new URL("../../../packages/db/migrations", import.meta.url)),
+    );
+    await migrateRegister(pool, migrations);
+    await migrateLocked(pool);
+    const pos = new Kysely<DB>({ dialect: new PostgresDialect({ pool }) });
+    await ensureStore(
+      pos,
+      storeSetup({ POS_OWNERS: "N8 <n8gr8@prismcortex.net>", POS_DEMO_STOCK: "100" }, BIZ_A),
+    );
+    // The store's own staff sign-in still works beside the register's tables.
+    const store = makeStore(postgresDatabase(pool));
+    store.ctx.pos = pos;
+    await signInStaff(store);
+    const { rows } = await withBusiness(postgresDatabase(pool), BIZ_A, (sql) =>
+      sql.query<{ n: number }>("SELECT count(*)::int AS n FROM products"),
+    );
+    expect(rows[0]!.n).toBeGreaterThan(0);
   });
 });

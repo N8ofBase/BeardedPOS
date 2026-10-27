@@ -46,13 +46,17 @@ new MailStack(app, "BeardedMail", {
 
 // The online store proof of concept at bbg.prismcortex.net: npm run deploy:store-demo
 const storeSiteDir: string = app.node.getContext("storeSiteDir");
-if (built("BeardedStoreDemo", storeSiteDir))
+const registerDir: string = app.node.getContext("registerDir");
+if (built("BeardedStoreDemo", storeSiteDir) && built("BeardedStoreDemo", registerDir))
   new StoreDemoStack(app, "BeardedStoreDemo", {
     env: { account, region: "us-east-1" },
     domainName: app.node.getContext("domainName"),
     subdomain: app.node.getContext("storeSubdomain"),
     siteDir: storeSiteDir,
+    registerDir,
+    registerOwners: app.node.getContext("registerOwners"),
     staffEmails: app.node.getContext("storeStaff"),
     businessId: app.node.getContext("storeBusinessId"),
-    description: "Bearded Board Games online store demo: site, /api Lambda, Postgres (Square Sandbox only)",
+    description:
+      "Bearded Board Games online store demo: site, register, /api Lambda, Postgres (Square Sandbox only)",
   });

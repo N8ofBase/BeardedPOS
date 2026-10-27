@@ -16,6 +16,8 @@ interface Props {
   me: Me;
   onSwitchRole: () => void;
   onResetDemo: () => Promise<void>;
+  /** The register on the store's server: a test banner without reset, and the button signs out. */
+  hosted?: boolean;
 }
 
 const PAGES: Record<string, () => React.ReactNode> = {
@@ -27,7 +29,7 @@ const PAGES: Record<string, () => React.ReactNode> = {
   "/settings": () => <SettingsRoutes />,
 };
 
-export function AdminShell({ me, onSwitchRole, onResetDemo }: Props) {
+export function AdminShell({ me, onSwitchRole, onResetDemo, hosted }: Props) {
   const location = useLocation();
   const nav = navFor(me.staff.role);
   const brand = isHexColor(me.business.brandColor) ? me.business.brandColor! : "#0f6e5a";
@@ -36,7 +38,13 @@ export function AdminShell({ me, onSwitchRole, onResetDemo }: Props) {
 
   return (
     <div className="shell">
-      <DemoBanner onReset={onResetDemo} />
+      {hosted ? (
+        <div className="demo-banner" role="status">
+          <span>Test register · sample data, and card payments are simulated</span>
+        </div>
+      ) : (
+        <DemoBanner onReset={onResetDemo} />
+      )}
       <nav className="sidebar" aria-label="Main">
         <div
           className="store-header store"
@@ -59,7 +67,7 @@ export function AdminShell({ me, onSwitchRole, onResetDemo }: Props) {
             {me.staff.name} · {ROLE_LABEL[me.staff.role]}
           </span>
           <button type="button" onClick={onSwitchRole}>
-            Switch role
+            {hosted ? "Sign out" : "Switch role"}
           </button>
         </div>
       </nav>

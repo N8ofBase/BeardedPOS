@@ -1,3 +1,5 @@
+import type { Kysely } from "kysely";
+import type { DB } from "@bearded/db";
 import type { Database } from "./db.ts";
 import type { Mailer } from "./mailer.ts";
 import type { SquareStore } from "./square/types.ts";
@@ -18,4 +20,6 @@ export interface StoreCtx {
   mailer: Mailer;
   config: StoreConfig;
   now: () => Date;
+  /** The register's database (apps/web over /api/pos), when it's hosted on this server too. */
+  pos?: Kysely<DB>;
 }
