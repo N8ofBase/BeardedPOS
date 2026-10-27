@@ -88,7 +88,7 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
   const toast = useToast();
   const [f, setF] = useState({
     name: s.name,
-    brandColor: s.brandColor ?? "#0f6e5a",
+    brandColor: s.brandColor ?? "#14614f",
     logo: s.logo,
     locationName: s.locationName,
     taxPercent: taxPercentInput(s.taxRateMpct),

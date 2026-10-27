@@ -22,6 +22,7 @@ h1,
 h2,
 h3 {
   font-family: var(--display);
+  font-weight: 400;
   margin: 0;
   letter-spacing: -0.01em;
   text-wrap: balance;
@@ -60,14 +61,24 @@ button:hover {
   border-color: var(--muted);
 }
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--mustard);
   outline-offset: 2px;
 }
+/* The store's "go" button: mustard with an ink edge that lifts on hover. */
 button.primary {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-color: var(--accent);
-  font-weight: 700;
+  background: var(--mustard);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  font-weight: 800;
+}
+button.primary:hover:not(:disabled) {
+  border-color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  transform: translateY(-1px);
+}
+button.primary:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(1px);
 }
 button.danger {
   color: var(--bad);
@@ -161,7 +172,8 @@ button:disabled {
   gap: 2px;
 }
 .sidebar .store small {
-  color: var(--muted);
+  color: inherit;
+  opacity: 0.85;
 }
 .sidebar a {
   display: block;
@@ -462,6 +474,7 @@ th.r {
   overflow-wrap: anywhere;
 }
 .store-header small {
+  color: inherit;
   opacity: 0.85;
 }
 .store-logo {

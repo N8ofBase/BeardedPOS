@@ -5,7 +5,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, ensureStore, migrate as migrateRegister, PGLITE_OPTIONS } from "@bearded/db";
 import type { CheckoutResult, PaymentResult } from "@bearded/api";
 import { migrate as migrateStore, withBusiness, type Database } from "../src/db.ts";
-import { storeSetup } from "../src/register-postgres.ts";
+import { storeItems, storeSetup } from "../src/register-postgres.ts";
+import { loadSnapshot } from "../src/square/snapshot.ts";
 import { BIZ_A, BIZ_B, makeStore, signInStaff, type TestStore } from "./helpers.ts";
 
 const N8 = "n8gr8@prismcortex.net";
@@ -19,8 +20,8 @@ beforeAll(async () => {
   await migrateRegister(pg);
   await migrateStore(pg as unknown as Database);
   const pos = createDb(pg);
-  await ensureStore(pos, storeSetup(ENV, BIZ_A));
-  await ensureStore(pos, storeSetup(ENV, BIZ_A)); // a second cold start changes nothing
+  await ensureStore(pos, storeSetup(ENV, BIZ_A, loadSnapshot()));
+  await ensureStore(pos, storeSetup(ENV, BIZ_A, loadSnapshot())); // a second cold start changes nothing
   await ensureStore(pos, { ...storeSetup({ POS_OWNERS: "Other <owner@b.example>" }, BIZ_B), slug: "other" });
 });
 
@@ -135,16 +136,27 @@ describe("register calls", () => {
     expect((await store.call("POST", "/api/pos/code", { email: N8 })).status).toBe(404);
   });
 
-  it("starts the sample games at 100 each, and a cash sale takes one off", async () => {
+  it("shelves the online store's items at 100 each in its colors, and a cash sale takes one off", async () => {
     const store = register();
     const jar = await signInOwner(store);
-    const products = (
-      (await call(store, jar, "listProducts", {})).body as {
-        output: { id: string; onHand: number; name: string }[];
-      }
-    ).output;
-    expect(products.length).toBeGreaterThan(0);
+    type Row = { id: string; onHand: number; name: string; sku: string; active: boolean };
+    const products = ((await call(store, jar, "listProducts", {})).body as { output: Row[] }).output;
+    const shelf = storeItems(loadSnapshot());
+    expect(shelf.map((p) => p.name)).toContain("Fences");
+    expect(products.map((p) => p.name).sort()).toEqual(shelf.map((p) => p.name).sort());
     for (const p of products) expect(p.onHand).toBe(100);
+    // The (DEMO) samples are archived, not deleted.
+    const all = (
+      (await call(store, jar, "listProducts", { includeArchived: true })).body as { output: Row[] }
+    ).output;
+    const samples = all.filter((p) => p.name.includes("(DEMO)"));
+    expect(samples.length).toBeGreaterThan(0);
+    for (const p of samples) expect(p.active).toBe(false);
+    const me = (
+      (await call(store, jar, "me")).body as { output: { business: { brandColor: string; logo: string } } }
+    ).output;
+    expect(me.business.brandColor).toBe("#14614f");
+    expect(me.business.logo).toMatch(/^data:image\/webp;base64,/);
     const game = products[0]!;
     const sale = (
       (

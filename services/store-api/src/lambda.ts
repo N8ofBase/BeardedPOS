@@ -129,7 +129,10 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     ? await openRegister(options, readMigrations(env.POS_MIGRATIONS_DIR)).catch(registerOff)
     : undefined;
   const storeDb = await openPostgres(options);
-  if (pos) pos = await ensureStore(pos, storeSetup(env, businessId)).then(() => pos, registerOff);
+  // The register's shelf starts with what the online store sells (Square's catalog, or the saved
+  // copy when Square can't be reached).
+  const catalog = pos ? await square.catalog().catch(() => new SnapshotStore().catalog()) : undefined;
+  if (pos) pos = await ensureStore(pos, storeSetup(env, businessId, catalog)).then(() => pos, registerOff);
   return {
     db: storeDb,
     ...(pos ? { pos } : {}),

@@ -8,7 +8,14 @@ import { Kysely, PostgresDialect } from "kysely";
 import { ensureStore, type DB } from "@bearded/db";
 import { withBusiness } from "../src/db.ts";
 import { migrateLocked, postgresDatabase } from "../src/postgres.ts";
-import { migrateRegister, readMigrations, REGISTER_TYPES, storeSetup } from "../src/register-postgres.ts";
+import {
+  migrateRegister,
+  readMigrations,
+  REGISTER_TYPES,
+  storeItems,
+  storeSetup,
+} from "../src/register-postgres.ts";
+import { loadSnapshot } from "../src/square/snapshot.ts";
 import { BIZ_A, makeStore, signInStaff } from "./helpers.ts";
 
 function fakePool(failOn?: string) {
@@ -154,17 +161,22 @@ describe.runIf(url)("on a real Postgres", () => {
     await migrateRegister(pool, migrations);
     await migrateLocked(pool);
     const pos = new Kysely<DB>({ dialect: new PostgresDialect({ pool }) });
-    await ensureStore(
-      pos,
-      storeSetup({ POS_OWNERS: "N8 <n8gr8@prismcortex.net>", POS_DEMO_STOCK: "100" }, BIZ_A),
-    );
+    // Last deploy's setup (sample products only), then this one's with the online store's items.
+    const env = { POS_OWNERS: "N8 <n8gr8@prismcortex.net>", POS_DEMO_STOCK: "100" };
+    await ensureStore(pos, storeSetup(env, BIZ_A));
+    await ensureStore(pos, storeSetup(env, BIZ_A, loadSnapshot()));
+    await ensureStore(pos, storeSetup(env, BIZ_A, loadSnapshot()));
     // The store's own staff sign-in still works beside the register's tables.
     const store = makeStore(postgresDatabase(pool));
     store.ctx.pos = pos;
     await signInStaff(store);
     const { rows } = await withBusiness(postgresDatabase(pool), BIZ_A, (sql) =>
-      sql.query<{ n: number }>("SELECT count(*)::int AS n FROM products"),
+      sql.query<{ name: string; on_hand: number }>(
+        `SELECT p.name, l.on_hand FROM products p JOIN inventory_levels l ON l.product_id = p.id
+         WHERE p.active ORDER BY p.sku`,
+      ),
     );
-    expect(rows[0]!.n).toBeGreaterThan(0);
+    expect(rows.map((r) => r.name)).toEqual(storeItems(loadSnapshot()).map((p) => p.name));
+    for (const r of rows) expect(r.on_hand).toBe(100);
   });
 });
