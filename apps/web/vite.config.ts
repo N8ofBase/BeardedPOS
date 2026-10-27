@@ -23,39 +23,46 @@ function prototypePage(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [
-    react(),
-    prototypePage(),
-    VitePWA({
-      registerType: "autoUpdate",
-      includeAssets: ["icon.svg"],
-      manifest: {
-        name: "Bearded POS",
-        short_name: "Bearded POS",
-        description: "Register, inventory and customers for the store.",
-        theme_color: "#0f6e5a",
-        background_color: "#f3f5f4",
-        display: "standalone",
-        orientation: "any",
-        start_url: "/",
-        icons: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }],
-      },
-      workbox: {
-        // PGlite's WebAssembly and data files are large; precache them so the counter works offline.
-        globPatterns: ["**/*.{js,css,html,svg,wasm,data,gz}"],
-        maximumFileSizeToCacheInBytes: 25 * 1024 * 1024,
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/prototype\.html$/],
-      },
-    }),
-  ],
-  // PGlite ships its own WebAssembly; Vite's pre-bundling breaks its asset paths.
-  optimizeDeps: { exclude: ["@electric-sql/pglite"] },
-  worker: { format: "es" },
-  build: { target: "es2023", sourcemap: true },
-  test: {
-    name: "web",
-    environment: "happy-dom",
-  },
+// `vite build --mode hosted` makes the register for the store's site at /register (see .env.hosted).
+export default defineConfig(({ mode }) => {
+  const hosted = mode === "hosted";
+  const base = hosted ? "/register/" : "/";
+  return {
+    base,
+    plugins: [
+      react(),
+      ...(hosted ? [] : [prototypePage()]),
+      VitePWA({
+        registerType: "autoUpdate",
+        includeAssets: ["icon.svg"],
+        manifest: {
+          name: "Bearded POS",
+          short_name: "Bearded POS",
+          description: "Register, inventory and customers for the store.",
+          theme_color: "#0f6e5a",
+          background_color: "#f3f5f4",
+          display: "standalone",
+          orientation: "any",
+          start_url: base,
+          scope: base,
+          icons: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }],
+        },
+        workbox: {
+          // PGlite's WebAssembly and data files are large; precache them so the counter works offline.
+          globPatterns: ["**/*.{js,css,html,svg,wasm,data,gz}"],
+          maximumFileSizeToCacheInBytes: 25 * 1024 * 1024,
+          navigateFallback: `${base}index.html`,
+          navigateFallbackDenylist: [/^\/prototype\.html$/, /^\/api\//],
+        },
+      }),
+    ],
+    // PGlite ships its own WebAssembly; Vite's pre-bundling breaks its asset paths.
+    optimizeDeps: { exclude: ["@electric-sql/pglite"] },
+    worker: { format: "es" },
+    build: { target: "es2023", sourcemap: true, outDir: hosted ? "dist-hosted" : "dist" },
+    test: {
+      name: "web",
+      environment: "happy-dom",
+    },
+  };
 });

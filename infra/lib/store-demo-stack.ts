@@ -59,6 +59,10 @@ export interface StoreDemoStackProps extends StackProps {
   subdomain: string;
   /** The built store (apps/store/dist), relative to infra. */
   siteDir: string;
+  /** The built register (apps/web/dist-hosted), relative to infra, served at /register. */
+  registerDir: string;
+  /** The register's first owners, as "Name <email>". They sign in with an email code. */
+  registerOwners: string[];
   /** Emails that may sign in to Behind the Beard. SES sends each a verification email. */
   staffEmails: string[];
   /** The store's business id (DEV_BUSINESS_ID in services/store-api/src/node.ts). */
@@ -161,6 +165,10 @@ export class StoreDemoStack extends Stack {
         BBG_BUSINESS_ID: props.businessId,
         BBG_STAFF: props.staffEmails.join(","),
         BBG_SITE_URL: `https://${siteName}`,
+        // The register at /register: its own tables beside the store's, and (DEMO) sample stock.
+        POS_MIGRATIONS_DIR: "/var/task/pos-migrations",
+        POS_OWNERS: props.registerOwners.join(", "),
+        POS_DEMO_STOCK: "100",
       },
       bundling: {
         format: OutputFormat.ESM,
@@ -264,10 +272,20 @@ export class StoreDemoStack extends Stack {
     new BucketDeployment(this, "DeploySite", {
       sources: [Source.asset(join(process.cwd(), props.siteDir))],
       destinationBucket: bucket,
+      // The register's files are deployed below; pruning here would delete them.
+      exclude: ["register/*"],
       distribution,
       distributionPaths: ["/*"],
       // The song videos make the site about 50 MB.
       memoryLimit: 1024,
+    });
+
+    new BucketDeployment(this, "DeployRegister", {
+      sources: [Source.asset(join(process.cwd(), props.registerDir))],
+      destinationBucket: bucket,
+      destinationKeyPrefix: "register/",
+      distribution,
+      distributionPaths: ["/register/*"],
     });
 
     new CfnOutput(this, "SiteUrl", { value: `https://${siteName}` });
@@ -275,6 +293,7 @@ export class StoreDemoStack extends Stack {
       value: square.secretName,
       description: "Paste the Square Sandbox token here (Secrets Manager, us-east-1)",
     });
+    new CfnOutput(this, "RegisterUrl", { value: `https://${siteName}/register` });
     new CfnOutput(this, "DistributionId", { value: distribution.distributionId });
   }
 }

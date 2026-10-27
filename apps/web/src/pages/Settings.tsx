@@ -35,7 +35,7 @@ export function SettingsRoutes() {
 }
 
 function Settings() {
-  const { api, me, switchRole } = useSession();
+  const { api, me, switchRole, hosted } = useSession();
   const canEdit = can(me.staff.role, "settings.edit");
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => api.call("getSettings") });
 
@@ -44,7 +44,7 @@ function Settings() {
       <div className="page-head">
         <h1>Store settings</h1>
         <button type="button" onClick={switchRole}>
-          Switch role
+          {hosted ? "Sign out" : "Switch role"}
         </button>
       </div>
 

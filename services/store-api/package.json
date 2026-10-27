@@ -9,8 +9,12 @@
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.1156.0",
     "@aws-sdk/client-sesv2": "^3.1156.0",
+    "@bearded/api": "*",
+    "@bearded/core": "*",
+    "@bearded/db": "*",
     "@bearded/store-core": "*",
     "@electric-sql/pglite": "^0.5.10",
+    "kysely": "^0.29.6",
     "pg": "^8.23.1"
   },
   "scripts": {

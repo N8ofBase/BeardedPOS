@@ -5,23 +5,31 @@ export interface Migration {
   sql: string;
 }
 
-// Vite (web build) and Vitest both resolve this at build time.
-const files = import.meta.glob<string>("../migrations/*.sql", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+/** Migrations from name → SQL text, in filename order. */
+export function toMigrations(files: Record<string, string>): Migration[] {
+  return Object.entries(files)
+    .map(([path, sql]) => ({
+      name: path
+        .split("/")
+        .pop()!
+        .replace(/\.sql$/, ""),
+      sql,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
-/** Every migration in migrations/, in filename order. */
-export const MIGRATIONS: Migration[] = Object.entries(files)
-  .map(([path, sql]) => ({
-    name: path
-      .split("/")
-      .pop()!
-      .replace(/\.sql$/, ""),
-    sql,
-  }))
-  .sort((a, b) => a.name.localeCompare(b.name));
+// Vite (web build) and Vitest both resolve this at build time. Bundled for Node (the hosted
+// register's Lambda) there is no import.meta.glob: that build reads the folder itself.
+function bundled(): Record<string, string> {
+  try {
+    return import.meta.glob<string>("../migrations/*.sql", { query: "?raw", import: "default", eager: true });
+  } catch {
+    return {};
+  }
+}
+
+/** Every migration in migrations/, in filename order. Empty outside Vite and Vitest. */
+export const MIGRATIONS: Migration[] = toMigrations(bundled());
 
 /**
  * Applies migrations that haven't run yet, each in its own transaction.

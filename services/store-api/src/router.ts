@@ -16,6 +16,7 @@ import { joinVip, listReviews, submitReview } from "./handlers/people.ts";
 import { checkout, getCatalog, getOrderStatus, getPreviewOrder, payPreviewOrder } from "./handlers/shop.ts";
 import { me, moderateReview, requestCode, signIn, signOut, staffReviews } from "./handlers/staff.ts";
 import { getStats } from "./handlers/stats.ts";
+import { handleRegister } from "./register.ts";
 
 type Route = [
   method: string,
@@ -54,7 +55,8 @@ const ROUTES: Route[] = [
 export async function handle(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
   const matches = ROUTES.filter(([, pattern]) => pattern.test(req.path));
   const route = matches.find(([method]) => method === req.method);
-  if (!route) return { status: matches.length ? 405 : 404, body: { error: "Not found." } };
+  const register = req.path.startsWith("/api/pos/");
+  if (!route && !register) return { status: matches.length ? 405 : 404, body: { error: "Not found." } };
   // Bodies must be JSON, which also keeps other sites' plain form posts out.
   if (
     req.method === "POST" &&
@@ -63,6 +65,7 @@ export async function handle(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespons
   )
     return { status: 415, body: { error: "Send JSON." } };
   try {
+    if (!route) return (await handleRegister(ctx, req))!;
     const id = decodeURIComponent(route[1].exec(req.path)?.[1] ?? "");
     return await route[2](ctx, req, id);
   } catch (e) {

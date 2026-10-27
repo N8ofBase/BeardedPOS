@@ -14,12 +14,13 @@ $$;
 GRANT USAGE ON SCHEMA public TO pos_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO pos_app;
 
--- NULL when no business is set, so policies match nothing.
-CREATE FUNCTION current_business_id() RETURNS uuid
+-- NULL when no business is set, so policies match nothing. "OR REPLACE": the online store's
+-- migrations make the same two functions when both share one database.
+CREATE OR REPLACE FUNCTION current_business_id() RETURNS uuid
   LANGUAGE sql STABLE
   AS $$ SELECT nullif(current_setting('app.business_id', true), '')::uuid $$;
 
-CREATE FUNCTION set_updated_at() RETURNS trigger
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger
   LANGUAGE plpgsql
   AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END $$;
 

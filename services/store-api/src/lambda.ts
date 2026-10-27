@@ -7,12 +7,16 @@ import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
 import type { StoreCtx } from "./context.ts";
 import { parseCookies, type ApiRequest, type ApiResponse } from "./http.ts";
 import { sesMailer } from "./mailer.ts";
-import { openPostgres } from "./postgres.ts";
+import { ensureStore } from "@bearded/db";
+import { openPostgres, type PostgresOptions } from "./postgres.ts";
+import { openRegister, readMigrations, storeSetup } from "./register-postgres.ts";
 import { handle } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
 
 const MAX_BODY = 64 * 1024;
+/** The register sends bigger bodies: an import goes up 500 rows at a time. */
+const MAX_REGISTER_BODY = 5 * 1024 * 1024;
 /** What the CDK stack puts in the Square secret. Until N8 pastes the Sandbox token, Square is offline. */
 export const SQUARE_PLACEHOLDER = "paste-the-square-sandbox-token-here";
 
@@ -57,7 +61,8 @@ export async function serve(ctx: StoreCtx, event: HttpEvent): Promise<HttpResult
     : "";
   let body: unknown;
   try {
-    if (text.length > MAX_BODY) throw new Error("too big");
+    if (text.length > (event.rawPath.startsWith("/api/pos/") ? MAX_REGISTER_BODY : MAX_BODY))
+      throw new Error("too big");
     body = text ? JSON.parse(text) : undefined;
   } catch {
     return result({
@@ -108,19 +113,30 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
       ? new SnapshotStore()
       : new SquareApiStore({ mode: "sandbox", token, locationId: env.SQUARE_LOCATION_ID || undefined });
   const ses = new SESv2Client({});
+  const options: PostgresOptions = {
+    host: db.host,
+    port: db.port,
+    database: db.dbname ?? "store",
+    user: db.username,
+    password: db.password,
+    ca: readFileSync(need("RDS_CA_FILE"), "utf8"),
+  };
+  const businessId = need("BBG_BUSINESS_ID");
+  // The register's tables first, then the store's (which let the app's user act as pos_app),
+  // then the store's business, owners and sample data for the register. A register that can't
+  // start is left off until the next cold start; the store keeps working either way.
+  let pos = env.POS_MIGRATIONS_DIR
+    ? await openRegister(options, readMigrations(env.POS_MIGRATIONS_DIR)).catch(registerOff)
+    : undefined;
+  const storeDb = await openPostgres(options);
+  if (pos) pos = await ensureStore(pos, storeSetup(env, businessId)).then(() => pos, registerOff);
   return {
-    db: await openPostgres({
-      host: db.host,
-      port: db.port,
-      database: db.dbname ?? "store",
-      user: db.username,
-      password: db.password,
-      ca: readFileSync(need("RDS_CA_FILE"), "utf8"),
-    }),
+    db: storeDb,
+    ...(pos ? { pos } : {}),
     square,
     mailer: sesMailer(need("MAIL_FROM"), (input) => ses.send(new SendEmailCommand(input))),
     config: {
-      businessId: need("BBG_BUSINESS_ID"),
+      businessId,
       staff: need("BBG_STAFF")
         .split(",")
         .map((s) => s.trim())
@@ -130,6 +146,11 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     },
     now: () => new Date(),
   };
+}
+
+function registerOff(e: unknown): undefined {
+  console.error("register setup failed; /api/pos is off until the next cold start", e);
+  return undefined;
 }
 
 let ready: Promise<StoreCtx> | undefined;
