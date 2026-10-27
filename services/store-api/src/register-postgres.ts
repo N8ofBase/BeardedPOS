@@ -5,8 +5,18 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
-import { migrate, PGLITE_PARSERS, toMigrations, type DB, type Migration, type StoreSetup } from "@bearded/db";
+import {
+  migrate,
+  PGLITE_PARSERS,
+  toMigrations,
+  type DB,
+  type Migration,
+  type SetupProduct,
+  type StoreSetup,
+} from "@bearded/db";
+import { storeProducts, type Product, type SquareCatalog } from "@bearded/store-core";
 import type { PostgresOptions } from "./postgres.ts";
+import { STORE_LOGO } from "./registerLogo.ts";
 
 // Any fixed number other than the store's: two cold starts can't run the same migrations at once.
 const REGISTER_LOCK = 4_810_043;
@@ -33,12 +43,34 @@ export function readMigrations(dir: string): Migration[] {
   );
 }
 
+const CATEGORY: Record<Product["kind"], string> = {
+  game: "Family games",
+  expansion: "Other",
+  preorder: "Other",
+  digital: "Other",
+  merch: "Accessories",
+};
+
+/** What the online store sells, in shelf order, as register products (SKUs BBG-001 and on). */
+export function storeItems(catalog: SquareCatalog): SetupProduct[] {
+  return storeProducts(catalog).map((p, i) => ({
+    sku: `BBG-${String(i + 1).padStart(3, "0")}`,
+    name: p.name,
+    category: p.kind === "game" && /\bcard\b/i.test(p.name) ? "Card games" : CATEGORY[p.kind],
+    priceCents: p.priceCents,
+  }));
+}
+
 /**
  * The store as the register first meets it. POS_OWNERS lists the first owners as
- * "Name <email>, Name <email>"; POS_DEMO_STOCK, when set, loads the (DEMO) sample shop with that
- * many of each item.
+ * "Name <email>, Name <email>"; POS_DEMO_STOCK, when set, loads the (DEMO) sample customers and
+ * puts that many of each item on the shelf: the online store's items when a catalog is given.
  */
-export function storeSetup(env: Record<string, string | undefined>, businessId: string): StoreSetup {
+export function storeSetup(
+  env: Record<string, string | undefined>,
+  businessId: string,
+  catalog?: SquareCatalog,
+): StoreSetup {
   const owners = (env.POS_OWNERS ?? "")
     .split(",")
     .map((s) => /^\s*(.+?)\s*<([^>]+)>\s*$/.exec(s))
@@ -46,6 +78,7 @@ export function storeSetup(env: Record<string, string | undefined>, businessId: 
     .map((m) => ({ name: m[1]!, email: m[2]! }));
   if (!owners.length) throw new Error('POS_OWNERS needs at least one "Name <email>".');
   const stock = env.POS_DEMO_STOCK ? Number(env.POS_DEMO_STOCK) : NaN;
+  const demo = Number.isInteger(stock) && stock >= 0;
   return {
     businessId,
     name: "Bearded Board Games",
@@ -53,7 +86,9 @@ export function storeSetup(env: Record<string, string | undefined>, businessId: 
     locationName: "St. Louis",
     timezone: "America/Chicago",
     owners,
-    demo: Number.isInteger(stock) && stock >= 0 ? { openingStock: stock } : false,
+    demo: demo ? { openingStock: stock } : false,
+    look: { brandColor: "#14614f", logo: STORE_LOGO },
+    ...(demo && catalog ? { items: { products: storeItems(catalog), openingStock: stock } } : {}),
   };
 }
 

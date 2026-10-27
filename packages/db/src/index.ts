@@ -17,7 +17,7 @@ export {
   hasDemoData,
   type DemoStaff,
 } from "../seed/demo.ts";
-export { ensureStore, type StoreSetup } from "../seed/store.ts";
+export { ensureStore, type SetupProduct, type StoreSetup } from "../seed/store.ts";
 
 export function createDb(client: QueryClient): Kysely<DB> {
   return new Kysely<DB>({ dialect: new PGliteDialect(client) });

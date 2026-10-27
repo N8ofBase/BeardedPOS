@@ -32,7 +32,7 @@ const PAGES: Record<string, () => React.ReactNode> = {
 export function AdminShell({ me, onSwitchRole, onResetDemo, hosted }: Props) {
   const location = useLocation();
   const nav = navFor(me.staff.role);
-  const brand = isHexColor(me.business.brandColor) ? me.business.brandColor! : "#0f6e5a";
+  const brand = isHexColor(me.business.brandColor) ? me.business.brandColor! : "#14614f";
   const brandText = readableOn(brand);
   const home = nav[0]?.path ?? "/settings";
 

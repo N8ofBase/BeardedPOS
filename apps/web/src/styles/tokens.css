@@ -1,20 +1,25 @@
-/* Colors and type from docs/prototype.html. Light by default, dark when the device asks. */
+/* Bearded Board Games' look, from the store site (apps/store): felt green, mustard, Bowlby One and
+   Figtree. Light by default, dark when the device asks. */
 :root {
-  --bg: #f3f5f4;
+  --bg: #f2f7f4;
   --surface: #ffffff;
-  --sunk: #e8ecea;
-  --fg: #18211e;
-  --muted: #5d6a65;
-  --line: #d3dbd7;
-  --accent: #0f6e5a;
+  --sunk: #e6f2ee;
+  --fg: #1e2421;
+  --muted: #5b6863;
+  --line: #cfdcd6;
+  --accent: #14614f;
   --accent-fg: #ffffff;
-  --note-bg: #efe9fd;
+  --deep: #0c4337;
+  --mustard: #f6b820;
+  --butter: #ffd25e;
+  --ink: #1e2421;
+  --note-bg: #fff6e8;
   --good: #1d7a3a;
   --warn: #a85c00;
   --warn-soft: #fdf0dc;
   --bad: #b3261e;
-  --display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --body: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --display: "Bowlby One", "Arial Black", sans-serif;
+  --body: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   --radius: 10px;
   --sidebar: 220px;
