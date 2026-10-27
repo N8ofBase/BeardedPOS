@@ -272,7 +272,7 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
 }
 
 function StaffSection() {
-  const { api, me } = useSession();
+  const { api, me, hosted } = useSession();
   const canManage = can(me.staff.role, "staff.manage");
   const staff = useQuery({ queryKey: ["staff"], queryFn: () => api.call("listStaff") });
   const [editing, setEditing] = useState<StaffListItem | "new" | null>(null);
@@ -326,8 +326,9 @@ function StaffSection() {
         </table>
       </div>
       <p className="muted small">
-        In this demo, new staff appear on the "Who's using the register?" screen. In the hosted version they
-        get an email invite to sign in.
+        {hosted
+          ? "New staff sign in with a code sent to the email you enter here."
+          : `In this demo, new staff appear on the "Who's using the register?" screen. In the hosted version they sign in with a code sent to their email.`}
       </p>
       {editing && <StaffForm staff={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
     </section>

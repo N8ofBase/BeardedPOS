@@ -23,7 +23,7 @@ function prototypePage(): Plugin {
   };
 }
 
-// `vite build --mode hosted` makes the register for the store's site at /register (see .env.hosted).
+// `vite build --mode hosted` makes the register for the store's site at /register.
 export default defineConfig(({ mode }) => {
   const hosted = mode === "hosted";
   const base = hosted ? "/register/" : "/";
