@@ -217,3 +217,59 @@ describe("the store's setup", () => {
     expect(() => storeSetup({}, BIZ_A)).toThrow(/POS_OWNERS/);
   });
 });
+
+describe("website orders", () => {
+  const LOCKED_OUT = "NJ65T37BVFHTAAFBCEXI7KNX";
+  const JIBE = "XJ66RLVQ23F4GJJNWQLBNYLH";
+
+  async function onHand(name: string): Promise<number> {
+    const { rows } = await pg.query<{ on_hand: number }>(
+      `SELECT l.on_hand FROM products p JOIN inventory_levels l ON l.product_id = p.id
+       WHERE p.business_id = $1 AND p.name = $2`,
+      [BIZ_A, name],
+    );
+    return rows[0]!.on_hand;
+  }
+
+  async function buy(store: TestStore, productId: string, qty: number): Promise<string> {
+    const { orderId } = (await store.call("POST", "/api/checkout", { lines: [{ productId, qty }] })).body as {
+      orderId: string;
+    };
+    expect((await store.call("POST", `/api/checkout-preview/${orderId}/pay`, {})).status).toBe(200);
+    return orderId;
+  }
+
+  it("takes a paid website order off the register's shelf, once, with the order in its history", async () => {
+    const store = register();
+    const before = await onHand("Locked Out");
+    const orderId = await buy(store, LOCKED_OUT, 1);
+    expect(await onHand("Locked Out")).toBe(before - 1);
+    // Paying the same order again changes nothing.
+    await store.call("POST", `/api/checkout-preview/${orderId}/pay`, {});
+    expect(await onHand("Locked Out")).toBe(before - 1);
+
+    const jar = await signInOwner(store);
+    const product = (
+      (await call(store, jar, "listProducts", {})).body as { output: { id: string; name: string }[] }
+    ).output.find((p) => p.name === "Locked Out")!;
+    const moves = (
+      (await call(store, jar, "getProduct", { id: product.id })).body as {
+        output: { moves: { reason: string; qtyChange: number; note: string | null }[] };
+      }
+    ).output.moves;
+    expect(moves[0]).toMatchObject({
+      reason: "sale",
+      qtyChange: -1,
+      note: `Website order #${orderId.slice(0, 8).toUpperCase()}`,
+    });
+  });
+
+  it("still takes the order when the register has no product by that name", async () => {
+    await pg.query("UPDATE products SET name = 'Jibe' WHERE business_id = $1 AND name = 'Jibe Card Game'", [
+      BIZ_A,
+    ]);
+    const before = await onHand("Jibe");
+    await buy(register(), JIBE, 2);
+    expect(await onHand("Jibe")).toBe(before);
+  });
+});

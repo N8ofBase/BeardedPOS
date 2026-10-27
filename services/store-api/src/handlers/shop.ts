@@ -17,6 +17,7 @@ import type { StoreCtx } from "../context.ts";
 import { withBusiness, type Sql } from "../db.ts";
 import { asObject, HttpError, ok, type ApiRequest, type ApiResponse } from "../http.ts";
 import { bucksBalance, orderBucks, settlePaidOrder, storeToday } from "../loyalty.ts";
+import { takeRegisterStock } from "../registerStock.ts";
 import { currentCustomer } from "./account.ts";
 
 export async function getCatalog(ctx: StoreCtx): Promise<ApiResponse> {
@@ -171,8 +172,9 @@ async function loadOrder(sql: Sql, id: string): Promise<OrderView> {
 }
 
 /**
- * Marks an order paid once, and in the same transaction writes its Beard Bucks. Square's webhook
- * calls this when hosted; the thank-you page check and the offline preview page do too.
+ * Marks an order paid once, and in the same transaction writes its Beard Bucks and takes its items
+ * off the register's shelf. Square's webhook calls this when hosted; the thank-you page check and the
+ * offline preview page do too.
  */
 export async function markPaid(sql: Sql, id: string, today: string): Promise<boolean> {
   const { rows } = await sql.query<{ id: string }>(
@@ -181,6 +183,7 @@ export async function markPaid(sql: Sql, id: string, today: string): Promise<boo
   );
   if (rows.length === 0) return false;
   await settlePaidOrder(sql, id, today);
+  await takeRegisterStock(sql, id);
   return true;
 }
 
