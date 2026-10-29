@@ -8,8 +8,10 @@ import type { StoreCtx } from "./context.ts";
 import { parseCookies, type ApiRequest, type ApiResponse } from "./http.ts";
 import { sesMailer } from "./mailer.ts";
 import { ensureStore } from "@bearded/db";
+import { withBusiness } from "./db.ts";
 import { openPostgres, type PostgresOptions } from "./postgres.ts";
 import { openRegister, readMigrations, storeSetup } from "./register-postgres.ts";
+import { catchUpRegisterStock } from "./registerStock.ts";
 import { handle } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
@@ -133,6 +135,12 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
   // copy when Square can't be reached).
   const catalog = pos ? await square.catalog().catch(() => new SnapshotStore().catalog()) : undefined;
   if (pos) pos = await ensureStore(pos, storeSetup(env, businessId, catalog)).then(() => pos, registerOff);
+  // Website orders paid while the register was off (or before it shared this database) come off its
+  // shelf now. A failure here is logged and never stops the store.
+  if (pos)
+    await withBusiness(storeDb, businessId, catchUpRegisterStock).catch((e: unknown) =>
+      console.error("register stock catch-up failed", e),
+    );
   return {
     db: storeDb,
     ...(pos ? { pos } : {}),

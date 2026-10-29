@@ -6,6 +6,7 @@ import { createDb, ensureStore, migrate as migrateRegister, PGLITE_OPTIONS } fro
 import type { CheckoutResult, PaymentResult } from "@bearded/api";
 import { migrate as migrateStore, withBusiness, type Database } from "../src/db.ts";
 import { storeItems, storeSetup } from "../src/register-postgres.ts";
+import { catchUpRegisterStock } from "../src/registerStock.ts";
 import { loadSnapshot } from "../src/square/snapshot.ts";
 import { BIZ_A, BIZ_B, makeStore, signInStaff, type TestStore } from "./helpers.ts";
 
@@ -262,6 +263,24 @@ describe("website orders", () => {
       qtyChange: -1,
       note: `Website order #${orderId.slice(0, 8).toUpperCase()}`,
     });
+  });
+
+  it("catches up a paid order that never came off the shelf, once", async () => {
+    const store = register();
+    const before = await onHand("Locked Out");
+    const orderId = await buy(store, LOCKED_OUT, 3);
+    // As if the order was paid while the register was off: its moves were never written.
+    await pg.query("DELETE FROM inventory_moves WHERE ref_id = $1", [orderId]);
+    await pg.query(
+      `UPDATE inventory_levels SET on_hand = $2
+       WHERE product_id = (SELECT id FROM products WHERE business_id = $1 AND name = 'Locked Out')`,
+      [BIZ_A, before],
+    );
+    const catchUp = () => withBusiness(pg as unknown as Database, BIZ_A, catchUpRegisterStock);
+    expect(await catchUp()).toBeGreaterThanOrEqual(1);
+    expect(await onHand("Locked Out")).toBe(before - 3);
+    expect(await catchUp()).toBe(0); // the next cold start changes nothing
+    expect(await onHand("Locked Out")).toBe(before - 3);
   });
 
   it("still takes the order when the register has no product by that name", async () => {
