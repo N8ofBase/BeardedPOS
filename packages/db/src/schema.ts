@@ -443,6 +443,32 @@ export interface PosStaffSessionsTable {
   staff_id: string;
   token_hash: string;
   expires_at: Date;
+  /** Set for a PIN sign-in: the tablet it happened on. */
+  tablet_id: string | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface StaffPinsTable {
+  business_id: string;
+  staff_id: string;
+  pin_hash: string;
+  failed_tries: Generated<number>;
+  locked_until: Date | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface PosTabletsTable {
+  id: Generated<string>;
+  business_id: string;
+  name: string;
+  token_hash: string;
+  set_up_by: string;
+  expires_at: Date;
+  last_used_at: Date | null;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -524,6 +550,8 @@ export interface DB {
   staff: StaffTable;
   pos_staff_codes: PosStaffCodesTable;
   pos_staff_sessions: PosStaffSessionsTable;
+  staff_pins: StaffPinsTable;
+  pos_tablets: PosTabletsTable;
   products: ProductsTable;
   inventory_levels: InventoryLevelsTable;
   inventory_moves: InventoryMovesTable;

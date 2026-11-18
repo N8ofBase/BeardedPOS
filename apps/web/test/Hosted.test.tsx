@@ -13,7 +13,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 /** A small /api/pos: one staff email and code, and a session flag in place of the cookie. */
-function fakeServer() {
+function fakeServer(opts: { tablet?: boolean } = {}) {
   let signedIn = false;
   const calls: { path: string; body: unknown }[] = [];
   const fetch = vi.fn(async (url: string, init: RequestInit) => {
@@ -27,6 +27,19 @@ function fakeServer() {
       signedIn = true;
       return json(200, { signedIn: true });
     }
+    if (path === "tablet")
+      return json(
+        200,
+        opts.tablet
+          ? { tablet: { name: "Front counter" }, staff: [{ id: "s-robin", name: "Robin" }] }
+          : { tablet: null, staff: [] },
+      );
+    if (path === "pin-session") {
+      if (body.pin !== "2580") return json(401, { error: "That PIN didn’t match. 4 tries left." });
+      signedIn = true;
+      return json(200, { signedIn: true });
+    }
+    if (path === "pins") return json(200, { staffIds: [] });
     if (path === "signout") {
       signedIn = false;
       return json(200, { signedIn: false });
@@ -95,6 +108,44 @@ describe("hosted register", () => {
     fireEvent.click((await screen.findAllByRole("button", { name: "Sign out" }))[0]!);
     expect(await screen.findByRole("heading", { name: "Sign in to the register" })).toBeTruthy();
     expect(server.calls.some((c) => c.path === "signout")).toBe(true);
+  });
+});
+
+describe("PIN sign-in on a set-up tablet", () => {
+  beforeEach(() => {
+    server = fakeServer({ tablet: true });
+    vi.stubGlobal("fetch", server.fetch);
+  });
+
+  async function enterPin(pin: string) {
+    fireEvent.click(await screen.findByRole("button", { name: "Robin" }));
+    for (const d of pin) fireEvent.click(screen.getByRole("button", { name: d }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+  }
+
+  it("taps a name, enters the PIN on the keypad, and locks back to the names", async () => {
+    renderHosted();
+    expect(await screen.findByRole("heading", { name: "Who's at the register?" })).toBeTruthy();
+    await enterPin("2580");
+    expect(server.calls.find((c) => c.path === "pin-session")?.body).toEqual({
+      staffId: "s-robin",
+      pin: "2580",
+    });
+    const lock = await screen.findByRole("button", { name: "Lock" });
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeTruthy(); // Settings' own button
+    fireEvent.click(lock);
+    expect(await screen.findByRole("heading", { name: "Who's at the register?" })).toBeTruthy();
+  });
+
+  it("shows the tries left for a wrong PIN, and falls back to email", async () => {
+    renderHosted();
+    await enterPin("1357");
+    expect(await screen.findByText(/4 tries left/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Not Robin?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in with email instead" }));
+    expect(await screen.findByRole("heading", { name: "Sign in to the register" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Use my PIN" }));
+    expect(await screen.findByRole("heading", { name: "Who's at the register?" })).toBeTruthy();
   });
 });
 

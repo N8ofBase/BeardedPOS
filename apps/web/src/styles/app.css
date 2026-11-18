@@ -978,3 +978,33 @@ button.link {
 .tag-line input {
   width: 220px;
 }
+
+/* PIN sign-in on a set-up counter tablet: big name buttons, then a keypad. */
+.pin-names {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.pin-names button {
+  min-height: 64px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.pin-input {
+  font-size: 1.6rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 320px;
+  width: 100%;
+  margin: 0 auto;
+}
+.pin-pad button {
+  min-height: 60px;
+  font-size: 1.4rem;
+  font-weight: 700;
+}

@@ -19,6 +19,10 @@ interface Props {
   onResetDemo: () => Promise<void>;
   /** The register on the store's server: a test banner without reset, and the button signs out. */
   hosted?: boolean;
+  /** Hosted: "Lock" on a tablet set up for PINs, else "Sign out". */
+  signOutLabel?: string;
+  /** Hosted: more under the signed-in name, such as changing your PIN. */
+  whoExtra?: React.ReactNode;
 }
 
 const PAGES: Record<string, () => React.ReactNode> = {
@@ -30,7 +34,7 @@ const PAGES: Record<string, () => React.ReactNode> = {
   "/settings": () => <SettingsRoutes />,
 };
 
-export function AdminShell({ me, onSwitchRole, onResetDemo, hosted }: Props) {
+export function AdminShell({ me, onSwitchRole, onResetDemo, hosted, signOutLabel, whoExtra }: Props) {
   const location = useLocation();
   const nav = navFor(me.staff.role);
   const brand = isHexColor(me.business.brandColor) ? me.business.brandColor! : "#14614f";
@@ -70,8 +74,9 @@ export function AdminShell({ me, onSwitchRole, onResetDemo, hosted }: Props) {
           <span>
             {me.staff.name} · {ROLE_LABEL[me.staff.role]}
           </span>
+          {whoExtra}
           <button type="button" onClick={onSwitchRole}>
-            {hosted ? "Sign out" : "Switch role"}
+            {hosted ? (signOutLabel ?? "Sign out") : "Switch role"}
           </button>
         </div>
       </nav>
