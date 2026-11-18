@@ -90,3 +90,17 @@ export {
   type PublicOutput,
 } from "./public/registry.ts";
 export type { CodeSent, MyAccount, StoreInfo, VerifyResult } from "./public/account.ts";
+export {
+  applySquareSync,
+  linkCustomer,
+  loadSyncState,
+  markStockSends,
+  MAX_SEND_TRIES,
+  SQUARE_COUNT_NOTE,
+  squareSyncStatus,
+  waitingStockSends,
+  type SquareSyncStatus,
+  type StockSend,
+  type SyncState,
+  type SyncSummary,
+} from "./squareSync.ts";

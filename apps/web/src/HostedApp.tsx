@@ -2,11 +2,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { PIN_RULES } from "@bearded/core";
 import type { Me } from "@bearded/api";
+import { can } from "@bearded/core";
 import { createHttpApi, posFetch, SignedOutError } from "./api/http.ts";
 import { EmailSignIn } from "./auth/EmailSignIn.tsx";
 import { MyPinButton } from "./auth/PinSettings.tsx";
 import { PinSignIn, type TabletInfo } from "./auth/PinSignIn.tsx";
 import { AdminShell } from "./layout/AdminShell.tsx";
+import { useSquareAutoSync } from "./pages/settings/SquareSection.tsx";
 import { SessionContext } from "./session.tsx";
 
 const NO_TABLET: TabletInfo = { tablet: null, staff: [] };
@@ -55,6 +57,9 @@ export function HostedApp() {
   });
   const [useEmail, setUseEmail] = useState(false);
   const onTablet = !!tablet.data?.tablet;
+
+  // Owners and managers: Square's items, prices, counts and customers come in every 15 minutes.
+  useSquareAutoSync(!!me.data && can(me.data.staff.role, "products.edit"));
 
   function restart() {
     queryClient.clear();

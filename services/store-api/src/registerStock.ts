@@ -64,8 +64,9 @@ export async function takeRegisterStock(sql: Sql, orderId: string): Promise<numb
       continue;
     }
     await sql.query(
-      `INSERT INTO inventory_moves (business_id, product_id, location_id, qty_change, reason, ref_id, note)
-       VALUES ($1, $2, $3, $4, 'sale', $5, $6)`,
+      // Square took this sale off its own stock when the order was paid: not sent back to Square.
+      `INSERT INTO inventory_moves (business_id, product_id, location_id, qty_change, reason, ref_id, note, from_square)
+       VALUES ($1, $2, $3, $4, 'sale', $5, $6, true)`,
       [order.business_id, product.id, location.id, -line.qty, orderId, websiteOrderNote(orderId)],
     );
     count += line.qty;

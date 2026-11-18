@@ -17,6 +17,7 @@ import { catchUpRegisterStock } from "./registerStock.ts";
 import { handle } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SquarePosTerminal } from "./square/pos.ts";
+import { sendStockToSquare } from "./square/registerSync.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
 import type { SquareStore } from "./square/types.ts";
 
@@ -167,8 +168,7 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     await withBusiness(storeDb, businessId, catchUpRegisterStock).catch((e: unknown) =>
       console.error("register stock catch-up failed", e),
     );
-  step("ready");
-  return {
+  const ctx: StoreCtx = {
     db: storeDb,
     ...(pos ? { pos } : {}),
     square,
@@ -187,6 +187,10 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     },
     now: () => new Date(),
   };
+  // Register stock changes Square didn't take last time go now. A failure is retried later.
+  if (pos) await sendStockToSquare(ctx).catch((e: unknown) => console.error("square stock send failed", e));
+  step("ready");
+  return ctx;
 }
 
 /**
