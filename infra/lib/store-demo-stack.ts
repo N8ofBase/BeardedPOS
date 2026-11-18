@@ -22,7 +22,6 @@ import {
 } from "aws-cdk-lib/aws-cloudfront";
 import { HttpOrigin, S3BucketOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
-  AmazonLinuxCpuType,
   InstanceClass,
   InstanceSize,
   InstanceType,
@@ -33,6 +32,7 @@ import {
   Port,
   SecurityGroup,
   SubnetType,
+  UserData,
   Vpc,
 } from "aws-cdk-lib/aws-ec2";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
@@ -46,7 +46,14 @@ import {
   ParameterGroup,
   PostgresEngineVersion,
 } from "aws-cdk-lib/aws-rds";
-import { AaaaRecord, ARecord, CnameRecord, HostedZone, RecordTarget } from "aws-cdk-lib/aws-route53";
+import {
+  AaaaRecord,
+  ARecord,
+  CnameRecord,
+  HostedZone,
+  RecordTarget,
+  type IHostedZone,
+} from "aws-cdk-lib/aws-route53";
 import { CloudFrontTarget } from "aws-cdk-lib/aws-route53-targets";
 import { BlockPublicAccess, Bucket, BucketEncryption } from "aws-cdk-lib/aws-s3";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
@@ -54,6 +61,7 @@ import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { EmailIdentity, Identity } from "aws-cdk-lib/aws-ses";
 import type { Construct } from "constructs";
 import { oldSiteRedirects } from "../../packages/store-core/src/oldSite.ts";
+import { NAT_COMMANDS, NAT_IMAGE_PARAMETER } from "./nat.ts";
 import { viewerRequestCode } from "./site-request.ts";
 
 export interface StoreDemoStackProps extends StackProps {
@@ -83,6 +91,20 @@ export interface StoreDemoStackProps extends StackProps {
   verifyStaffEmails?: boolean;
   /** Load the register's (DEMO) sample stock at this count. Left out, the register starts empty. */
   demoStock?: number;
+  /**
+   * The shop's own domain (BeardedDomain's zone). Attached, the site answers at the domain and www too,
+   * on one certificate with its prismcortex.net name. Primary (once the domain points here), it's the
+   * main address: other names redirect to it, Square sends shoppers back to it, mail comes from it, and
+   * search engines may index it. The webhook stays on the prismcortex.net name either way, since Square
+   * signs that exact URL.
+   */
+  shopDomain?: { zone: IHostedZone; name: string; primary: boolean };
+}
+
+function natUserData(): UserData {
+  const data = UserData.forLinux();
+  data.addCommands(...NAT_COMMANDS);
+  return data;
 }
 
 /** Must match the placeholders in services/store-api/src/lambda.ts. */
@@ -104,6 +126,8 @@ export class StoreDemoStack extends Stack {
     const siteName = `${props.subdomain}.${props.domainName}`;
     const live = props.squareMode === "live";
     const isPrivate = props.privateDatabase === true;
+    const shop = props.shopDomain;
+    const primaryName = shop?.primary ? shop.name : siteName;
     const zone = HostedZone.fromLookup(this, "Zone", { domainName: props.domainName });
     const repoRoot = join(process.cwd(), "..");
 
@@ -114,7 +138,10 @@ export class StoreDemoStack extends Stack {
     const nat = isPrivate
       ? NatProvider.instanceV2({
           instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.NANO),
-          machineImage: MachineImage.latestAmazonLinux2023({ cpuType: AmazonLinuxCpuType.ARM_64 }),
+          // The minimal AL2023 image, with our own setup: CDK's default commands find the network card
+          // with `route`, which AL2023 doesn't have, so the NAT never forwarded anything.
+          machineImage: MachineImage.fromSsmParameter(NAT_IMAGE_PARAMETER),
+          userData: natUserData(),
           defaultAllowedTraffic: NatTrafficDirection.OUTBOUND_ONLY,
         })
       : undefined;
@@ -207,7 +234,8 @@ export class StoreDemoStack extends Stack {
       runtime: Runtime.NODEJS_24_X,
       architecture: Architecture.ARM_64,
       memorySize: 512,
-      timeout: Duration.seconds(20),
+      // The first start on a new database runs every migration; API Gateway waits at most 30 seconds.
+      timeout: Duration.seconds(29),
       ...(apiSecurity
         ? { vpc, vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS }, securityGroups: [apiSecurity] }
         : {}),
@@ -225,10 +253,10 @@ export class StoreDemoStack extends Stack {
         SQUARE_WEBHOOK_URL: webhookUrl,
         STORE_MIGRATIONS_DIR: "/var/task/migrations",
         RDS_CA_FILE: "/var/task/rds-global-bundle.pem",
-        MAIL_FROM: `Bearded Board Games <no-reply@${siteName}>`,
+        MAIL_FROM: `Bearded Board Games <no-reply@${primaryName}>`,
         BBG_BUSINESS_ID: props.businessId,
         BBG_STAFF: props.staffEmails.join(","),
-        BBG_SITE_URL: `https://${siteName}`,
+        BBG_SITE_URL: `https://${primaryName}`,
         // The register at /register: its own tables beside the store's, and (DEMO) sample stock.
         POS_MIGRATIONS_DIR: "/var/task/pos-migrations",
         POS_OWNERS: props.registerOwners.join(", "),
@@ -271,12 +299,22 @@ export class StoreDemoStack extends Stack {
     // https://<id>.execute-api.<region>.amazonaws.com -> the host part.
     const apiHost = Fn.select(2, Fn.split("/", httpApi.apiEndpoint));
 
-    const certificate = new Certificate(this, "Certificate", {
-      domainName: siteName,
-      validation: CertificateValidation.fromDns(zone),
-    });
+    const certificate = shop
+      ? new Certificate(this, "ShopCertificate", {
+          domainName: siteName,
+          subjectAlternativeNames: [shop.name, `www.${shop.name}`],
+          validation: CertificateValidation.fromDnsMultiZone({
+            [siteName]: zone,
+            [shop.name]: shop.zone,
+            [`www.${shop.name}`]: shop.zone,
+          }),
+        })
+      : new Certificate(this, "Certificate", {
+          domainName: siteName,
+          validation: CertificateValidation.fromDns(zone),
+        });
 
-    // A proof of concept: keep it out of search results until the domain moves.
+    // Kept out of search results until the shop's own domain is the main address.
     const headers = new ResponseHeadersPolicy(this, "Headers", {
       securityHeadersBehavior: {
         contentTypeOptions: { override: true },
@@ -287,9 +325,13 @@ export class StoreDemoStack extends Stack {
         },
         strictTransportSecurity: { accessControlMaxAge: Duration.days(365), override: true },
       },
-      customHeadersBehavior: {
-        customHeaders: [{ header: "X-Robots-Tag", value: "noindex, nofollow", override: true }],
-      },
+      ...(shop?.primary
+        ? {}
+        : {
+            customHeadersBehavior: {
+              customHeaders: [{ header: "X-Robots-Tag", value: "noindex, nofollow", override: true }],
+            },
+          }),
     });
 
     const bucket = new Bucket(this, "SiteBucket", {
@@ -303,7 +345,9 @@ export class StoreDemoStack extends Stack {
     const viewerRequest = new EdgeFunction(this, "SiteRequest", {
       runtime: FunctionRuntime.JS_2_0,
       comment: "Old Squarespace links and single-page app routes",
-      code: FunctionCode.fromInline(viewerRequestCode(oldSiteRedirects)),
+      code: FunctionCode.fromInline(
+        viewerRequestCode(oldSiteRedirects, shop?.primary ? shop.name : undefined),
+      ),
     });
 
     const distribution = new Distribution(this, "Distribution", {
@@ -323,7 +367,7 @@ export class StoreDemoStack extends Stack {
           responseHeadersPolicy: headers,
         },
       },
-      domainNames: [siteName],
+      domainNames: shop ? [siteName, shop.name, `www.${shop.name}`] : [siteName],
       certificate,
       defaultRootObject: "index.html",
       priceClass: PriceClass.PRICE_CLASS_100,
@@ -353,7 +397,11 @@ export class StoreDemoStack extends Stack {
       distributionPaths: ["/register/*"],
     });
 
-    new CfnOutput(this, "SiteUrl", { value: `https://${siteName}` });
+    new CfnOutput(this, "SiteUrl", { value: `https://${primaryName}` });
+    new CfnOutput(this, "DistributionDomain", {
+      value: distribution.distributionDomainName,
+      description: "For the shop domain's records (storeDistributionDomain in infra/cdk.json)",
+    });
     new CfnOutput(this, "SquareSecretName", {
       value: square.secretName,
       description: `Paste the Square ${live ? "production" : "Sandbox"} token here (Secrets Manager, us-east-1)`,
@@ -366,7 +414,7 @@ export class StoreDemoStack extends Stack {
       value: webhookKey.secretName,
       description: "Paste the webhook's signature key here (Secrets Manager, us-east-1)",
     });
-    new CfnOutput(this, "RegisterUrl", { value: `https://${siteName}/register` });
+    new CfnOutput(this, "RegisterUrl", { value: `https://${primaryName}/register` });
     new CfnOutput(this, "DistributionId", { value: distribution.distributionId });
   }
 }
