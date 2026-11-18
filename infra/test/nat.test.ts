@@ -10,6 +10,13 @@ describe("the live store's NAT instance setup", () => {
     expect(script).toMatch(/ip_forward=1/);
   });
 
+  it("adds swap before dnf, which runs out of memory on a t4g.nano without it", () => {
+    const swapon = NAT_COMMANDS.findIndex((c) => c.startsWith("swapon"));
+    const dnf = NAT_COMMANDS.findIndex((c) => c.startsWith("dnf install"));
+    expect(swapon).toBeGreaterThanOrEqual(0);
+    expect(swapon).toBeLessThan(dnf);
+  });
+
   it("uses the ARM image, to match the t4g instance", () => {
     expect(NAT_IMAGE_PARAMETER).toMatch(/al2023-.*arm64$/);
   });
