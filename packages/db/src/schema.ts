@@ -346,6 +346,8 @@ export interface PaymentsTable {
   method: "card" | "cash";
   provider: "square" | "cash";
   provider_ref: string | null;
+  /** The Square POS app hand-off's one-time reference ("pos_…"), which Square hands back. */
+  handoff_ref: Generated<string | null>;
   status: PaymentStatus;
   amount_cents: number;
   tendered_cents: number | null;

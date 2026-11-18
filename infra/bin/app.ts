@@ -103,6 +103,7 @@ if (built("BeardedStore", storeSiteDir) && built("BeardedStore", registerDir))
     staffEmails: app.node.getContext("storeStaff"),
     businessId: app.node.getContext("storeBusinessId"),
     squareMode: "live",
+    squareApplicationId: app.node.tryGetContext("squareLiveApplicationId") || undefined,
     privateDatabase: true,
     ...(shopStage === "copy"
       ? {}

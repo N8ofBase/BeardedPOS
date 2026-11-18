@@ -15,6 +15,7 @@
     "storeStaff": ["adam@beardedboardgames.com", "n8gr8@prismcortex.net"],
     "storeBusinessId": "b0a7dbbb-0000-4000-8000-000000000001",
     "registerDir": "../apps/web/dist-hosted",
-    "registerOwners": ["N8 <n8gr8@prismcortex.net>", "Adam <adam@beardedboardgames.com>"]
+    "registerOwners": ["N8 <n8gr8@prismcortex.net>", "Adam <adam@beardedboardgames.com>"],
+    "squareLiveApplicationId": ""
   }
 }

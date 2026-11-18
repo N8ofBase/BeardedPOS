@@ -7,6 +7,7 @@ import {
   allocate,
   AppError,
   can,
+  formatMoney,
   priceSale,
   type AppliedStoreDiscount,
   type Ctx,
@@ -17,7 +18,7 @@ import {
 } from "@bearded/core";
 import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
-import { terminal } from "../payments/terminal.ts";
+import { terminal, type CardHandoff } from "../payments/terminal.ts";
 import { audit, currentLocationId, likePattern, requireInt } from "../shared.ts";
 import { CUSTOMER_COLUMNS, toCards, type CustomerCard } from "./customers.ts";
 import { productQuery, type ProductRow } from "./inventory.ts";
@@ -166,6 +167,8 @@ export interface CheckoutResult {
   /** A cash-only discount is on the sale: card payments are refused. */
   cashOnly: boolean;
   paid: boolean;
+  /** Already paid toward the sale (only when an open sale is picked up again, e.g. back from Square). */
+  paidCents?: number;
 }
 
 /** Prices the ticket with current prices and opens a sale, ready for payment. */
@@ -356,6 +359,11 @@ export interface PaymentResult {
   remainingCents: number;
   /** The sale is fully paid and finished. */
   paid: boolean;
+  /** Card payments on the live register: what the screen needs to open the Square POS app. */
+  handoff?: CardHandoff;
+  /** Why a hand-off card payment didn't go through, in Square's words when it gave any. */
+  message?: string;
+  saleId: string;
 }
 
 async function result(
@@ -372,6 +380,7 @@ async function result(
     .executeTakeFirstOrThrow();
   const paidCents = await paidSoFar(trx, saleId);
   return {
+    saleId,
     paymentId,
     status,
     changeCents,
@@ -427,7 +436,7 @@ export const startCardPayment = defineHandler<{ saleId: string; amountCents: num
     if (pending) throw new AppError("conflict", "The card reader is already waiting for this sale.");
     const remaining = sale.total_cents - (await paidSoFar(trx, saleId));
     requireInt(amountCents, "Card amount", { min: 1, max: remaining });
-    const charge = await terminal.charge(amountCents, saleId);
+    const charge = await terminal.charge(amountCents, saleId, `Receipt #${sale.receipt_number}`);
     const row = await trx
       .insertInto("payments")
       .values({
@@ -435,14 +444,16 @@ export const startCardPayment = defineHandler<{ saleId: string; amountCents: num
         sale_id: saleId,
         method: "card",
         provider: "square",
-        provider_ref: charge.providerRef,
+        provider_ref: charge.handoff ? null : charge.providerRef,
+        handoff_ref: charge.handoff ? charge.handoff.state : null,
         status: "pending",
         amount_cents: amountCents,
         staff_id: ctx.staffId,
       })
       .returning("id")
       .executeTakeFirstOrThrow();
-    return result(trx, saleId, row.id, "pending");
+    const r = await result(trx, saleId, row.id, "pending");
+    return charge.handoff ? { ...r, handoff: charge.handoff } : r;
   },
 });
 
@@ -463,6 +474,8 @@ export const simulateTerminalResult = defineHandler<
       .forUpdate()
       .executeTakeFirst();
     if (!p || p.method !== "card") throw new AppError("not_found", "That card payment doesn't exist.");
+    if (terminal.kind !== "simulated")
+      throw new AppError("forbidden", "This register takes real cards. The pretend reader is off.");
     if (p.status !== "pending")
       throw new AppError("conflict", "The card reader already answered for this payment.");
     await openSale(trx, p.sale_id);
@@ -474,6 +487,191 @@ export const simulateTerminalResult = defineHandler<
       .execute();
     if (status === "completed") await finishSale(trx, ctx, p.sale_id);
     return result(trx, p.sale_id, paymentId, status);
+  },
+});
+
+/** How Square's app answered a hand-off, as the return page read it from the address. */
+export interface CardHandoffAnswer {
+  /** Our reference, which Square hands back unchanged. */
+  state: string;
+  /** Square's transaction id when the app says it was paid. */
+  transactionId?: string;
+  /** Square's error code when it wasn't (e.g. the customer canceled). */
+  errorCode?: string;
+  /** Square's own words about the error, when it gave any. */
+  errorDescription?: string;
+}
+
+/** Square payments count for a hand-off from a minute before it started (clocks differ a little). */
+const handoffSince = (startedAt: Date) => new Date(startedAt.getTime() - 60_000);
+
+/** A hand-off asked about again after it settled: paid (even if refunded since) or not. */
+const settled = (s: string): PaymentResult["status"] =>
+  s === "completed" || s === "refunded" ? "completed" : s === "declined" ? "declined" : "canceled";
+
+async function pendingHandoff(trx: Trx, where: { state?: string; paymentId?: string }) {
+  let q = trx
+    .selectFrom("payments")
+    .select(["id", "sale_id", "status", "method", "amount_cents", "provider_ref", "created_at"])
+    .where("method", "=", "card");
+  if (where.state) q = q.where("handoff_ref", "=", where.state);
+  if (where.paymentId) q = q.where("id", "=", where.paymentId);
+  const p = await q.forUpdate().executeTakeFirst();
+  if (!p) throw new AppError("not_found", "That card payment doesn't exist.");
+  return p;
+}
+
+/** Marks a pending hand-off paid once Square confirmed it, then finishes the sale when it's fully paid. */
+async function completeHandoff(
+  trx: Trx,
+  ctx: Ctx,
+  p: { id: string; sale_id: string; amount_cents: number; created_at: Date },
+  transactionId: string,
+): Promise<PaymentResult> {
+  if (!terminal.confirm)
+    throw new AppError("invalid", "This register's card reader doesn't use the Square app.");
+  // Square's answer is checked with Square itself: the browser's word never marks anything paid.
+  const { paymentRef } = await terminal.confirm(transactionId, p.amount_cents, handoffSince(p.created_at));
+  const used = await trx
+    .selectFrom("payments")
+    .select("id")
+    .where("provider_ref", "=", paymentRef)
+    .where("id", "!=", p.id)
+    .executeTakeFirst();
+  if (used) throw new AppError("conflict", "That Square payment is already on another sale.");
+  await trx
+    .updateTable("payments")
+    .set({ status: "completed", provider_ref: paymentRef, completed_at: new Date() })
+    .where("id", "=", p.id)
+    .execute();
+  await finishSale(trx, ctx, p.sale_id);
+  return result(trx, p.sale_id, p.id, "completed");
+}
+
+/**
+ * The live register's return page: Square's app sent the browser back. Paid only after the server
+ * checks the transaction with Square; canceled or failed leaves the sale open to try again.
+ * Coming back twice (a reload) just shows the answer again.
+ */
+export const finishCardHandoff = defineHandler<CardHandoffAnswer, PaymentResult>({
+  action: "register.use",
+  async run(trx, ctx, answer) {
+    if (typeof answer?.state !== "string" || !answer.state.startsWith("pos_"))
+      throw new AppError("invalid", "Square's answer didn't name a card payment from this register.");
+    const p = await pendingHandoff(trx, { state: answer.state });
+    if (p.status !== "pending") return result(trx, p.sale_id, p.id, settled(p.status));
+    await openSale(trx, p.sale_id);
+    const transactionId = typeof answer.transactionId === "string" ? answer.transactionId.trim() : "";
+    if (transactionId) return completeHandoff(trx, ctx, p, transactionId);
+
+    if (!answer.errorCode) {
+      // Paid with no transaction id (Square's app can do this when it's offline): staff use
+      // "Find it in Square" rather than charging again.
+      const r = await result(trx, p.sale_id, p.id, "pending");
+      return {
+        ...r,
+        message:
+          "Square didn't say whether the card went through. Tap Find it in Square before charging again.",
+      };
+    }
+    await trx.updateTable("payments").set({ status: "canceled" }).where("id", "=", p.id).execute();
+    const canceled = /cancel/i.test(answer.errorCode);
+    const r = await result(trx, p.sale_id, p.id, "canceled");
+    return {
+      ...r,
+      message: canceled
+        ? "The card payment was canceled in the Square app. Try again or take cash."
+        : `The Square app didn't take the card${
+            answer.errorDescription
+              ? `: ${String(answer.errorDescription).slice(0, 200)}`
+              : ` (${String(answer.errorCode).slice(0, 80)})`
+          }. Try again or take cash.`,
+    };
+  },
+});
+
+/**
+ * When Square's answer never came back: looks in Square for a card payment of exactly this amount
+ * taken since the hand-off started, and uses the newest one no other sale has. Nothing found leaves
+ * the payment waiting.
+ */
+export const findCardHandoff = defineHandler<{ paymentId: string }, PaymentResult>({
+  action: "register.use",
+  async run(trx, ctx, { paymentId }) {
+    const p = await pendingHandoff(trx, { paymentId });
+    if (p.status !== "pending") return result(trx, p.sale_id, p.id, settled(p.status));
+    await openSale(trx, p.sale_id);
+    if (!terminal.find)
+      throw new AppError("invalid", "This register's card reader doesn't use the Square app.");
+    for (const transactionId of await terminal.find(p.amount_cents, handoffSince(p.created_at))) {
+      try {
+        return await completeHandoff(trx, ctx, p, transactionId);
+      } catch (e) {
+        if (e instanceof AppError && e.code === "conflict") continue; // already on another sale
+        throw e;
+      }
+    }
+    const r = await result(trx, p.sale_id, p.id, "pending");
+    return {
+      ...r,
+      message: `Square has no card payment of ${formatMoney(p.amount_cents)} since this one started. If the customer didn't pay, cancel the card payment and try again.`,
+    };
+  },
+});
+
+/** Stops waiting for a hand-off the customer never paid, so the sale can be paid another way. */
+export const cancelCardHandoff = defineHandler<{ paymentId: string }, PaymentResult>({
+  action: "register.use",
+  async run(trx, _ctx, { paymentId }) {
+    const p = await pendingHandoff(trx, { paymentId });
+    if (p.status !== "pending")
+      throw new AppError("conflict", "The card reader already answered for this payment.");
+    await openSale(trx, p.sale_id);
+    await trx.updateTable("payments").set({ status: "canceled" }).where("id", "=", p.id).execute();
+    return result(trx, p.sale_id, p.id, "canceled");
+  },
+});
+
+/** An open sale picked up again (back from the Square app): its totals and what's paid so far. */
+export const saleForPayment = defineHandler<
+  { saleId: string },
+  CheckoutResult & { pendingCard: { paymentId: string; amountCents: number } | null }
+>({
+  action: "register.use",
+  async run(trx, _ctx, { saleId }) {
+    const sale = await trx
+      .selectFrom("sales")
+      .select([
+        "id",
+        "status",
+        "receipt_number",
+        "subtotal_cents",
+        "discount_cents",
+        "tax_cents",
+        "total_cents",
+      ])
+      .where("id", "=", saleId)
+      .where("source", "=", "register")
+      .executeTakeFirst();
+    if (!sale || sale.receipt_number === null) throw new AppError("not_found", "That sale doesn't exist.");
+    const pending = await trx
+      .selectFrom("payments")
+      .select(["id", "amount_cents"])
+      .where("sale_id", "=", saleId)
+      .where("status", "=", "pending")
+      .executeTakeFirst();
+    return {
+      saleId,
+      receiptNumber: sale.receipt_number,
+      subtotalCents: sale.subtotal_cents,
+      discountCents: sale.discount_cents,
+      taxCents: sale.tax_cents,
+      totalCents: sale.total_cents,
+      cashOnly: await hasCashOnlyDiscount(trx, saleId),
+      paid: sale.status === "paid",
+      paidCents: await paidSoFar(trx, saleId),
+      pendingCard: pending ? { paymentId: pending.id, amountCents: pending.amount_cents } : null,
+    };
   },
 });
 

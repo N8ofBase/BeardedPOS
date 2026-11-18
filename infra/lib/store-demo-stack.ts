@@ -92,6 +92,12 @@ export interface StoreDemoStackProps extends StackProps {
   /** Load the register's (DEMO) sample stock at this count. Left out, the register starts empty. */
   demoStock?: number;
   /**
+   * The live register's card payments go through the Square POS app once this is set: the Square
+   * app's Production application id (public, "sq0idp-…"). Left empty, the register keeps the
+   * pretend card reader.
+   */
+  squareApplicationId?: string;
+  /**
    * The shop's own domain (BeardedDomain's zone). Attached, the site answers at the domain and www too,
    * on one certificate with its prismcortex.net name. Primary (once the domain points here), it's the
    * main address: other names redirect to it, Square sends shoppers back to it, mail comes from it, and
@@ -260,6 +266,7 @@ export class StoreDemoStack extends Stack {
         POS_MIGRATIONS_DIR: "/var/task/pos-migrations",
         POS_OWNERS: props.registerOwners.join(", "),
         ...(props.demoStock ? { POS_DEMO_STOCK: String(props.demoStock) } : {}),
+        ...(live && props.squareApplicationId ? { SQUARE_APP_ID: props.squareApplicationId } : {}),
       },
       bundling: {
         format: OutputFormat.ESM,

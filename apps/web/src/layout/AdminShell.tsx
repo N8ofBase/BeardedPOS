@@ -7,6 +7,7 @@ import { CustomersRoutes } from "../pages/customers/CustomersPage.tsx";
 import { EmailRoutes } from "../pages/email/EmailPage.tsx";
 import { InventoryRoutes } from "../pages/inventory/InventoryPage.tsx";
 import { RegisterPage } from "../pages/register/RegisterPage.tsx";
+import { SquareReturn } from "../pages/register/SquareReturn.tsx";
 import { SalesRoutes } from "../pages/SalesPage.tsx";
 import { SettingsRoutes } from "../pages/Settings.tsx";
 import { DemoBanner } from "./DemoBanner.tsx";
@@ -43,9 +44,12 @@ export function AdminShell({ me, onSwitchRole, onResetDemo, hosted, signOutLabel
   return (
     <div className="shell">
       {hosted ? (
-        <div className="demo-banner" role="status">
-          <span>Test register · sample data, and card payments are simulated</span>
-        </div>
+        // The live register takes real cards and has no sample data: no test banner there.
+        me.cardReader === "simulated" && (
+          <div className="demo-banner" role="status">
+            <span>Test register · sample data, and card payments are simulated</span>
+          </div>
+        )
       ) : (
         <DemoBanner onReset={onResetDemo} />
       )}
@@ -82,6 +86,7 @@ export function AdminShell({ me, onSwitchRole, onResetDemo, hosted, signOutLabel
             {nav.map((n) => (
               <Route key={n.path} path={`${n.path}/*`} element={PAGES[n.path]?.()} />
             ))}
+            {me.cardReader === "square-pos" && <Route path="/square-return" element={<SquareReturn />} />}
             <Route path="*" element={<Navigate to={home} replace />} />
           </Routes>
         </ErrorBoundary>

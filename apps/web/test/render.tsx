@@ -21,10 +21,17 @@ export function meFor(role: Role): Me {
       modules: {},
     },
     location: { id: "l1", name: "Main store (DEMO)", taxRateMpct: 7000 },
+    cardReader: "simulated",
   };
 }
 
-export function renderAs(role: Role, ui: ReactNode, responses: Record<string, unknown> = {}, path = "/") {
+export function renderAs(
+  role: Role,
+  ui: ReactNode,
+  responses: Record<string, unknown> = {},
+  path = "/",
+  meOverride: Partial<Me> = {},
+) {
   // A response can be a function of the input, for screens that call with different inputs.
   const call = vi.fn(async (name: string, input?: unknown) => {
     if (!(name in responses)) throw new Error(`No fake response for ${name}`);
@@ -38,7 +45,12 @@ export function renderAs(role: Role, ui: ReactNode, responses: Record<string, un
       <MemoryRouter initialEntries={[path]}>
         <ToastProvider>
           <SessionContext.Provider
-            value={{ api, me: meFor(role), switchRole: vi.fn(), resetDemo: vi.fn(async () => {}) }}
+            value={{
+              api,
+              me: { ...meFor(role), ...meOverride },
+              switchRole: vi.fn(),
+              resetDemo: vi.fn(async () => {}),
+            }}
           >
             {ui}
           </SessionContext.Provider>

@@ -41,6 +41,10 @@ import {
   registerCustomer,
   simulateTerminalResult,
   startCardPayment,
+  finishCardHandoff,
+  findCardHandoff,
+  cancelCardHandoff,
+  saleForPayment,
   startCheckout,
 } from "./handlers/register.ts";
 import {
@@ -114,6 +118,10 @@ export const handlers = {
   payCash,
   startCardPayment,
   simulateTerminalResult,
+  finishCardHandoff,
+  findCardHandoff,
+  cancelCardHandoff,
+  saleForPayment,
   cancelSale,
   getSale,
   listSales,
