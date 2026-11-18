@@ -164,7 +164,14 @@ export interface CustomerPlan {
   duplicates: SquareCustomer[];
 }
 
-/** Square's customer fields, tidied the register's way (phone 10 digits, email lower case). */
+/** The register's own rule for an email it can save (the customers table checks the same). */
+const EMAIL = /^[^@\s]+@[^@\s]+$/;
+
+/**
+ * Square's customer fields, tidied the register's way (phone 10 digits, email lower case). Null
+ * for a Square customer with no usable phone or email: the register keeps every customer
+ * reachable, so a name alone can't be saved.
+ */
 export function squareCustomer(c: {
   id: string;
   given_name?: string;
@@ -173,7 +180,8 @@ export function squareCustomer(c: {
   email_address?: string;
   phone_number?: string;
 }): SquareCustomer | null {
-  const email = c.email_address?.trim().toLowerCase() || null;
+  const typed = c.email_address?.trim().toLowerCase();
+  const email = typed && EMAIL.test(typed) ? typed : null;
   const phone = normalizePhone(c.phone_number);
   const name =
     [c.given_name, c.family_name]
@@ -183,7 +191,7 @@ export function squareCustomer(c: {
     c.company_name?.trim() ||
     email ||
     (phone ? `Customer ${phone.slice(-4)}` : "");
-  return name && (phone || email || c.given_name || c.family_name) ? { id: c.id, name, phone, email } : null;
+  return name && (phone || email) ? { id: c.id, name, phone, email } : null;
 }
 
 export function planCustomers(square: SquareCustomer[], shelf: ShelfCustomer[]): CustomerPlan {

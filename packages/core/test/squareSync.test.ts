@@ -139,6 +139,20 @@ describe("squareCustomer", () => {
     );
     expect(squareCustomer({ id: "C3" })).toBeNull();
   });
+
+  it("leaves out a Square customer with no phone or email the register can save", () => {
+    expect(squareCustomer({ id: "C4", given_name: "Sam", family_name: "Ray" })).toBeNull();
+    expect(squareCustomer({ id: "C5", given_name: "Sam", email_address: "sam at x.com" })).toBeNull();
+    expect(squareCustomer({ id: "C6", given_name: "Sam", phone_number: "555-0101" })).toBeNull();
+    expect(
+      squareCustomer({
+        id: "C7",
+        given_name: "Sam",
+        email_address: "not an email",
+        phone_number: "3145550101",
+      }),
+    ).toEqual({ id: "C7", name: "Sam", phone: "3145550101", email: null });
+  });
 });
 
 describe("planCustomers", () => {

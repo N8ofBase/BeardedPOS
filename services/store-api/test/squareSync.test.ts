@@ -324,6 +324,21 @@ describe("the Square sync", () => {
     expect(other).toEqual([]);
   });
 
+  it("brings the rest in when some Square customers have only a name or a broken email", async () => {
+    square.customers.push(
+      { id: "C3", given_name: "Name", family_name: "Only" },
+      { id: "C4", given_name: "Bad", email_address: "bad at example.com" },
+      { id: "C5", company_name: "Phone Shop", email_address: "oops", phone_number: "(636) 555-0102" },
+    );
+    const r = await sync(true);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect((r.body as { applied: { customersAdded: number } }).applied.customersAdded).toBe(3);
+    const saved = await rows<{ name: string; email: string | null }>(
+      "SELECT name, email FROM customers WHERE square_customer_id = 'C5'",
+    );
+    expect(saved).toEqual([{ name: "Phone Shop", email: null }]);
+  });
+
   it("says plainly when Square can't be reached", async () => {
     square.fail.add("GET /v2/catalog/list");
     const r = await sync(false);

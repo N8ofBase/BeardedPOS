@@ -249,6 +249,8 @@ textarea {
 }
 label {
   display: grid;
+  /* Keep each field at its own height when a neighbor in the row has a longer label or a hint. */
+  align-content: start;
   gap: 0.25rem;
   font-size: 0.85rem;
   color: var(--muted);
@@ -269,6 +271,11 @@ label.check input {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
+}
+/* A checkbox with a sentence takes a whole row of a form, so its words never run over a field. */
+.form > label.check {
+  grid-column: 1 / -1;
+  white-space: normal;
 }
 .field-error {
   color: var(--bad);
