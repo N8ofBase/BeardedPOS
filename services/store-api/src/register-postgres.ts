@@ -136,6 +136,8 @@ export async function openRegister(o: PostgresOptions, migrations: Migration[]):
     ssl: { ca: o.ca, rejectUnauthorized: true },
     max: 2,
     idleTimeoutMillis: 60_000,
+    // Fail fast (and say so in the log) when the database can't be reached, instead of hanging.
+    connectionTimeoutMillis: 5_000,
     types: REGISTER_TYPES,
   });
   await migrateRegister(pool, migrations);

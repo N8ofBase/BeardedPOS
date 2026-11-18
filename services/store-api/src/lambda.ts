@@ -105,7 +105,12 @@ async function secret(client: SecretsManagerClient, id: string): Promise<string>
 export async function hostedContext(env = process.env): Promise<StoreCtx> {
   const mode = env.SQUARE_ENV;
   if (mode !== "sandbox" && mode !== "live") throw new Error('SQUARE_ENV must be "sandbox" or "live".');
-  const secrets = new SecretsManagerClient({});
+  // Short network timeouts and a log line per step: when the store can't start, the log says where.
+  const step = (s: string) => console.log(`store start: ${s}`);
+  const secrets = new SecretsManagerClient({
+    requestHandler: { connectionTimeout: 3_000, requestTimeout: 5_000 },
+  });
+  step("reading secrets");
   const db = JSON.parse(await secret(secrets, need("DB_SECRET_ARN"))) as {
     host: string;
     port: number;
@@ -114,6 +119,7 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     password: string;
   };
   const token = (await secret(secrets, need("SQUARE_SECRET_ARN"))).trim();
+  step("secrets read; checking Square");
   const square = squareFor(mode, token, env.SQUARE_LOCATION_ID);
   if (square.account)
     await square.account().then(
@@ -123,7 +129,8 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
   const webhookKey = env.SQUARE_WEBHOOK_SECRET_ARN
     ? (await secret(secrets, env.SQUARE_WEBHOOK_SECRET_ARN)).trim()
     : "";
-  const ses = new SESv2Client({});
+  step("opening the database");
+  const ses = new SESv2Client({ requestHandler: { connectionTimeout: 3_000, requestTimeout: 5_000 } });
   const options: PostgresOptions = {
     host: db.host,
     port: db.port,
@@ -139,7 +146,9 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
   let pos = env.POS_MIGRATIONS_DIR
     ? await openRegister(options, readMigrations(env.POS_MIGRATIONS_DIR)).catch(registerOff)
     : undefined;
+  step(pos ? "register ready; opening the store's tables" : "opening the store's tables");
   const storeDb = await openPostgres(options);
+  step("store tables ready");
   // The register's shelf starts with what the online store sells (Square's catalog, or the saved
   // copy when Square can't be reached).
   const catalog = pos ? await square.catalog().catch(() => new SnapshotStore().catalog()) : undefined;
@@ -150,6 +159,7 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     await withBusiness(storeDb, businessId, catchUpRegisterStock).catch((e: unknown) =>
       console.error("register stock catch-up failed", e),
     );
+  step("ready");
   return {
     db: storeDb,
     ...(pos ? { pos } : {}),

@@ -134,7 +134,9 @@ export class SquareApiStore implements SquareStore {
     this.opts = opts;
     this.mode = opts.mode;
     this.base = SQUARE_URLS[opts.mode];
-    this.fetchFn = opts.fetch ?? ((url, init) => fetch(url, init));
+    // A Square call that hangs fails after 10 seconds, so the request (and the log) says why.
+    this.fetchFn =
+      opts.fetch ?? ((url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }));
     this.now = opts.now ?? Date.now;
     if (opts.locationId) this.location = Promise.resolve(opts.locationId);
   }

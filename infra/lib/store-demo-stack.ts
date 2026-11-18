@@ -138,8 +138,7 @@ export class StoreDemoStack extends Stack {
     const nat = isPrivate
       ? NatProvider.instanceV2({
           instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.NANO),
-          // The minimal AL2023 image, with our own setup: CDK's default commands find the network card
-          // with `route`, which AL2023 doesn't have, so the NAT never forwarded anything.
+          // Our own setup (infra/lib/nat.ts): CDK's default commands fail on a t4g.nano.
           machineImage: MachineImage.fromSsmParameter(NAT_IMAGE_PARAMETER),
           userData: natUserData(),
           defaultAllowedTraffic: NatTrafficDirection.OUTBOUND_ONLY,

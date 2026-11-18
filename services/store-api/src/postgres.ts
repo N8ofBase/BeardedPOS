@@ -80,6 +80,8 @@ export async function openPostgres(o: PostgresOptions): Promise<Database> {
     // A Lambda instance serves one request at a time; two leaves room for the migration lock.
     max: 2,
     idleTimeoutMillis: 60_000,
+    // Fail fast (and say so in the log) when the database can't be reached, instead of hanging.
+    connectionTimeoutMillis: 5_000,
   });
   await migrateLocked(pool);
   return postgresDatabase(pool);
