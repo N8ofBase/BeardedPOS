@@ -75,6 +75,10 @@ export interface ProductsTable {
   reorder_at: Generated<number>;
   active: Generated<boolean>;
   import_batch_id: string | null;
+  /** The Square item variation this product is, once a sync linked them. */
+  square_variation_id: Generated<string | null>;
+  /** Square counts this variation's stock, so register stock changes are sent to it. */
+  square_tracks_stock: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -99,6 +103,8 @@ export interface InventoryMovesTable {
   ref_id: string | null;
   staff_id: string | null;
   note: string | null;
+  /** Square already has this change (a count copied from Square, a website order). Not sent back. */
+  from_square: Generated<boolean>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
 }
@@ -138,6 +144,8 @@ export interface CustomersTable {
   email_opt_in: Generated<boolean>;
   follow_up_on: DateString | null;
   follow_up_note: string | null;
+  /** The matching customer in Square, once a sync linked them. */
+  square_customer_id: Generated<string | null>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -544,6 +552,32 @@ export interface DemoSeedPartsTable {
 export type TaxClass = "standard" | "exempt";
 export type MoveReason = "sale" | "receive" | "adjust" | "return";
 
+export interface SquareStockSendsTable {
+  id: Generated<string>;
+  business_id: string;
+  move_id: string;
+  product_id: string;
+  square_variation_id: string;
+  qty_change: number;
+  status: Generated<"waiting" | "sent" | "failed">;
+  tries: Generated<number>;
+  last_error: string | null;
+  sent_at: Date | null;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface SquareSyncRunsTable {
+  id: Generated<string>;
+  business_id: string;
+  staff_id: string | null;
+  summary: Json<Record<string, unknown>>;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface DB {
   businesses: BusinessesTable;
   locations: LocationsTable;
@@ -553,6 +587,8 @@ export interface DB {
   staff_pins: StaffPinsTable;
   pos_tablets: PosTabletsTable;
   products: ProductsTable;
+  square_stock_sends: SquareStockSendsTable;
+  square_sync_runs: SquareSyncRunsTable;
   inventory_levels: InventoryLevelsTable;
   inventory_moves: InventoryMovesTable;
   audit_log: AuditLogTable;

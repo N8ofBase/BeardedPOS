@@ -9,6 +9,7 @@ import { AppError, isRole, type Ctx, type ErrorCode } from "@bearded/core";
 import type { DB } from "@bearded/db";
 import type { StoreCtx } from "./context.ts";
 import { withBusiness, type Sql } from "./db.ts";
+import { sendStockToSquare, squareApi, syncRegister, syncStatus } from "./square/registerSync.ts";
 import { asObject, HttpError, ok, type ApiRequest, type ApiResponse } from "./http.ts";
 import {
   CODE_MINUTES,
@@ -134,13 +135,35 @@ async function call(ctx: StoreCtx, pos: Kysely<DB>, req: ApiRequest, name: strin
   if (!Object.hasOwn(handlers, name)) throw new HttpError(404, "Not found.");
   const input = asObject(req.body ?? {}).input;
   try {
-    return ok({ output: (await invoke(pos, staff, name as HandlerName, input as never)) ?? null });
+    const output = (await invoke(pos, staff, name as HandlerName, input as never)) ?? null;
+    // A sale, refund or count may have changed stock: Square hears about it now. A failure is
+    // kept and retried, and never fails the register's own call.
+    await sendStockToSquare(ctx).catch((e: unknown) => console.error("square stock send failed", e));
+    return ok({ output });
   } catch (e) {
     if (e instanceof AppError) {
       const body: PosError = { error: e.message, code: e.code, fields: e.fields };
       return { status: STATUS[e.code], body };
     }
     throw e;
+  }
+}
+
+/** Settings, Square: when it last synced, and a preview or a sync. Owners and managers. */
+async function square(ctx: StoreCtx, req: ApiRequest, what: "status" | "sync"): Promise<ApiResponse> {
+  const staff = await session(ctx, req);
+  if (!staff) throw new HttpError(401, "Sign in to use the register.");
+  try {
+    if (what === "status") return ok(await syncStatus(ctx, staff));
+    if (!squareApi(ctx)) throw new AppError("invalid", "This register isn't connected to a Square account.");
+    return ok(await syncRegister(ctx, staff, asObject(req.body ?? {}).apply === true));
+  } catch (e) {
+    if (e instanceof AppError) {
+      const body: PosError = { error: e.message, code: e.code, fields: e.fields };
+      return { status: STATUS[e.code], body };
+    }
+    console.error("square sync failed", e);
+    return { status: 502, body: { error: "Square didn't answer. Try again in a minute." } };
   }
 }
 
@@ -156,6 +179,8 @@ export async function handleRegister(ctx: StoreCtx, req: ApiRequest): Promise<Ap
   if (route === "signout") return signOut(ctx, req);
   const pins = await handlePins(ctx, req, route);
   if (pins) return pins;
+  if (route === "square/status" || route === "square/sync")
+    return square(ctx, req, route.slice(7) as "status" | "sync");
   const handler = /^call\/([A-Za-z]+)$/.exec(route);
   if (handler) return call(ctx, ctx.pos, req, handler[1]!);
   return { status: 404, body: { error: "Not found." } };

@@ -112,7 +112,8 @@ pretend reader, so only take cash.
 2. **Set the app id.** Same app, Production, Credentials: copy the Application ID (`sq0idp-…`; it isn't
    secret) into `squareLiveApplicationId` in `infra/cdk.json`, then `npm.cmd run deploy:store-live`.
 3. **Check the token's permissions.** The production access token must allow Orders read and Payments
-   write (for refunds). A personal access token from the Developer Dashboard has them.
+   write (for refunds), plus Items, Inventory and Customers for the sync below. A personal access token
+   from the Developer Dashboard has them all.
 4. **Set up the phone or tablet.** Install Square Point of Sale, sign in to Bearded Board Games, pair
    the reader. Open the register in Safari (iPhone/iPad) or Chrome (Android) itself, not from a
    home-screen icon: Square comes back to the browser, and a home-screen app has its own sign-in.
@@ -127,6 +128,23 @@ open the Square app; on a laptop take cash, or ring the sale up on the phone.
 Tips added in the Square app go to Square, not into the register's totals. Refunds made in the Square
 app itself aren't seen by the register; refund from the register instead.
 
-## Not yet
+## Items, prices, stock and customers from Square
 
-- The register's items, prices, stock and customers don't sync with Square yet. That's the next step.
+Square is the home for items, prices and stock. The register brings them in, and sends its own
+stock changes back, so the counter, the website and the farmers market app see the same counts.
+
+- **Bring them in:** Settings, Square, **Check Square** shows what would change (new products, price
+  changes, counts, customers); **Bring these in** saves it. While an owner or manager has the register
+  open, this also happens on its own every 15 minutes. Price changes from Square are written to the
+  audit log like any other price change.
+- **Matching:** a register product matches its Square item by the link a sync made, then SKU, then
+  barcode, then name. Square items with a variable price are left out. Register products Square
+  doesn't sell are left as they are.
+- **Stock back to Square:** every register sale, refund, delivery or count of an item Square counts is
+  sent to Square's Inventory API right after it happens. If Square is down it's kept and tried again
+  (on the next register call or start), and after 10 failed tries Settings says so. Counts copied
+  from Square, and website orders (Square already took those off), aren't sent back.
+- **Customers:** Square's customers come in, matched to the register's on phone, then email. The
+  register's own customers with a phone or email are added to Square. (DEMO) customers never are.
+
+The production token needs Items, Inventory and Customers read and write, besides Orders and Payments.

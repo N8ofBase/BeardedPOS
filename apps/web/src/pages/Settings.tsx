@@ -23,6 +23,7 @@ import { StoreMark } from "../ui/StoreMark.tsx";
 import { useToast } from "../ui/Toast.tsx";
 import { DiscountsSection } from "./settings/DiscountsSection.tsx";
 import { EmailSection, TagsSection } from "./settings/EmailSection.tsx";
+import { SquareSection } from "./settings/SquareSection.tsx";
 import { ImportPage } from "./settings/ImportPage.tsx";
 import { resizeLogo } from "./settings/logo.ts";
 
@@ -55,6 +56,8 @@ function Settings() {
       <StaffSection />
 
       {hosted && (me.staff.role === "owner" || me.staff.role === "manager") && <TabletsSection />}
+
+      {hosted && can(me.staff.role, "products.edit") && <SquareSection />}
 
       {can(me.staff.role, "discounts.manage") && <DiscountsSection />}
 
