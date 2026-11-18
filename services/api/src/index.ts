@@ -61,7 +61,19 @@ export {
 export { mailer, PreviewMailer, sesSendEmailInput, type Mailer } from "./email/mailer.ts";
 export type { DiscountInput, DiscountRow } from "./handlers/discounts.ts";
 export type { CustomerBucks, LedgerRow, LoyaltyCard } from "./handlers/loyalty.ts";
+export {
+  handoffRef,
+  setTerminal,
+  SimulatedTerminal,
+  terminal,
+  type CardHandoff,
+  type CardReaderKind,
+  type ConfirmedCard,
+  type PaymentTerminal,
+  type TerminalCharge,
+} from "./payments/terminal.ts";
 export type {
+  CardHandoffAnswer,
   CheckoutResult,
   PaymentResult,
   Receipt,

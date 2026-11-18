@@ -2,6 +2,7 @@ import { sql, type Transaction } from "kysely";
 import { AppError, isRole, isUniqueViolation, type Role } from "@bearded/core";
 import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
+import { terminal, type CardReaderKind } from "../payments/terminal.ts";
 
 export interface Me {
   staff: { id: string; name: string; role: Role };
@@ -14,6 +15,8 @@ export interface Me {
   };
   /** taxRateMpct: thousandths of a percent (8.875% = 8875). */
   location: { id: string; name: string; taxRateMpct: number } | null;
+  /** Which card reader this register uses: the pretend one, or the Square POS app hand-off. */
+  cardReader: CardReaderKind;
 }
 
 /** The signed-in staff member, their business and its first location. */
@@ -52,6 +55,7 @@ export const me = defineHandler<void, Me>({
       location: location
         ? { id: location.id, name: location.name, taxRateMpct: location.tax_rate_mpct }
         : null,
+      cardReader: terminal.kind,
     };
   },
 });

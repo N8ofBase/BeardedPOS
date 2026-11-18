@@ -7,6 +7,8 @@ import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
 import type { StoreCtx } from "./context.ts";
 import { parseCookies, type ApiRequest, type ApiResponse } from "./http.ts";
 import { sesMailer } from "./mailer.ts";
+import { setTerminal } from "@bearded/api";
+import { squareReturnUrl } from "@bearded/core";
 import { ensureStore } from "@bearded/db";
 import { withBusiness } from "./db.ts";
 import { openPostgres, type PostgresOptions } from "./postgres.ts";
@@ -14,6 +16,7 @@ import { openRegister, readMigrations, storeSetup } from "./register-postgres.ts
 import { catchUpRegisterStock } from "./registerStock.ts";
 import { handle } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
+import { SquarePosTerminal } from "./square/pos.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
 import type { SquareStore } from "./square/types.ts";
 
@@ -126,6 +129,11 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
       (a) => console.log(`square ${mode}: ${a.merchant}, location ${a.location}`),
       (e: unknown) => console.error(`square ${mode}: account check failed`, e),
     );
+  // The live register takes real cards through the Square POS app once the app id is set; the
+  // Sandbox register keeps the pretend reader.
+  const reader = cardReaderFor(mode, square, env.SQUARE_APP_ID, need("BBG_SITE_URL"));
+  if (reader) setTerminal(reader);
+  step(`card reader: ${reader ? reader.name : "simulated"}`);
   const webhookKey = env.SQUARE_WEBHOOK_SECRET_ARN
     ? (await secret(secrets, env.SQUARE_WEBHOOK_SECRET_ARN)).trim()
     : "";
@@ -192,6 +200,21 @@ export function squareFor(mode: "sandbox" | "live", raw: string, locationId?: st
   if (mode === "live" && (token === LIVE_SQUARE_PLACEHOLDER || token === SQUARE_PLACEHOLDER))
     throw new Error("The live store needs the Square production token in its secret.");
   return new SquareApiStore({ mode, token, locationId: locationId || undefined });
+}
+
+/** The Square POS app hand-off on the live store when its application id is set, else none (simulated). */
+export function cardReaderFor(
+  mode: "sandbox" | "live",
+  square: SquareStore,
+  applicationId: string | undefined,
+  siteUrl: string,
+): SquarePosTerminal | undefined {
+  if (mode !== "live" || !applicationId?.trim() || !(square instanceof SquareApiStore)) return undefined;
+  return new SquarePosTerminal({
+    api: square,
+    applicationId: applicationId.trim(),
+    callbackUrl: squareReturnUrl(siteUrl),
+  });
 }
 
 function registerOff(e: unknown): undefined {

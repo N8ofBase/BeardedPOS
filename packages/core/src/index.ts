@@ -18,3 +18,4 @@ export * from "./signin.ts";
 export * from "./profit.ts";
 export * from "./crm.ts";
 export * from "./loyalty.ts";
+export * from "./squarePos.ts";
