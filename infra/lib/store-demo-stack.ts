@@ -22,7 +22,6 @@ import {
 } from "aws-cdk-lib/aws-cloudfront";
 import { HttpOrigin, S3BucketOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
-  AmazonLinuxCpuType,
   InstanceClass,
   InstanceSize,
   InstanceType,
@@ -33,6 +32,7 @@ import {
   Port,
   SecurityGroup,
   SubnetType,
+  UserData,
   Vpc,
 } from "aws-cdk-lib/aws-ec2";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
@@ -61,6 +61,7 @@ import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { EmailIdentity, Identity } from "aws-cdk-lib/aws-ses";
 import type { Construct } from "constructs";
 import { oldSiteRedirects } from "../../packages/store-core/src/oldSite.ts";
+import { NAT_COMMANDS, NAT_IMAGE_PARAMETER } from "./nat.ts";
 import { viewerRequestCode } from "./site-request.ts";
 
 export interface StoreDemoStackProps extends StackProps {
@@ -100,6 +101,12 @@ export interface StoreDemoStackProps extends StackProps {
   shopDomain?: { zone: IHostedZone; name: string; primary: boolean };
 }
 
+function natUserData(): UserData {
+  const data = UserData.forLinux();
+  data.addCommands(...NAT_COMMANDS);
+  return data;
+}
+
 /** Must match the placeholders in services/store-api/src/lambda.ts. */
 const SQUARE_PLACEHOLDER = "paste-the-square-sandbox-token-here";
 const LIVE_SQUARE_PLACEHOLDER = "paste-the-square-production-token-here";
@@ -131,7 +138,10 @@ export class StoreDemoStack extends Stack {
     const nat = isPrivate
       ? NatProvider.instanceV2({
           instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.NANO),
-          machineImage: MachineImage.latestAmazonLinux2023({ cpuType: AmazonLinuxCpuType.ARM_64 }),
+          // The minimal AL2023 image, with our own setup: CDK's default commands find the network card
+          // with `route`, which AL2023 doesn't have, so the NAT never forwarded anything.
+          machineImage: MachineImage.fromSsmParameter(NAT_IMAGE_PARAMETER),
+          userData: natUserData(),
           defaultAllowedTraffic: NatTrafficDirection.OUTBOUND_ONLY,
         })
       : undefined;
@@ -224,7 +234,8 @@ export class StoreDemoStack extends Stack {
       runtime: Runtime.NODEJS_24_X,
       architecture: Architecture.ARM_64,
       memorySize: 512,
-      timeout: Duration.seconds(20),
+      // The first start on a new database runs every migration; API Gateway waits at most 30 seconds.
+      timeout: Duration.seconds(29),
       ...(apiSecurity
         ? { vpc, vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS }, securityGroups: [apiSecurity] }
         : {}),
