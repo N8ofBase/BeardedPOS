@@ -114,7 +114,8 @@ export class SquarePosTerminal implements PaymentTerminal {
     if (!/^[A-Za-z0-9_-]{1,192}$/.test(transactionId))
       throw new AppError("invalid", "Square's answer had a transaction id this register can't read.");
     const order = await this.order(transactionId);
-    if (!order) throw new AppError("not_found", "Square doesn't know that transaction yet. Tap Find it in Square.");
+    if (!order)
+      throw new AppError("not_found", "Square doesn't know that transaction yet. Tap Find it in Square.");
     const problem = orderProblem(order, { amountCents, locationId: await this.opts.api.locationId(), since });
     if (problem) throw new AppError("invalid", problem);
     return { paymentRef: order.tenders!.find((t) => t.type === "CARD")!.id! };

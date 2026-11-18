@@ -96,7 +96,37 @@ Cancel Squarespace's website plan only after a couple of weeks live, and keep th
 separately. Either keep paying Squarespace for the domain, or transfer it to Route 53 (about $14 a
 year) first. The DNS stays in Route 53 either way.
 
+## Card payments at the register (Square POS app)
+
+The live register takes cards through the Square POS app on the same phone or tablet, with the
+Square Reader you already use at the farmers market. Tap Card on the register, the Square app opens
+with the amount, the customer taps or inserts, and the register comes back showing Paid. The server
+asks Square about each payment (amount, location, time) before it counts, and refunds from the
+register go back to the card through Square. Until these steps are done the register keeps the
+pretend reader, so only take cash.
+
+1. **Register the return page.** Square Developer, signed in as Bearded Board Games, the "Bearded
+   Store" app, Production, Point of Sale API: add the web callback URL
+   `https://bbg-live.prismcortex.net/register/square-return`. Add
+   `https://beardedboardgames.com/register/square-return` too, before the domain's "live" stage.
+2. **Set the app id.** Same app, Production, Credentials: copy the Application ID (`sq0idp-…`; it isn't
+   secret) into `squareLiveApplicationId` in `infra/cdk.json`, then `npm.cmd run deploy:store-live`.
+3. **Check the token's permissions.** The production access token must allow Orders read and Payments
+   write (for refunds). A personal access token from the Developer Dashboard has them.
+4. **Set up the phone or tablet.** Install Square Point of Sale, sign in to Bearded Board Games, pair
+   the reader. Open the register in Safari (iPhone/iPad) or Chrome (Android) itself, not from a
+   home-screen icon: Square comes back to the browser, and a home-screen app has its own sign-in.
+5. **A $1 test.** Ring up $1, tap Card, pay in the Square app, check the register says Paid, then
+   refund it from Sales. If you can, also try Tap to Pay on the phone in the Square app.
+
+If Square's app doesn't come back to the register (it can happen when it's offline), go back to the
+register yourself and tap **Find it in Square**: it looks up a card payment of that amount taken since
+the sale started. Only tap **Cancel card payment** when the customer really didn't pay. A laptop can't
+open the Square app; on a laptop take cash, or ring the sale up on the phone.
+
+Tips added in the Square app go to Square, not into the register's totals. Refunds made in the Square
+app itself aren't seen by the register; refund from the register instead.
+
 ## Not yet
 
-- The register still uses the simulated card reader. Real counter card payments need a Square Terminal
-  and its own build step; until then only take cash on the live register.
+- The register's items, prices, stock and customers don't sync with Square yet. That's the next step.

@@ -1,13 +1,21 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { cashSuggestions, changeDue, formatMoney, parseMoney } from "@bearded/core";
-import type { CheckoutResult, PaymentResult } from "@bearded/api";
+import type { CardHandoff, CheckoutResult, PaymentResult } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";
 import { TwoTapButton } from "../../ui/TwoTapButton.tsx";
+import { openSquarePos, rememberHandoff, thisDevice } from "./squareHandoff.ts";
 
 export type PayMode = "cash" | "card" | "split";
+
+/** A card payment waiting on the reader; `handoff` when it's waiting in the Square POS app. */
+export interface PendingCard {
+  paymentId: string;
+  amountCents: number;
+  handoff?: CardHandoff;
+}
 
 /** Taking payment for an open sale: cash with change, the card reader, or both. */
 export function PaymentPanel({
@@ -15,18 +23,33 @@ export function PaymentPanel({
   mode: initialMode,
   onPaid,
   onCanceled,
+  pendingCard: initialPending = null,
+  message = null,
 }: {
   sale: CheckoutResult;
   mode: PayMode;
   onPaid: (saleId: string, changeCents: number) => void;
   onCanceled: () => void;
+  /** Picked up again after the Square app: the card still waiting there, if any. */
+  pendingCard?: PendingCard | null;
+  /** What happened in the Square app, to show at the top. */
+  message?: string | null;
 }) {
-  const { api } = useSession();
+  const { api, me } = useSession();
   const toast = useToast();
   const [mode, setMode] = useState<PayMode>(initialMode);
-  const [paidCents, setPaidCents] = useState(0);
-  const [pendingCard, setPendingCard] = useState<{ paymentId: string; amountCents: number } | null>(null);
-  const [declined, setDeclined] = useState<string | null>(null);
+  const [paidCents, setPaidCents] = useState(sale.paidCents ?? 0);
+  const [pendingCard, setPendingCard] = useState<PendingCard | null>(initialPending);
+  const [declined, setDeclined] = useState<string | null>(message);
+  const handoff = me.cardReader === "square-pos";
+
+  // The live register: leave for the Square POS app as soon as the payment is started.
+  const started = (p: PendingCard) => {
+    setDeclined(null);
+    setPendingCard(p);
+    if (p.handoff && !openSquarePos({ saleId: sale.saleId, ...p, handoff: p.handoff }))
+      setDeclined("This device can't open the Square POS app. Use the phone or tablet that has it.");
+  };
   const remaining = sale.totalCents - paidCents;
 
   const after = (r: PaymentResult) => {
@@ -70,7 +93,19 @@ export function PaymentPanel({
 
       {declined && <p className="error-box">{declined}</p>}
 
-      {pendingCard ? (
+      {pendingCard && handoff ? (
+        <HandoffPanel
+          saleId={sale.saleId}
+          card={pendingCard}
+          onResult={(r) => {
+            if (r.status === "pending") return setDeclined(r.message ?? null);
+            setPendingCard(null);
+            rememberHandoff(null);
+            setDeclined(r.status === "completed" ? null : (r.message ?? "The card payment was canceled."));
+            after(r);
+          }}
+        />
+      ) : pendingCard ? (
         <TerminalPanel
           amountCents={pendingCard.amountCents}
           paymentId={pendingCard.paymentId}
@@ -89,10 +124,7 @@ export function PaymentPanel({
           saleId={sale.saleId}
           amountCents={remaining}
           cashOnly={sale.cashOnly}
-          onStarted={(p) => {
-            setDeclined(null);
-            setPendingCard(p);
-          }}
+          onStarted={started}
         />
       ) : (
         <SplitForm
@@ -100,10 +132,7 @@ export function PaymentPanel({
           remainingCents={remaining}
           cashOnly={sale.cashOnly}
           onCash={after}
-          onCard={(p) => {
-            setDeclined(null);
-            setPendingCard(p);
-          }}
+          onCard={started}
         />
       )}
 
@@ -219,25 +248,35 @@ function CardStart({
   saleId: string;
   amountCents: number;
   cashOnly: boolean;
-  onStarted: (p: { paymentId: string; amountCents: number }) => void;
+  onStarted: (p: PendingCard) => void;
 }) {
   const { api } = useSession();
   const toast = useToast();
   const start = useMutation({
     mutationFn: () => api.call("startCardPayment", { saleId, amountCents }),
-    onSuccess: (r) => onStarted({ paymentId: r.paymentId, amountCents }),
+    onSuccess: (r) => onStarted({ paymentId: r.paymentId, amountCents, handoff: r.handoff }),
     onError: (err) => toast(errorMessage(err)),
   });
+  const { me } = useSession();
   if (cashOnly)
     return (
       <p className="error-box">
         This sale has a cash-only discount. Take cash, or go back and remove the discount.
       </p>
     );
+  if (me.cardReader === "square-pos" && thisDevice() === "other")
+    return (
+      <p className="error-box">
+        Cards are taken in the Square POS app. Ring this sale up on the phone or tablet that has the Square
+        app and the card reader, or take cash.
+      </p>
+    );
   return (
     <div>
       <button type="button" className="primary big" disabled={start.isPending} onClick={() => start.mutate()}>
-        Send {formatMoney(amountCents)} to the card reader
+        {me.cardReader === "square-pos"
+          ? `Charge ${formatMoney(amountCents)} in the Square app`
+          : `Send ${formatMoney(amountCents)} to the card reader`}
       </button>
     </div>
   );
@@ -254,7 +293,7 @@ function SplitForm({
   remainingCents: number;
   cashOnly: boolean;
   onCash: (r: PaymentResult) => void;
-  onCard: (p: { paymentId: string; amountCents: number }) => void;
+  onCard: (p: PendingCard) => void;
 }) {
   const [cash, setCash] = useState("");
   const cashCents = cash.trim() ? parseMoney(cash) : null;
@@ -291,7 +330,7 @@ function CardStartSmall({
 }: {
   saleId: string;
   remainingCents: number;
-  onStarted: (p: { paymentId: string; amountCents: number }) => void;
+  onStarted: (p: PendingCard) => void;
 }) {
   const [amount, setAmount] = useState("");
   const cents = amount.trim() ? parseMoney(amount) : null;
@@ -299,7 +338,7 @@ function CardStartSmall({
   const toast = useToast();
   const start = useMutation({
     mutationFn: (c: number) => api.call("startCardPayment", { saleId, amountCents: c }),
-    onSuccess: (r, c) => onStarted({ paymentId: r.paymentId, amountCents: c }),
+    onSuccess: (r, c) => onStarted({ paymentId: r.paymentId, amountCents: c, handoff: r.handoff }),
     onError: (err) => toast(errorMessage(err)),
   });
   const ok = cents !== null && cents > 0 && cents < remainingCents;
@@ -364,6 +403,63 @@ function TerminalPanel({
         <button type="button" disabled={answer.isPending} onClick={() => answer.mutate("canceled")}>
           Customer canceled
         </button>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The live register while a card payment is in the Square POS app. Normally Square's app comes
+ * straight back to the return page; these buttons cover the times it doesn't.
+ */
+function HandoffPanel({
+  saleId,
+  card,
+  onResult,
+}: {
+  saleId: string;
+  card: PendingCard;
+  onResult: (r: PaymentResult) => void;
+}) {
+  const { api } = useSession();
+  const toast = useToast();
+  const find = useMutation({
+    mutationFn: () => api.call("findCardHandoff", { paymentId: card.paymentId }),
+    onSuccess: onResult,
+    onError: (err) => toast(errorMessage(err)),
+  });
+  const cancel = useMutation({
+    mutationFn: () => api.call("cancelCardHandoff", { paymentId: card.paymentId }),
+    onSuccess: onResult,
+    onError: (err) => toast(errorMessage(err)),
+  });
+  const busy = find.isPending || cancel.isPending;
+  return (
+    <section className="terminal" aria-label="Square POS app">
+      <b>Waiting for the Square app</b>
+      <span className="terminal-amount num">{formatMoney(card.amountCents)}</span>
+      <span className="muted">
+        Take the card in the Square POS app. It comes back here when the customer has paid.
+      </span>
+      <div className="actions">
+        {card.handoff && (
+          <button
+            type="button"
+            className="primary"
+            disabled={busy}
+            onClick={() => openSquarePos({ saleId, ...card, handoff: card.handoff! })}
+          >
+            Open the Square app again
+          </button>
+        )}
+        <button type="button" disabled={busy} onClick={() => find.mutate()}>
+          Find it in Square
+        </button>
+        <TwoTapButton
+          label="Cancel card payment"
+          confirmLabel="Tap again: the customer didn't pay"
+          onConfirm={() => cancel.mutate()}
+        />
       </div>
     </section>
   );

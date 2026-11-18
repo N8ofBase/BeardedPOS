@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import {
   can,
   CATEGORIES,
@@ -17,7 +17,9 @@ import { CameraButton } from "../../ui/scanner/CameraScanner.tsx";
 import { useToast } from "../../ui/Toast.tsx";
 import { CustomerBox } from "./CustomerBox.tsx";
 import { DiscountPicker } from "./DiscountPicker.tsx";
-import { PaymentPanel, type PayMode } from "./PaymentPanel.tsx";
+import { PaymentPanel, type PayMode, type PendingCard } from "./PaymentPanel.tsx";
+import { rememberHandoff, waitingHandoff } from "./squareHandoff.ts";
+import type { CardReturn } from "./SquareReturn.tsx";
 import { ReceiptSend } from "../sales/ReceiptSend.tsx";
 import { ReceiptView } from "./ReceiptView.tsx";
 import {
@@ -36,7 +38,14 @@ import {
 
 type Stage =
   | { kind: "ticket" }
-  | { kind: "pay"; sale: CheckoutResult; mode: PayMode }
+  | {
+      kind: "pay";
+      sale: CheckoutResult;
+      mode: PayMode;
+      /** Picked up again after the Square app: the card still waiting, and what to tell staff. */
+      pendingCard?: PendingCard | null;
+      message?: string | null;
+    }
   | { kind: "done"; saleId: string; changeCents: number };
 
 export function RegisterPage() {
@@ -55,6 +64,50 @@ export function RegisterPage() {
   const scanRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => saveTicket(me.staff.id, ticket), [ticket, me.staff.id]);
+
+  // Back from the Square POS app (or the register opened again while a card waits there): pick
+  // the same sale back up, paid or still to pay.
+  const location = useLocation();
+  const [resume] = useState<CardReturn | null>(() => {
+    const back = (location.state as { cardReturn?: CardReturn } | null)?.cardReturn;
+    if (back) return back;
+    const w = me.cardReader === "square-pos" ? waitingHandoff() : null;
+    return w ? { saleId: w.saleId, message: null } : null;
+  });
+  useEffect(() => {
+    if (!resume) return;
+    if (location.state) navigate(".", { replace: true, state: null });
+    let live = true;
+    api
+      .call("saleForPayment", { saleId: resume.saleId })
+      .then((sale) => {
+        if (!live) return;
+        const waiting = waitingHandoff();
+        if (!sale.pendingCard) rememberHandoff(null);
+        if (sale.paid) return finish(sale.saleId, 0);
+        setStage({
+          kind: "pay",
+          sale,
+          mode: "card",
+          message: resume.message,
+          pendingCard: sale.pendingCard
+            ? {
+                ...sale.pendingCard,
+                handoff: waiting?.paymentId === sale.pendingCard.paymentId ? waiting.handoff : undefined,
+              }
+            : null,
+        });
+      })
+      .catch((e: unknown) => {
+        rememberHandoff(null);
+        if (live) toast(errorMessage(e));
+      });
+    return () => {
+      live = false;
+    };
+    // Once, on opening the register.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const products = useQuery({
     queryKey: ["products", "register", q.trim(), category],
@@ -261,6 +314,8 @@ export function RegisterPage() {
           <PaymentPanel
             sale={stage.sale}
             mode={stage.mode}
+            pendingCard={stage.pendingCard ?? null}
+            message={stage.message ?? null}
             onPaid={finish}
             onCanceled={() => {
               setStage({ kind: "ticket" });

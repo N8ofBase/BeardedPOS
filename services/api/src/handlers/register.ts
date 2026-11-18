@@ -444,7 +444,8 @@ export const startCardPayment = defineHandler<{ saleId: string; amountCents: num
         sale_id: saleId,
         method: "card",
         provider: "square",
-        provider_ref: charge.providerRef,
+        provider_ref: charge.handoff ? null : charge.providerRef,
+        handoff_ref: charge.handoff ? charge.handoff.state : null,
         status: "pending",
         amount_cents: amountCents,
         staff_id: ctx.staffId,
@@ -501,6 +502,9 @@ export interface CardHandoffAnswer {
   errorDescription?: string;
 }
 
+/** Square payments count for a hand-off from a minute before it started (clocks differ a little). */
+const handoffSince = (startedAt: Date) => new Date(startedAt.getTime() - 60_000);
+
 /** A hand-off asked about again after it settled: paid (even if refunded since) or not. */
 const settled = (s: string): PaymentResult["status"] =>
   s === "completed" || s === "refunded" ? "completed" : s === "declined" ? "declined" : "canceled";
@@ -510,7 +514,7 @@ async function pendingHandoff(trx: Trx, where: { state?: string; paymentId?: str
     .selectFrom("payments")
     .select(["id", "sale_id", "status", "method", "amount_cents", "provider_ref", "created_at"])
     .where("method", "=", "card");
-  if (where.state) q = q.where("provider_ref", "=", where.state);
+  if (where.state) q = q.where("handoff_ref", "=", where.state);
   if (where.paymentId) q = q.where("id", "=", where.paymentId);
   const p = await q.forUpdate().executeTakeFirst();
   if (!p) throw new AppError("not_found", "That card payment doesn't exist.");
@@ -524,9 +528,10 @@ async function completeHandoff(
   p: { id: string; sale_id: string; amount_cents: number; created_at: Date },
   transactionId: string,
 ): Promise<PaymentResult> {
-  if (!terminal.confirm) throw new AppError("invalid", "This register's card reader doesn't use the Square app.");
+  if (!terminal.confirm)
+    throw new AppError("invalid", "This register's card reader doesn't use the Square app.");
   // Square's answer is checked with Square itself: the browser's word never marks anything paid.
-  const { paymentRef } = await terminal.confirm(transactionId, p.amount_cents, p.created_at);
+  const { paymentRef } = await terminal.confirm(transactionId, p.amount_cents, handoffSince(p.created_at));
   const used = await trx
     .selectFrom("payments")
     .select("id")
@@ -565,7 +570,8 @@ export const finishCardHandoff = defineHandler<CardHandoffAnswer, PaymentResult>
       const r = await result(trx, p.sale_id, p.id, "pending");
       return {
         ...r,
-        message: "Square didn't say whether the card went through. Tap Find it in Square before charging again.",
+        message:
+          "Square didn't say whether the card went through. Tap Find it in Square before charging again.",
       };
     }
     await trx.updateTable("payments").set({ status: "canceled" }).where("id", "=", p.id).execute();
@@ -576,7 +582,9 @@ export const finishCardHandoff = defineHandler<CardHandoffAnswer, PaymentResult>
       message: canceled
         ? "The card payment was canceled in the Square app. Try again or take cash."
         : `The Square app didn't take the card${
-            answer.errorDescription ? `: ${String(answer.errorDescription).slice(0, 200)}` : ` (${String(answer.errorCode).slice(0, 80)})`
+            answer.errorDescription
+              ? `: ${String(answer.errorDescription).slice(0, 200)}`
+              : ` (${String(answer.errorCode).slice(0, 80)})`
           }. Try again or take cash.`,
     };
   },
@@ -593,9 +601,9 @@ export const findCardHandoff = defineHandler<{ paymentId: string }, PaymentResul
     const p = await pendingHandoff(trx, { paymentId });
     if (p.status !== "pending") return result(trx, p.sale_id, p.id, settled(p.status));
     await openSale(trx, p.sale_id);
-    if (!terminal.find) throw new AppError("invalid", "This register's card reader doesn't use the Square app.");
-    const since = new Date(p.created_at.getTime() - 60_000);
-    for (const transactionId of await terminal.find(p.amount_cents, since)) {
+    if (!terminal.find)
+      throw new AppError("invalid", "This register's card reader doesn't use the Square app.");
+    for (const transactionId of await terminal.find(p.amount_cents, handoffSince(p.created_at))) {
       try {
         return await completeHandoff(trx, ctx, p, transactionId);
       } catch (e) {
@@ -616,7 +624,8 @@ export const cancelCardHandoff = defineHandler<{ paymentId: string }, PaymentRes
   action: "register.use",
   async run(trx, _ctx, { paymentId }) {
     const p = await pendingHandoff(trx, { paymentId });
-    if (p.status !== "pending") throw new AppError("conflict", "The card reader already answered for this payment.");
+    if (p.status !== "pending")
+      throw new AppError("conflict", "The card reader already answered for this payment.");
     await openSale(trx, p.sale_id);
     await trx.updateTable("payments").set({ status: "canceled" }).where("id", "=", p.id).execute();
     return result(trx, p.sale_id, p.id, "canceled");
@@ -624,12 +633,23 @@ export const cancelCardHandoff = defineHandler<{ paymentId: string }, PaymentRes
 });
 
 /** An open sale picked up again (back from the Square app): its totals and what's paid so far. */
-export const saleForPayment = defineHandler<{ saleId: string }, CheckoutResult & { pendingCard: { paymentId: string; amountCents: number } | null }>({
+export const saleForPayment = defineHandler<
+  { saleId: string },
+  CheckoutResult & { pendingCard: { paymentId: string; amountCents: number } | null }
+>({
   action: "register.use",
   async run(trx, _ctx, { saleId }) {
     const sale = await trx
       .selectFrom("sales")
-      .select(["id", "status", "receipt_number", "subtotal_cents", "discount_cents", "tax_cents", "total_cents"])
+      .select([
+        "id",
+        "status",
+        "receipt_number",
+        "subtotal_cents",
+        "discount_cents",
+        "tax_cents",
+        "total_cents",
+      ])
       .where("id", "=", saleId)
       .where("source", "=", "register")
       .executeTakeFirst();

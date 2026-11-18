@@ -76,6 +76,25 @@ export interface SquarePosAnswer {
   errorDescription?: string;
 }
 
+/** A query string's parameters (core runs without the DOM, so no URLSearchParams). */
+function queryParams(search: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const part of search.replace(/^\?/, "").split("&")) {
+    if (!part) continue;
+    const i = part.indexOf("=");
+    const decode = (x: string) => {
+      try {
+        return decodeURIComponent(x.replace(/\+/g, " "));
+      } catch {
+        return "";
+      }
+    };
+    const key = decode(i < 0 ? part : part.slice(0, i));
+    if (!out.has(key)) out.set(key, i < 0 ? "" : decode(part.slice(i + 1)));
+  }
+  return out;
+}
+
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 
 /**
@@ -83,7 +102,7 @@ const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : unde
  * separate com.squareup.pos.* parameters. Null when it isn't an answer from Square at all.
  */
 export function readSquarePosAnswer(search: string): SquarePosAnswer | null {
-  const q = new URLSearchParams(search);
+  const q = queryParams(search);
   const data = q.get("data");
   if (data) {
     let d: Record<string, unknown>;
@@ -92,8 +111,9 @@ export function readSquarePosAnswer(search: string): SquarePosAnswer | null {
     } catch {
       return null;
     }
+    if (!d || typeof d !== "object") return null;
     const state = str(d.state);
-    if (!state || typeof d !== "object") return null;
+    if (!state) return null;
     const ok = d.status === "ok";
     return {
       state,
