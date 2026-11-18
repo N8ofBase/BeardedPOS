@@ -34,6 +34,7 @@ export function fakeStore(over: Partial<StoreApi> = {}): StoreApi {
       requestCode: async () => ({ sent: true }),
       signIn: () => Promise.reject(new Error("no server")),
       me: async () => null,
+      square: async () => ({ mode: "offline" }),
       signOut: async () => {},
       reviews: async () => [],
       moderate: async () => {},

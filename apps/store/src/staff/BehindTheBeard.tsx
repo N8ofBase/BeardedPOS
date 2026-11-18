@@ -1,7 +1,7 @@
 // Behind the Beard: the staff page. Sign in with a one-time code, then approve reviews, read store
 // stats and sort through what to keep from the old site. Hidden from shoppers: no links to it, no tracking, and search engines are told to skip it.
 import { useEffect, useState, type FormEvent } from "react";
-import type { StaffMe } from "@bearded/store-core";
+import type { StaffMe, StaffSquare } from "@bearded/store-core";
 import { errorText, looksLikeEmail, useStore, type Loadable } from "../api/store.ts";
 import { BuddiesTab } from "./BuddiesTab.tsx";
 import { OldSiteTab } from "./OldSiteTab.tsx";
@@ -50,6 +50,30 @@ export function BehindTheBeard() {
   );
 }
 
+/** Says which Square account takes the money, so nobody confuses test money with real money. */
+export function squareText(s: StaffSquare): string {
+  if (s.mode === "offline") return "Square: offline. Checkout is a preview and no money moves.";
+  const kind = s.mode === "live" ? "live, real money" : "Sandbox, test money only";
+  if (s.error) return `Square (${kind}): ${s.error}`;
+  return `Square (${kind}): ${s.merchant ?? "unknown shop"}, ${s.location ?? "unknown location"}`;
+}
+
+function SquareLine() {
+  const store = useStore();
+  const [square, setSquare] = useState<StaffSquare | null>(null);
+  useEffect(() => {
+    let live = true;
+    store.staff.square().then(
+      (value) => live && setSquare(value),
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [store]);
+  return square ? <p className="staff-square">{squareText(square)}</p> : null;
+}
+
 function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void }) {
   const store = useStore();
   const [tab, setTab] = useState<Tab>("reviews");
@@ -65,6 +89,7 @@ function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void })
         <p>
           Signed in as <strong>{me.email}</strong>
         </p>
+        <SquareLine />
         <button type="button" className="btn" onClick={() => store.staff.signOut().finally(onSignedOut)}>
           Sign out
         </button>

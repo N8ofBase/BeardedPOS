@@ -80,8 +80,9 @@ export function apiMiddleware(ready: Promise<StoreCtx>) {
       res.end(body === undefined ? undefined : JSON.stringify(body));
     };
     let body: unknown;
+    let text: string;
     try {
-      const text = await readBody(req);
+      text = await readBody(req);
       body = text ? JSON.parse(text) : undefined;
     } catch {
       return send(400, { error: "That request didn’t make sense. Refresh the page and try again." });
@@ -96,6 +97,7 @@ export function apiMiddleware(ready: Promise<StoreCtx>) {
       headers,
       cookies: parseCookies(headers.cookie),
       body,
+      rawBody: text,
     };
     const out = await handle(await ready, apiReq);
     send(out.status, out.body, out.headers);

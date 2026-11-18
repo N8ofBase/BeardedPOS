@@ -19,6 +19,7 @@ import type {
   SquareCatalog,
   StaffBuddy,
   StaffMe,
+  StaffSquare,
   StaffReview,
   StoreStats,
 } from "@bearded/store-core";
@@ -29,6 +30,8 @@ export interface StaffApi {
   /** Emails a sign-in code (offline, the code comes back to show on screen). */
   requestCode(email: string): Promise<CodeResponse>;
   signIn(email: string, code: string): Promise<StaffMe>;
+  /** Which Square account the store is connected to. */
+  square(): Promise<StaffSquare>;
   /** Who is signed in, or null. */
   me(): Promise<StaffMe | null>;
   signOut(): Promise<void>;
@@ -126,6 +129,7 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
           throw e;
         }),
       signOut: async () => void (await call("POST", "/staff/signout", {})),
+      square: () => call("GET", "/staff/square"),
       reviews: (status) => call("GET", `/staff/reviews?status=${status}`),
       moderate: async (reviewId, action) =>
         void (await call("POST", `/staff/reviews/${id(reviewId)}`, { action })),

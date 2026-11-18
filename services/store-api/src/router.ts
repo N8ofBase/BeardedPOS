@@ -14,9 +14,18 @@ import { logEvents } from "./handlers/events.ts";
 import { chooseOldSite, oldSiteChoices } from "./handlers/oldSite.ts";
 import { joinVip, listReviews, submitReview } from "./handlers/people.ts";
 import { checkout, getCatalog, getOrderStatus, getPreviewOrder, payPreviewOrder } from "./handlers/shop.ts";
-import { me, moderateReview, requestCode, signIn, signOut, staffReviews } from "./handlers/staff.ts";
+import {
+  me,
+  moderateReview,
+  squareAccount,
+  requestCode,
+  signIn,
+  signOut,
+  staffReviews,
+} from "./handlers/staff.ts";
 import { getStats } from "./handlers/stats.ts";
 import { handleRegister } from "./register.ts";
+import { squareWebhook } from "./square/webhook.ts";
 
 type Route = [
   method: string,
@@ -26,6 +35,7 @@ type Route = [
 
 const ROUTES: Route[] = [
   ["GET", /^\/api\/catalog$/, getCatalog],
+  ["POST", /^\/api\/square\/webhook$/, squareWebhook],
   ["POST", /^\/api\/checkout$/, checkout],
   ["GET", /^\/api\/orders\/([^/]+)$/, getOrderStatus],
   ["GET", /^\/api\/checkout-preview\/([^/]+)$/, (ctx, _req, id) => getPreviewOrder(ctx, id)],
@@ -42,6 +52,7 @@ const ROUTES: Route[] = [
   ["POST", /^\/api\/staff\/code$/, requestCode],
   ["POST", /^\/api\/staff\/session$/, signIn],
   ["GET", /^\/api\/staff\/me$/, me],
+  ["GET", /^\/api\/staff\/square$/, squareAccount],
   ["POST", /^\/api\/staff\/signout$/, signOut],
   ["GET", /^\/api\/staff\/reviews$/, staffReviews],
   ["POST", /^\/api\/staff\/reviews\/([^/]+)$/, moderateReview],
