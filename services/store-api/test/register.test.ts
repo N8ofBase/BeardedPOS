@@ -292,3 +292,148 @@ describe("website orders", () => {
     expect(await onHand("Jibe")).toBe(before);
   });
 });
+
+describe("PIN sign-in", () => {
+  const cookieOf = (res: { headers?: Record<string, string> }, name: string) =>
+    new RegExp(`${name}=([^;]*)`).exec(res.headers!["Set-Cookie"]!)![1]!;
+
+  /** An owner signs in by email, sets up the tablet, and adds a cashier with a PIN. */
+  async function setUpCounter(store: TestStore) {
+    const owner = await signInOwner(store);
+    const setup = await store.call("POST", "/api/pos/tablet/setup", { name: "Front counter" }, owner);
+    expect(setup.status).toBe(200);
+    expect(setup.headers!["Set-Cookie"]).toMatch(
+      /^bbg_pos_tablet=[^;]+; Path=\/api\/pos; HttpOnly; SameSite=Strict; Max-Age=\d+; Secure$/,
+    );
+    const tablet = { bbg_pos_tablet: cookieOf(setup, "bbg_pos_tablet") };
+    const email = `cashier${++n}@bearded.example`;
+    const added = (await call(store, owner, "addStaff", { name: `Cashier ${n}`, email, role: "cashier" }))
+      .body as { output: { id: string } };
+    const cashierId = added.output.id;
+    expect(
+      (await store.call("POST", "/api/pos/pin", { staffId: cashierId, pin: "2580" }, owner)).status,
+    ).toBe(200);
+    return { owner, tablet, cashierId };
+  }
+
+  const pinIn = (store: TestStore, jar: Record<string, string>, staffId: string, pin: string) =>
+    store.call("POST", "/api/pos/pin-session", { staffId, pin }, jar);
+
+  it("lists who has a PIN on a set-up tablet, and signs them in", async () => {
+    const store = register();
+    const { tablet, cashierId } = await setUpCounter(store);
+    const info = (await store.call("POST", "/api/pos/tablet", {}, tablet)).body as {
+      tablet: { name: string };
+      staff: { id: string; name: string }[];
+    };
+    expect(info.tablet.name).toBe("Front counter");
+    expect(info.staff.map((s) => s.id)).toContain(cashierId);
+    const res = await pinIn(store, tablet, cashierId, "2580");
+    expect(res.status).toBe(200);
+    const jar = { bbg_pos: cookieOf(res, "bbg_pos") };
+    const me = (await call(store, jar, "me")).body as { output: { staff: { role: string } } };
+    expect(me.output.staff.role).toBe("cashier");
+  });
+
+  it("shows no names and takes no PINs without a set-up tablet", async () => {
+    const store = register();
+    const { cashierId } = await setUpCounter(store);
+    expect((await store.call("POST", "/api/pos/tablet", {})).body).toEqual({ tablet: null, staff: [] });
+    expect((await pinIn(store, {}, cashierId, "2580")).status).toBe(401);
+    expect((await pinIn(store, { bbg_pos_tablet: "made-up" }, cashierId, "2580")).status).toBe(401);
+  });
+
+  it("locks a PIN after five wrong tries, and a new PIN unlocks it", async () => {
+    const store = register();
+    const { owner, tablet, cashierId } = await setUpCounter(store);
+    for (let i = 4; i >= 1; i--) {
+      const res = await pinIn(store, tablet, cashierId, "1357");
+      expect(res).toMatchObject({ status: 401, body: { error: expect.stringContaining(`${i} tr`) } });
+    }
+    const locked = await pinIn(store, tablet, cashierId, "1357");
+    expect(locked).toMatchObject({ status: 429, body: { error: expect.stringContaining("15 minutes") } });
+    // Even the right PIN waits out the lock.
+    expect((await pinIn(store, tablet, cashierId, "2580")).status).toBe(429);
+    await store.call("POST", "/api/pos/pin", { staffId: cashierId, pin: "8642" }, owner);
+    expect((await pinIn(store, tablet, cashierId, "8642")).status).toBe(200);
+  });
+
+  it("refuses easy PINs, and lets only the right people set them", async () => {
+    const store = register();
+    const { owner, tablet, cashierId } = await setUpCounter(store);
+    expect(
+      (await store.call("POST", "/api/pos/pin", { staffId: cashierId, pin: "1234" }, owner)).status,
+    ).toBe(400);
+    const cashier = { bbg_pos: cookieOf(await pinIn(store, tablet, cashierId, "2580"), "bbg_pos") };
+    // A cashier changes their own PIN, but nobody else's, and can't set up tablets.
+    expect((await store.call("POST", "/api/pos/pin", { pin: "9147" }, cashier)).status).toBe(200);
+    const meOwner = (await call(store, owner, "me")).body as { output: { staff: { id: string } } };
+    expect(
+      (await store.call("POST", "/api/pos/pin", { staffId: meOwner.output.staff.id, pin: "9147" }, cashier))
+        .status,
+    ).toBe(403);
+    expect((await store.call("POST", "/api/pos/tablet/setup", {}, cashier)).status).toBe(403);
+    expect((await store.call("POST", "/api/pos/tablets", {}, cashier)).status).toBe(403);
+    expect((await store.call("POST", "/api/pos/pins", {}, cashier)).body).toEqual({ staffIds: [cashierId] });
+    expect((await pinIn(store, tablet, cashierId, "9147")).status).toBe(200);
+  });
+
+  it("keeps the PIN hash out of reach and salted", async () => {
+    const store = register();
+    const { cashierId } = await setUpCounter(store);
+    const { rows } = await pg.query<{ pin_hash: string }>(
+      "SELECT pin_hash FROM staff_pins WHERE staff_id = $1",
+      [cashierId],
+    );
+    expect(rows[0]!.pin_hash).toMatch(/^scrypt\$[\w-]+\$[\w-]+$/);
+    expect(rows[0]!.pin_hash).not.toContain("2580");
+  });
+
+  it("stops PINs for someone made inactive", async () => {
+    const store = register();
+    const { owner, tablet, cashierId } = await setUpCounter(store);
+    const jar = { bbg_pos: cookieOf(await pinIn(store, tablet, cashierId, "2580"), "bbg_pos") };
+    const staff = (await call(store, owner, "listStaff")).body as {
+      output: { id: string; name: string; email: string }[];
+    };
+    const me = staff.output.find((s) => s.id === cashierId)!;
+    await call(store, owner, "updateStaff", { ...me, role: "cashier", active: false });
+    expect((await call(store, jar, "me")).status).toBe(401);
+    expect((await pinIn(store, tablet, cashierId, "2580")).status).toBe(401);
+    const info = (await store.call("POST", "/api/pos/tablet", {}, tablet)).body as {
+      staff: { id: string }[];
+    };
+    expect(info.staff.map((s) => s.id)).not.toContain(cashierId);
+  });
+
+  it("removing a tablet signs out whoever is on it and ends its PINs", async () => {
+    const store = register();
+    const { owner, tablet, cashierId } = await setUpCounter(store);
+    const jar = { bbg_pos: cookieOf(await pinIn(store, tablet, cashierId, "2580"), "bbg_pos") };
+    const list = (await store.call("POST", "/api/pos/tablets", {}, { ...owner, ...tablet })).body as {
+      id: string;
+      name: string;
+      thisTablet: boolean;
+    }[];
+    const here = list.find((t) => t.thisTablet)!;
+    expect(here.name).toBe("Front counter");
+    const res = await store.call("POST", "/api/pos/tablet/remove", { id: here.id }, { ...owner, ...tablet });
+    expect(res.headers!["Set-Cookie"]).toMatch(/^bbg_pos_tablet=; .*Max-Age=0/);
+    expect((await call(store, jar, "me")).status).toBe(401);
+    expect((await pinIn(store, tablet, cashierId, "2580")).status).toBe(401);
+    // The owner's email session didn't come from the tablet, so it stays.
+    expect((await call(store, owner, "me")).status).toBe(200);
+  });
+
+  it("keeps each business's tablets and PINs to itself", async () => {
+    const a = register();
+    const { tablet, cashierId } = await setUpCounter(a);
+    const b = register(BIZ_B);
+    expect((await b.call("POST", "/api/pos/tablet", {}, tablet)).body).toEqual({ tablet: null, staff: [] });
+    expect((await pinIn(b, tablet, cashierId, "2580")).status).toBe(401);
+    const ownerB = await signInPos(b, "owner@b.example");
+    expect((await b.call("POST", "/api/pos/pin", { staffId: cashierId, pin: "9147" }, ownerB)).status).toBe(
+      404,
+    );
+  });
+});
