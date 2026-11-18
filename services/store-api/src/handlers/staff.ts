@@ -89,6 +89,19 @@ export async function me(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
   return ok({ email: await requireStaff(ctx, req) });
 }
 
+/** Which Square account the store is using: Sandbox or live, and the shop's name. */
+export async function squareAccount(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
+  await requireStaff(ctx, req);
+  const mode = ctx.square.mode;
+  if (!ctx.square.account) return ok({ mode });
+  try {
+    return ok({ mode, ...(await ctx.square.account()) });
+  } catch (e) {
+    console.error("square account check failed", e);
+    return ok({ mode, error: "Square didn’t answer. Check the token in Secrets Manager." });
+  }
+}
+
 export async function signOut(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
   const token = req.cookies[STAFF_COOKIE];
   if (token)

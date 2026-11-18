@@ -2,6 +2,7 @@
 
 A proof of concept of the online store, hosted in AWS by the `BeardedStoreDemo` stack
 (`infra/lib/store-demo-stack.ts`). Square is Sandbox only, and search engines are told not to index it.
+The live store on the real Square account is a separate stack: see `hosting-live-store.md`.
 
 ## What it makes
 

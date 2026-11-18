@@ -8,6 +8,8 @@ export interface ApiRequest {
   headers: Record<string, string | undefined>;
   cookies: Record<string, string>;
   body: unknown;
+  /** The body exactly as sent, for checking a webhook's signature. */
+  rawBody?: string;
 }
 
 export interface ApiResponse {

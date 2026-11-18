@@ -1,6 +1,6 @@
 // The store api in AWS Lambda behind API Gateway (HTTP API, payload v2). Settings come from the
 // environment; the database password and the Square token come from Secrets Manager, read once per
-// instance. Only the Square Sandbox is allowed here until N8 says to use the real account.
+// instance. SQUARE_ENV picks the Square Sandbox (the demo) or the real account (the live store).
 import { readFileSync } from "node:fs";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
@@ -15,12 +15,16 @@ import { catchUpRegisterStock } from "./registerStock.ts";
 import { handle } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
+import type { SquareStore } from "./square/types.ts";
 
 const MAX_BODY = 64 * 1024;
 /** The register sends bigger bodies: an import goes up 500 rows at a time. */
 const MAX_REGISTER_BODY = 5 * 1024 * 1024;
 /** What the CDK stack puts in the Square secret. Until N8 pastes the Sandbox token, Square is offline. */
 export const SQUARE_PLACEHOLDER = "paste-the-square-sandbox-token-here";
+/** The live store's placeholders. A live store never runs offline: it waits for the real token. */
+export const LIVE_SQUARE_PLACEHOLDER = "paste-the-square-production-token-here";
+export const WEBHOOK_PLACEHOLDER = "paste-the-square-webhook-signature-key-here";
 
 /** The parts of an API Gateway v2 event the store reads. */
 export interface HttpEvent {
@@ -80,6 +84,7 @@ export async function serve(ctx: StoreCtx, event: HttpEvent): Promise<HttpResult
     headers,
     cookies: parseCookies((event.cookies ?? []).join("; ") || headers.cookie),
     body,
+    rawBody: text,
   };
   return result(await handle(ctx, req));
 }
@@ -98,7 +103,8 @@ async function secret(client: SecretsManagerClient, id: string): Promise<string>
 
 /** Builds the hosted context from the environment the CDK stack sets. */
 export async function hostedContext(env = process.env): Promise<StoreCtx> {
-  if (env.SQUARE_ENV !== "sandbox") throw new Error("The hosted store only uses the Square Sandbox for now.");
+  const mode = env.SQUARE_ENV;
+  if (mode !== "sandbox" && mode !== "live") throw new Error('SQUARE_ENV must be "sandbox" or "live".');
   const secrets = new SecretsManagerClient({});
   const db = JSON.parse(await secret(secrets, need("DB_SECRET_ARN"))) as {
     host: string;
@@ -108,12 +114,15 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     password: string;
   };
   const token = (await secret(secrets, need("SQUARE_SECRET_ARN"))).trim();
-  if (!token || token.startsWith("{"))
-    throw new Error("Put the Square Sandbox token in its secret as plain text.");
-  const square =
-    token === SQUARE_PLACEHOLDER
-      ? new SnapshotStore()
-      : new SquareApiStore({ mode: "sandbox", token, locationId: env.SQUARE_LOCATION_ID || undefined });
+  const square = squareFor(mode, token, env.SQUARE_LOCATION_ID);
+  if (square.account)
+    await square.account().then(
+      (a) => console.log(`square ${mode}: ${a.merchant}, location ${a.location}`),
+      (e: unknown) => console.error(`square ${mode}: account check failed`, e),
+    );
+  const webhookKey = env.SQUARE_WEBHOOK_SECRET_ARN
+    ? (await secret(secrets, env.SQUARE_WEBHOOK_SECRET_ARN)).trim()
+    : "";
   const ses = new SESv2Client({});
   const options: PostgresOptions = {
     host: db.host,
@@ -154,9 +163,25 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
         .filter(Boolean),
       siteUrl: need("BBG_SITE_URL"),
       secureCookies: true,
+      ...(webhookKey && webhookKey !== WEBHOOK_PLACEHOLDER
+        ? { squareWebhook: { signatureKey: webhookKey, url: need("SQUARE_WEBHOOK_URL") } }
+        : {}),
     },
     now: () => new Date(),
   };
+}
+
+/**
+ * The Sandbox demo runs on the saved catalog until its token is pasted. The live store refuses to
+ * start without the real token: an offline store would let anyone "pay" on the preview page.
+ */
+export function squareFor(mode: "sandbox" | "live", raw: string, locationId?: string): SquareStore {
+  const token = raw.trim();
+  if (!token || token.startsWith("{")) throw new Error("Put the Square token in its secret as plain text.");
+  if (mode === "sandbox" && token === SQUARE_PLACEHOLDER) return new SnapshotStore();
+  if (mode === "live" && (token === LIVE_SQUARE_PLACEHOLDER || token === SQUARE_PLACEHOLDER))
+    throw new Error("The live store needs the Square production token in its secret.");
+  return new SquareApiStore({ mode, token, locationId: locationId || undefined });
 }
 
 function registerOff(e: unknown): undefined {

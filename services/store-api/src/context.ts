@@ -12,6 +12,11 @@ export interface StoreConfig {
   siteUrl: string;
   /** Mark the staff cookie Secure (everywhere but localhost). */
   secureCookies: boolean;
+  /**
+   * Square's webhook, when it's set up: the signature key from Square's Webhooks page and the exact
+   * notification URL saved there (Square signs the URL plus the body). Left out, the webhook is off.
+   */
+  squareWebhook?: { signatureKey: string; url: string };
 }
 
 export interface StoreCtx {

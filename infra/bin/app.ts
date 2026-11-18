@@ -57,6 +57,28 @@ if (built("BeardedStoreDemo", storeSiteDir) && built("BeardedStoreDemo", registe
     registerOwners: app.node.getContext("registerOwners"),
     staffEmails: app.node.getContext("storeStaff"),
     businessId: app.node.getContext("storeBusinessId"),
+    demoStock: 100,
     description:
       "Bearded Board Games online store demo: site, register, /api Lambda, Postgres (Square Sandbox only)",
+  });
+
+// The live store on the real Bearded Board Games Square account: npm run deploy:store-live
+// Its own private database, so real orders never share a server with the Sandbox demo. The demo stack
+// already owns the staff SES verifications, so this one doesn't send them again.
+if (built("BeardedStore", storeSiteDir) && built("BeardedStore", registerDir))
+  new StoreDemoStack(app, "BeardedStore", {
+    env: { account, region: "us-east-1" },
+    domainName: app.node.getContext("domainName"),
+    subdomain: app.node.getContext("liveSubdomain"),
+    siteDir: storeSiteDir,
+    registerDir,
+    registerOwners: app.node.getContext("registerOwners"),
+    staffEmails: app.node.getContext("storeStaff"),
+    businessId: app.node.getContext("storeBusinessId"),
+    squareMode: "live",
+    privateDatabase: true,
+    verifyStaffEmails: false,
+    terminationProtection: true,
+    description:
+      "Bearded Board Games live store: site, register, /api Lambda, private Postgres (real Square)",
   });

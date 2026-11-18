@@ -22,9 +22,13 @@ import {
 } from "aws-cdk-lib/aws-cloudfront";
 import { HttpOrigin, S3BucketOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
+  AmazonLinuxCpuType,
   InstanceClass,
   InstanceSize,
   InstanceType,
+  MachineImage,
+  NatProvider,
+  NatTrafficDirection,
   Peer,
   Port,
   SecurityGroup,
@@ -67,44 +71,84 @@ export interface StoreDemoStackProps extends StackProps {
   staffEmails: string[];
   /** The store's business id (DEV_BUSINESS_ID in services/store-api/src/node.ts). */
   businessId: string;
+  /** "sandbox" for the demo; "live" takes real money on the real Square account. */
+  squareMode?: "sandbox" | "live";
+  /**
+   * Keep the database off the internet: it sits in private subnets and only the Lambda can reach it.
+   * The Lambda then runs in the VPC and reaches Square, SES and Secrets Manager through a small NAT
+   * instance (about $7 a month). Also turns on a week of backups and delete protection.
+   */
+  privateDatabase?: boolean;
+  /** Send each staff address an SES verification email (only one stack may own those identities). */
+  verifyStaffEmails?: boolean;
+  /** Load the register's (DEMO) sample stock at this count. Left out, the register starts empty. */
+  demoStock?: number;
 }
 
-/** Must match SQUARE_PLACEHOLDER in services/store-api/src/lambda.ts: Square stays offline until replaced. */
+/** Must match the placeholders in services/store-api/src/lambda.ts. */
 const SQUARE_PLACEHOLDER = "paste-the-square-sandbox-token-here";
+const LIVE_SQUARE_PLACEHOLDER = "paste-the-square-production-token-here";
+const WEBHOOK_PLACEHOLDER = "paste-the-square-webhook-signature-key-here";
 
 /**
- * The online store as a proof of concept at <subdomain>.<domainName>: the built site in a private S3
- * bucket behind CloudFront, /api to the store server in Lambda (behind an HTTP API), and the smallest
- * RDS Postgres. Square is Sandbox only. Kept out of search engines. Adds only its own records to the
- * existing hosted zone; never changes other records.
+ * The online store at <subdomain>.<domainName>: the built site in a private S3 bucket behind
+ * CloudFront, /api to the store server in Lambda (behind an HTTP API), and the smallest RDS Postgres.
+ * Used twice: BeardedStoreDemo (Square Sandbox, public database with TLS) and BeardedStore (the real
+ * Square account, private database). Kept out of search engines until the domain moves. Adds only its
+ * own records to the existing hosted zone; never changes other records.
  */
 export class StoreDemoStack extends Stack {
   constructor(scope: Construct, id: string, props: StoreDemoStackProps) {
     super(scope, id, props);
 
     const siteName = `${props.subdomain}.${props.domainName}`;
+    const live = props.squareMode === "live";
+    const isPrivate = props.privateDatabase === true;
     const zone = HostedZone.fromLookup(this, "Zone", { domainName: props.domainName });
     const repoRoot = join(process.cwd(), "..");
 
-    // Database. Public with TLS forced and a long generated password, so the Lambda can stay outside
-    // the VPC (no NAT gateway to pay for). Snapshot on delete: staff choices and accounts live here.
+    // Database. In the demo it's public with TLS forced and a long generated password, so the Lambda
+    // can stay outside the VPC (no NAT to pay for). Private: the database has no internet address, only
+    // the Lambda's security group may connect, and the Lambda reaches out through a NAT instance.
+    // Snapshot on delete either way: staff choices and accounts live here.
+    const nat = isPrivate
+      ? NatProvider.instanceV2({
+          instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.NANO),
+          machineImage: MachineImage.latestAmazonLinux2023({ cpuType: AmazonLinuxCpuType.ARM_64 }),
+          defaultAllowedTraffic: NatTrafficDirection.OUTBOUND_ONLY,
+        })
+      : undefined;
     const vpc = new Vpc(this, "Vpc", {
       maxAzs: 2,
-      natGateways: 0,
-      subnetConfiguration: [{ name: "public", subnetType: SubnetType.PUBLIC }],
+      natGateways: nat ? 1 : 0,
+      ...(nat ? { natGatewayProvider: nat } : {}),
+      subnetConfiguration: nat
+        ? [
+            { name: "public", subnetType: SubnetType.PUBLIC, cidrMask: 24 },
+            { name: "app", subnetType: SubnetType.PRIVATE_WITH_EGRESS, cidrMask: 24 },
+            { name: "data", subnetType: SubnetType.PRIVATE_ISOLATED, cidrMask: 24 },
+          ]
+        : [{ name: "public", subnetType: SubnetType.PUBLIC }],
     });
+    nat?.connections.allowFrom(Peer.ipv4(vpc.vpcCidrBlock), Port.allTraffic(), "Out to the internet");
+    const apiSecurity = isPrivate
+      ? new SecurityGroup(this, "ApiSecurity", { vpc, description: "Store Lambda" })
+      : undefined;
     const dbSecurity = new SecurityGroup(this, "DbSecurity", {
       vpc,
-      description: "Store database: Postgres over TLS (the Lambda has no fixed address)",
+      description: apiSecurity
+        ? "Store database: Postgres from the store Lambda only"
+        : "Store database: Postgres over TLS (the Lambda has no fixed address)",
     });
-    dbSecurity.addIngressRule(Peer.anyIpv4(), Port.tcp(5432), "Postgres over TLS");
+    if (apiSecurity) dbSecurity.addIngressRule(apiSecurity, Port.tcp(5432), "Postgres from the store Lambda");
+    else dbSecurity.addIngressRule(Peer.anyIpv4(), Port.tcp(5432), "Postgres over TLS");
     const engine = DatabaseInstanceEngine.postgres({ version: PostgresEngineVersion.VER_16 });
     const db = new DatabaseInstance(this, "Database", {
       engine,
       instanceType: InstanceType.of(InstanceClass.T4G, InstanceSize.MICRO),
       vpc,
-      vpcSubnets: { subnetType: SubnetType.PUBLIC },
-      publiclyAccessible: true,
+      vpcSubnets: { subnetType: isPrivate ? SubnetType.PRIVATE_ISOLATED : SubnetType.PUBLIC },
+      publiclyAccessible: !isPrivate,
       securityGroups: [dbSecurity],
       credentials: Credentials.fromGeneratedSecret("storeadmin"),
       databaseName: "store",
@@ -116,16 +160,30 @@ export class StoreDemoStack extends Stack {
       maxAllocatedStorage: 20,
       storageEncrypted: true,
       multiAz: false,
-      backupRetention: Duration.days(1),
-      deletionProtection: false,
+      backupRetention: Duration.days(isPrivate ? 7 : 1),
+      deletionProtection: isPrivate,
       removalPolicy: RemovalPolicy.SNAPSHOT,
     });
 
-    // N8 pastes the Square Sandbox token here in the AWS console. Deploys don't overwrite it.
-    const square = new Secret(this, "SquareSandboxToken", {
-      description: "Square Sandbox access token for the store demo (plain text). Paste it in the console.",
-      secretStringValue: SecretValue.unsafePlainText(SQUARE_PLACEHOLDER),
+    // N8 pastes the Square token here in the AWS console. Deploys don't overwrite it.
+    const square = live
+      ? new Secret(this, "SquareLiveToken", {
+          description:
+            "Square production access token for the live store (plain text). Paste it in the console.",
+          secretStringValue: SecretValue.unsafePlainText(LIVE_SQUARE_PLACEHOLDER),
+        })
+      : new Secret(this, "SquareSandboxToken", {
+          description:
+            "Square Sandbox access token for the store demo (plain text). Paste it in the console.",
+          secretStringValue: SecretValue.unsafePlainText(SQUARE_PLACEHOLDER),
+        });
+    // The webhook's signature key from Square's Webhooks page. Until it's pasted, the webhook is off and
+    // orders are confirmed by the thank-you page and the catch-up at start.
+    const webhookKey = new Secret(this, "SquareWebhookKey", {
+      description: "Square webhook signature key (plain text). Paste it in the console.",
+      secretStringValue: SecretValue.unsafePlainText(WEBHOOK_PLACEHOLDER),
     });
+    const webhookUrl = `https://${siteName}/api/square/webhook`;
 
     // Sign-in codes and receipts come from the store's own subdomain.
     const mail = new EmailIdentity(this, "MailDomain", { identity: Identity.domain(siteName) });
@@ -138,9 +196,10 @@ export class StoreDemoStack extends Stack {
       });
     });
     // While SES is in its sandbox it only sends to verified addresses, so verify the staff.
-    props.staffEmails.forEach(
-      (email, i) => new EmailIdentity(this, `Staff${i + 1}`, { identity: Identity.email(email) }),
-    );
+    if (props.verifyStaffEmails !== false)
+      props.staffEmails.forEach(
+        (email, i) => new EmailIdentity(this, `Staff${i + 1}`, { identity: Identity.email(email) }),
+      );
 
     const api = new NodejsFunction(this, "StoreApi", {
       entry: join(repoRoot, "services/store-api/src/lambda.ts"),
@@ -149,6 +208,9 @@ export class StoreDemoStack extends Stack {
       architecture: Architecture.ARM_64,
       memorySize: 512,
       timeout: Duration.seconds(20),
+      ...(apiSecurity
+        ? { vpc, vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS }, securityGroups: [apiSecurity] }
+        : {}),
       logGroup: new LogGroup(this, "StoreApiLogs", {
         retention: RetentionDays.ONE_MONTH,
         removalPolicy: RemovalPolicy.DESTROY,
@@ -156,9 +218,11 @@ export class StoreDemoStack extends Stack {
       projectRoot: repoRoot,
       depsLockFilePath: join(repoRoot, "package-lock.json"),
       environment: {
-        SQUARE_ENV: "sandbox",
+        SQUARE_ENV: live ? "live" : "sandbox",
         DB_SECRET_ARN: db.secret!.secretArn,
         SQUARE_SECRET_ARN: square.secretArn,
+        SQUARE_WEBHOOK_SECRET_ARN: webhookKey.secretArn,
+        SQUARE_WEBHOOK_URL: webhookUrl,
         STORE_MIGRATIONS_DIR: "/var/task/migrations",
         RDS_CA_FILE: "/var/task/rds-global-bundle.pem",
         MAIL_FROM: `Bearded Board Games <no-reply@${siteName}>`,
@@ -168,7 +232,7 @@ export class StoreDemoStack extends Stack {
         // The register at /register: its own tables beside the store's, and (DEMO) sample stock.
         POS_MIGRATIONS_DIR: "/var/task/pos-migrations",
         POS_OWNERS: props.registerOwners.join(", "),
-        POS_DEMO_STOCK: "100",
+        ...(props.demoStock ? { POS_DEMO_STOCK: String(props.demoStock) } : {}),
       },
       bundling: {
         format: OutputFormat.ESM,
@@ -189,6 +253,7 @@ export class StoreDemoStack extends Stack {
     });
     db.secret!.grantRead(api);
     square.grantRead(api);
+    webhookKey.grantRead(api);
     api.addToRolePolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
@@ -291,7 +356,15 @@ export class StoreDemoStack extends Stack {
     new CfnOutput(this, "SiteUrl", { value: `https://${siteName}` });
     new CfnOutput(this, "SquareSecretName", {
       value: square.secretName,
-      description: "Paste the Square Sandbox token here (Secrets Manager, us-east-1)",
+      description: `Paste the Square ${live ? "production" : "Sandbox"} token here (Secrets Manager, us-east-1)`,
+    });
+    new CfnOutput(this, "SquareWebhookUrl", {
+      value: webhookUrl,
+      description: "Square Developer, Webhooks: add this URL with payment.updated and order.updated",
+    });
+    new CfnOutput(this, "SquareWebhookSecretName", {
+      value: webhookKey.secretName,
+      description: "Paste the webhook's signature key here (Secrets Manager, us-east-1)",
     });
     new CfnOutput(this, "RegisterUrl", { value: `https://${siteName}/register` });
     new CfnOutput(this, "DistributionId", { value: distribution.distributionId });

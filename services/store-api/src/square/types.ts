@@ -24,4 +24,6 @@ export interface SquareStore {
   upsertCustomer(email: string): Promise<void>;
   /** True when this email paid for a Square order: shown as "Bought from us" on reviews. */
   hasPaidOrder(email: string): Promise<boolean>;
+  /** Which Square shop and location this is, so staff can see the store is on the right account. */
+  account?(): Promise<{ merchant: string; location: string }>;
 }

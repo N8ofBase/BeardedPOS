@@ -171,6 +171,22 @@ export class SquareApiStore implements SquareStore {
     return this.location;
   }
 
+  async account(): Promise<{ merchant: string; location: string }> {
+    const [me, location] = await Promise.all([
+      this.call<{ merchant?: { business_name?: string; id?: string } }>("GET", "/v2/merchants/me"),
+      this.locationId().then((id) =>
+        this.call<{ location?: { name?: string; id?: string } }>(
+          "GET",
+          `/v2/locations/${encodeURIComponent(id)}`,
+        ),
+      ),
+    ]);
+    return {
+      merchant: me.merchant?.business_name ?? me.merchant?.id ?? "unknown",
+      location: location.location?.name ?? location.location?.id ?? "unknown",
+    };
+  }
+
   catalog(): Promise<SquareCatalog> {
     const at = this.now();
     if (this.cached && at - this.cached.at < CATALOG_SECONDS * 1000) return this.cached.value;

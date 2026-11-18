@@ -60,6 +60,15 @@ export interface StaffMe {
   email: string;
 }
 
+/** Which Square the store is using: offline (saved catalog), the Sandbox (test money) or live. */
+export interface StaffSquare {
+  mode: "offline" | "sandbox" | "live";
+  /** The Square shop's name and location, once Square answers. */
+  merchant?: string;
+  location?: string;
+  error?: string;
+}
+
 export interface CodeResponse {
   sent: true;
   /** Offline only: the code, since no email is sent. */

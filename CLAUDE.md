@@ -46,6 +46,8 @@ Point of sale, inventory, customers and an online store for Bearded Board Games,
 - `npm run lint` / `npm run typecheck` / `npm run format`
 - `npm run build:demo` — static demo build in `apps/web/dist`
 - `npm run deploy:demo` — build and deploy to https://bearded-pos-demo.prismcortex.net (BeardedDemoSite stack)
+- `npm run deploy:store-demo` — the store and register on the Square Sandbox at https://bbg.prismcortex.net (BeardedStoreDemo)
+- `npm run deploy:store-live` — the live store on the real Square account (BeardedStore, private database; `docs/hosting-live-store.md`). Real money: deploy only when N8 asks.
 
 AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC_Dev). The AWS CLI takes `--profile prismcortex`. The CDK CLI can't read the `[sso-session]` config, so before `cdk` commands load short-lived credentials into the shell: `aws configure export-credentials --profile prismcortex --format powershell | Invoke-Expression` (never print or save them).
 
@@ -68,5 +70,6 @@ AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC
 - Day totals (Sales KPIs and end of day) come only from `moneyTotals()` in `services/api/src/handlers/totals.ts`. Imported orders (`sales.source = 'import'`) have no receipt number or payments and never count there; register queries filter `source = 'register'`.
 - Every PGlite instance takes `PGLITE_OPTIONS` (the parsers). Use it for any new `new PGlite()`.
 - Shell edits: template backticks inside `node -e "..."` break in bash and PowerShell. Use the editor tools or a script file in the scratchpad.
+- Square's webhook (`services/store-api/src/square/webhook.ts`) checks the signature over the exact notification URL plus the raw body, then asks Square whether the order is paid before `markPaid()`; the body alone never marks an order paid.
 - Customer-facing calls go through `invokePublic` and the `publicHandlers` registry in `services/api/src/public/`, never `invoke`: the customer id comes from the session token, not the input. Sign-in codes and sessions are in `public/account.ts`; the code rules are in `packages/core/src/signin.ts`.
 - New demo data: add a part to `ensureDemo` in `packages/db/seed/demo.ts` through `once(...)`, so existing demo browsers get it once.
