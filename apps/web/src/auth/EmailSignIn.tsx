@@ -3,7 +3,7 @@ import { posFetch } from "../api/http.ts";
 import { errorMessage } from "../ui/errors.ts";
 
 /** Hosted sign-in: staff get a 6-digit code at the email in the register's Settings. */
-export function EmailSignIn({ onSignedIn }: { onSignedIn: () => void }) {
+export function EmailSignIn({ onSignedIn, onUsePin }: { onSignedIn: () => void; onUsePin?: () => void }) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
@@ -62,6 +62,11 @@ export function EmailSignIn({ onSignedIn }: { onSignedIn: () => void }) {
               <button type="submit" className="primary" disabled={busy}>
                 {busy ? "Sending…" : "Email me a code"}
               </button>
+              {onUsePin && (
+                <button type="button" onClick={onUsePin} disabled={busy}>
+                  Use my PIN
+                </button>
+              )}
             </div>
           </form>
         ) : (

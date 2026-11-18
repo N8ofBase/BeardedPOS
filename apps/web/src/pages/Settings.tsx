@@ -14,6 +14,7 @@ import {
   type Role,
 } from "@bearded/core";
 import type { DemoCounts, StaffListItem, StoreSettings } from "@bearded/api";
+import { PinForm, TabletsSection, usePins } from "../auth/PinSettings.tsx";
 import { useSession } from "../session.tsx";
 import { ConfirmTyped } from "../ui/ConfirmTyped.tsx";
 import { errorMessage, fieldErrors } from "../ui/errors.ts";
@@ -52,6 +53,8 @@ function Settings() {
       {settings.data && <StoreForm key={JSON.stringify(settings.data)} s={settings.data} canEdit={canEdit} />}
 
       <StaffSection />
+
+      {hosted && (me.staff.role === "owner" || me.staff.role === "manager") && <TabletsSection />}
 
       {can(me.staff.role, "discounts.manage") && <DiscountsSection />}
 
@@ -276,6 +279,9 @@ function StaffSection() {
   const canManage = can(me.staff.role, "staff.manage");
   const staff = useQuery({ queryKey: ["staff"], queryFn: () => api.call("listStaff") });
   const [editing, setEditing] = useState<StaffListItem | "new" | null>(null);
+  // Managers can't edit staff, but can set or reset a cashier's PIN.
+  const pinFor = (s: StaffListItem) => hosted && me.staff.role === "manager" && s.role === "cashier";
+  const [settingPin, setSettingPin] = useState<StaffListItem | null>(null);
 
   return (
     <section className="panel">
@@ -295,7 +301,7 @@ function StaffSection() {
               <th>Name</th>
               <th>Role</th>
               <th>Status</th>
-              {canManage && <th />}
+              {(canManage || staff.data?.some(pinFor)) && <th />}
             </tr>
           </thead>
           <tbody>
@@ -320,6 +326,15 @@ function StaffSection() {
                     </button>
                   </td>
                 )}
+                {!canManage && staff.data?.some(pinFor) && (
+                  <td>
+                    {pinFor(s) && (
+                      <button type="button" onClick={() => setSettingPin(s)}>
+                        Set PIN
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -327,16 +342,21 @@ function StaffSection() {
       </div>
       <p className="muted small">
         {hosted
-          ? "New staff sign in with a code sent to the email you enter here."
+          ? "New staff sign in with a code sent to the email you enter here. Once they have a PIN, they can also sign in on a tablet set up for PINs."
           : `In this demo, new staff appear on the "Who's using the register?" screen. In the hosted version they sign in with a code sent to their email.`}
       </p>
       {editing && <StaffForm staff={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
+      {settingPin && (
+        <SlideOver title={`${settingPin.name}'s PIN`} onClose={() => setSettingPin(null)}>
+          <StaffPin staffId={settingPin.id} name={settingPin.name} />
+        </SlideOver>
+      )}
     </section>
   );
 }
 
 export function StaffForm({ staff, onClose }: { staff: StaffListItem | null; onClose: () => void }) {
-  const { api, me } = useSession();
+  const { api, me, hosted } = useSession();
   const qc = useQueryClient();
   const toast = useToast();
   const [f, setF] = useState({
@@ -419,7 +439,25 @@ export function StaffForm({ staff, onClose }: { staff: StaffListItem | null; onC
           </button>
         </div>
       </form>
+      {hosted && staff && <StaffPin staffId={staff.id} name={staff.name} />}
     </SlideOver>
+  );
+}
+
+/** The PIN part of a staff member's page: set one, or reset a forgotten one (which also unlocks it). */
+function StaffPin({ staffId, name }: { staffId: string; name: string }) {
+  const pins = usePins();
+  const hasPin = !!pins.data?.includes(staffId);
+  return (
+    <section className="stack" style={{ marginTop: 20 }}>
+      <h3>PIN</h3>
+      <p className="muted small">
+        {hasPin
+          ? `${name} has a PIN. Set a new one here if it's forgotten or locked.`
+          : `${name} has no PIN yet. Set one here, or they can set their own after signing in.`}
+      </p>
+      <PinForm staffId={staffId} hasPin={hasPin} />
+    </section>
   );
 }
 

@@ -1,7 +1,8 @@
 // The hosted register (apps/web) under /api/pos: staff sign in with an email code, then call the
 // register's handlers by name. The staff member, role and business come from the session, never from
 // the request, and every handler runs through invoke(), which checks the role and sets row-level
-// security. Only active staff with an email in the register's Settings can sign in.
+// security. Only active staff with an email in the register's Settings can sign in, by email code or,
+// on a tablet an owner or manager has set up, by tapping their name and entering a PIN (registerPins.ts).
 import type { Kysely } from "kysely";
 import { handlers, invoke, type HandlerName } from "@bearded/api";
 import { AppError, isRole, type Ctx, type ErrorCode } from "@bearded/core";
@@ -18,9 +19,10 @@ import {
   useCode,
   wrongCode,
 } from "./handlers/codes.ts";
+import { handlePins } from "./registerPins.ts";
 
 export const POS_COOKIE = "bbg_pos";
-const SESSION_HOURS = 12;
+export const SESSION_HOURS = 12;
 
 const STATUS: Record<ErrorCode, number> = { invalid: 400, forbidden: 403, not_found: 404, conflict: 409 };
 
@@ -31,15 +33,39 @@ export interface PosError {
   fields: Record<string, string>;
 }
 
-function cookie(ctx: StoreCtx, token: string, maxAgeSeconds: number): string {
+/** A register cookie: only ever sent to /api/pos, never readable by the page. */
+export function posCookie(ctx: StoreCtx, name: string, token: string, maxAgeSeconds: number): string {
   return [
-    `${POS_COOKIE}=${token}`,
+    `${name}=${token}`,
     "Path=/api/pos",
     "HttpOnly",
     "SameSite=Strict",
     `Max-Age=${maxAgeSeconds}`,
     ...(ctx.config.secureCookies ? ["Secure"] : []),
   ].join("; ");
+}
+
+const cookie = (ctx: StoreCtx, token: string, maxAgeSeconds: number) =>
+  posCookie(ctx, POS_COOKIE, token, maxAgeSeconds);
+
+/** Starts a register session for a staff member and returns the response that sets its cookie. */
+export async function startSession(
+  ctx: StoreCtx,
+  sql: Sql,
+  staffId: string,
+  tabletId: string | null,
+): Promise<ApiResponse> {
+  const token = newToken();
+  await sql.query(
+    `INSERT INTO pos_staff_sessions (business_id, staff_id, token_hash, expires_at, tablet_id)
+     VALUES ($1, $2, $3, now() + make_interval(hours => $4), $5)`,
+    [ctx.config.businessId, staffId, sha256(token), SESSION_HOURS, tabletId],
+  );
+  return {
+    status: 200,
+    body: { signedIn: true },
+    headers: { "Set-Cookie": cookie(ctx, token, SESSION_HOURS * 3600) },
+  };
 }
 
 async function activeStaffByEmail(sql: Sql, email: string): Promise<string | undefined> {
@@ -66,26 +92,14 @@ async function requestCode(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse>
 async function signIn(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
   const body = asObject(req.body);
   const email = readEmail(body);
-  const token = newToken();
-  const { businessId } = ctx.config;
   // A wrong try is counted even though sign-in fails, so the error is thrown after the commit.
-  const signedIn = await withBusiness(ctx.db, businessId, async (sql) => {
-    if (!(await useCode(sql, "pos_staff_codes", email, body.code))) return false;
+  const signedIn = await withBusiness(ctx.db, ctx.config.businessId, async (sql) => {
+    if (!(await useCode(sql, "pos_staff_codes", email, body.code))) return null;
     const staffId = await activeStaffByEmail(sql, email);
-    if (!staffId) return false;
-    await sql.query(
-      `INSERT INTO pos_staff_sessions (business_id, staff_id, token_hash, expires_at)
-       VALUES ($1, $2, $3, now() + make_interval(hours => $4))`,
-      [businessId, staffId, sha256(token), SESSION_HOURS],
-    );
-    return true;
+    return staffId ? startSession(ctx, sql, staffId, null) : null;
   });
   if (!signedIn) throw wrongCode();
-  return {
-    status: 200,
-    body: { signedIn: true },
-    headers: { "Set-Cookie": cookie(ctx, token, SESSION_HOURS * 3600) },
-  };
+  return signedIn;
 }
 
 async function signOut(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
@@ -98,7 +112,7 @@ async function signOut(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
 }
 
 /** The signed-in staff member, or null. A session ends when its staff member is made inactive. */
-async function session(ctx: StoreCtx, req: ApiRequest): Promise<Ctx | null> {
+export async function session(ctx: StoreCtx, req: ApiRequest): Promise<Ctx | null> {
   const token = req.cookies[POS_COOKIE];
   if (!token) return null;
   const { businessId } = ctx.config;
@@ -140,6 +154,8 @@ export async function handleRegister(ctx: StoreCtx, req: ApiRequest): Promise<Ap
   if (route === "code") return requestCode(ctx, req);
   if (route === "session") return signIn(ctx, req);
   if (route === "signout") return signOut(ctx, req);
+  const pins = await handlePins(ctx, req, route);
+  if (pins) return pins;
   const handler = /^call\/([A-Za-z]+)$/.exec(route);
   if (handler) return call(ctx, ctx.pos, req, handler[1]!);
   return { status: 404, body: { error: "Not found." } };
