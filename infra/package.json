@@ -10,7 +10,8 @@
     "stage:prototype": "node scripts/stage-prototype.mjs",
     "deploy:prototype": "npm run stage:prototype && cdk deploy BeardedDemoSite -c siteDir=.site",
     "deploy:store-demo": "cdk deploy BeardedStoreDemo",
-    "deploy:store-live": "cdk deploy BeardedStore"
+    "deploy:store-live": "cdk deploy BeardedStore",
+    "deploy:domain": "cdk deploy BeardedDomain"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.273.0",

@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { App } from "aws-cdk-lib";
+import { BBG_RECORDS } from "../lib/bbg-dns.js";
 import { DemoSiteStack } from "../lib/demo-site-stack.js";
+import { DomainStack } from "../lib/domain-stack.js";
 import { MailStack } from "../lib/mail-stack.js";
 import { StoreDemoStack } from "../lib/store-demo-stack.js";
 
@@ -62,6 +64,31 @@ if (built("BeardedStoreDemo", storeSiteDir) && built("BeardedStoreDemo", registe
       "Bearded Board Games online store demo: site, register, /api Lambda, Postgres (Square Sandbox only)",
   });
 
+/**
+ * The shop's own domain, in stages (shopDomainStage in cdk.json; docs/hosting-live-store.md):
+ * - "copy": the BeardedDomain zone holds every Squarespace record, website included. Moving the
+ *   nameservers to it changes nothing anyone can see.
+ * - "attach": the live store also answers at the domain and www (its certificate validates through
+ *   the zone, so the nameservers must have moved). The domain still shows Squarespace.
+ * - "live": the domain and www point at the live store, which becomes the main address.
+ */
+const shopDomainName: string = app.node.getContext("shopDomain");
+const shopStage: string = app.node.getContext("shopDomainStage");
+if (!["copy", "attach", "live"].includes(shopStage))
+  throw new Error('shopDomainStage must be "copy", "attach" or "live".');
+const storeDistribution: string = app.node.tryGetContext("storeDistributionDomain") ?? "";
+if (shopStage === "live" && !storeDistribution)
+  throw new Error("The live stage needs storeDistributionDomain (BeardedStore's DistributionDomain output).");
+const domain = new DomainStack(app, "BeardedDomain", {
+  env: { account, region: "us-east-1" },
+  domainName: shopDomainName,
+  records: BBG_RECORDS,
+  website:
+    shopStage === "live" ? { kind: "store", distributionDomain: storeDistribution } : { kind: "squarespace" },
+  terminationProtection: true,
+  description: `${shopDomainName} DNS (copied from Squarespace) and the shop's SES sender`,
+});
+
 // The live store on the real Bearded Board Games Square account: npm run deploy:store-live
 // Its own private database, so real orders never share a server with the Sandbox demo. The demo stack
 // already owns the staff SES verifications, so this one doesn't send them again.
@@ -77,6 +104,9 @@ if (built("BeardedStore", storeSiteDir) && built("BeardedStore", registerDir))
     businessId: app.node.getContext("storeBusinessId"),
     squareMode: "live",
     privateDatabase: true,
+    ...(shopStage === "copy"
+      ? {}
+      : { shopDomain: { zone: domain.zone, name: shopDomainName, primary: shopStage === "live" } }),
     verifyStaffEmails: false,
     terminationProtection: true,
     description:

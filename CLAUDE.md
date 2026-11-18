@@ -48,6 +48,7 @@ Point of sale, inventory, customers and an online store for Bearded Board Games,
 - `npm run deploy:demo` — build and deploy to https://bearded-pos-demo.prismcortex.net (BeardedDemoSite stack)
 - `npm run deploy:store-demo` — the store and register on the Square Sandbox at https://bbg.prismcortex.net (BeardedStoreDemo)
 - `npm run deploy:store-live` — the live store on the real Square account (BeardedStore, private database; `docs/hosting-live-store.md`). Real money: deploy only when N8 asks.
+- `npm run deploy:domain` — the beardedboardgames.com Route 53 zone (BeardedDomain). Its records are copied from Squarespace in `infra/lib/bbg-dns.ts`; change them there, never in the console. `shopDomainStage` in `infra/cdk.json` moves the domain over in stages (copy, attach, live).
 
 AWS: sign in with `aws sso login --profile prismcortex` (Identity Center user PC_Dev). The AWS CLI takes `--profile prismcortex`. The CDK CLI can't read the `[sso-session]` config, so before `cdk` commands load short-lived credentials into the shell: `aws configure export-credentials --profile prismcortex --format powershell | Invoke-Expression` (never print or save them).
 

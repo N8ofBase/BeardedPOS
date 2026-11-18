@@ -60,12 +60,43 @@ Cost: about $25 a month (database about $15, NAT instance and its address about 
 7. **A $1 test.** Buy something real, check it shows as paid and comes off stock, then refund it in
    Square.
 
-When the domain moves, the site URL changes, so the webhook URL in step 4 changes with it: update the
-subscription in Square at the same time.
+## Moving beardedboardgames.com
+
+The domain stays registered at Squarespace; only its DNS moves to Route 53 (Squarespace's DNS can't
+point the bare domain at CloudFront). The `BeardedDomain` stack holds every record copied from
+Squarespace (`infra/lib/bbg-dns.ts`: Google Workspace email, the Mailchimp and Sender.net signatures,
+SPF with Google, Sender.net and Amazon SES, DMARC, both Google verifications, `theranch`), plus the
+shop's SES sender. It moves in three stages, set by `shopDomainStage` in `infra/cdk.json`. Each one
+is safe to stop at.
+
+1. **"copy": move the nameservers. Nobody sees a change.** `npm.cmd run deploy:domain`. The zone also
+   copies Squarespace's website records, so the old site keeps showing. Then in Squarespace, Domains,
+   beardedboardgames.com:
+   - DNS, DNSSEC: if it's on, turn it off first and wait a day (a nameserver move with DNSSEC on can
+     take the whole domain offline).
+   - Domain Nameservers: "Use custom nameservers", the four in the `NameServers` output.
+
+   Check after an hour: email to and from adam@beardedboardgames.com still works, and the old site
+   still loads. Resolvers can take up to two days to move over; nothing breaks meanwhile, since both
+   DNS hosts give the same answers.
+2. **"attach": the store answers at the domain too.** Set `"shopDomainStage": "attach"`,
+   `npm.cmd run deploy:store-live`. The certificate gains beardedboardgames.com and www and validates
+   through the zone (only once the nameservers have moved). Copy the `DistributionDomain` output into
+   `storeDistributionDomain` in `infra/cdk.json`. The domain still shows Squarespace.
+3. **"live": switch over.** Set `"shopDomainStage": "live"`, `npm.cmd run deploy:store-live`. The
+   domain and www point at the store (an in-place record change, so the name never stops resolving);
+   www and bbg-live.prismcortex.net redirect to https://beardedboardgames.com; Square sends shoppers
+   back there; mail comes from no-reply@beardedboardgames.com; search engines may index it. The webhook
+   keeps its bbg-live.prismcortex.net address, so nothing changes in Square.
+
+Going back from "live" to "attach" puts Squarespace back on the domain within minutes (5-minute TTL),
+as long as the Squarespace site plan hasn't been cancelled.
+
+Cancel Squarespace's website plan only after a couple of weeks live, and keep the domain: it's billed
+separately. Either keep paying Squarespace for the domain, or transfer it to Route 53 (about $14 a
+year) first. The DNS stays in Route 53 either way.
 
 ## Not yet
 
 - The register still uses the simulated card reader. Real counter card payments need a Square Terminal
   and its own build step; until then only take cash on the live register.
-- beardedboardgames.com and www (the certificate, the DNS move and email from the shop's own domain) are
-  the next PR, once we know where the domain is registered.
