@@ -85,6 +85,9 @@ export async function loadSyncState(trx: Trx): Promise<SyncState> {
 }
 
 export interface SyncSummary {
+  /** Square rows the register's database refused (logged), left out so the rest still come in. */
+  productsLeftOut: number;
+  customersLeftOut: number;
   productsAdded: number;
   productsUpdated: number;
   pricesChanged: number;
@@ -103,6 +106,8 @@ export async function applySquareSync(
   assertCan(ctx.role, "products.edit");
   const locationId = await currentLocationId(trx);
   const summary: SyncSummary = {
+    productsLeftOut: 0,
+    customersLeftOut: 0,
     productsAdded: 0,
     productsUpdated: 0,
     pricesChanged: 0,
@@ -126,23 +131,26 @@ export async function applySquareSync(
       .execute();
 
   for (const n of products.create) {
-    const row = await trx
-      .insertInto("products")
-      .values({
-        business_id: ctx.businessId,
-        sku: n.sku,
-        barcode: n.barcode,
-        name: n.item.name.trim(),
-        category: n.item.category?.trim() || "Other",
-        price_cents: n.item.priceCents!,
-        cost_cents: n.item.costCents ?? 0,
-        square_variation_id: n.item.variationId,
-        square_tracks_stock: n.item.tracksStock,
-      })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-    if (n.item.tracksStock && n.item.stock) await count(row.id, n.item.stock);
-    summary.productsAdded++;
+    const saved = await keepGoing(trx, `Square item ${n.item.variationId}`, async () => {
+      const row = await trx
+        .insertInto("products")
+        .values({
+          business_id: ctx.businessId,
+          sku: n.sku,
+          barcode: n.barcode,
+          name: n.item.name.trim(),
+          category: n.item.category?.trim() || "Other",
+          price_cents: n.item.priceCents!,
+          cost_cents: n.item.costCents ?? 0,
+          square_variation_id: n.item.variationId,
+          square_tracks_stock: n.item.tracksStock,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      if (n.item.tracksStock && n.item.stock) await count(row.id, n.item.stock);
+    });
+    if (saved) summary.productsAdded++;
+    else summary.productsLeftOut++;
   }
 
   for (const u of products.update) {
@@ -184,21 +192,27 @@ export async function applySquareSync(
   }
 
   for (const c of customers.create) {
-    await trx
-      .insertInto("customers")
-      .values({
-        business_id: ctx.businessId,
-        name: c.name,
-        phone: c.phone,
-        email: c.email,
-        square_customer_id: c.id,
-      })
-      .execute();
-    summary.customersAdded++;
+    const saved = await keepGoing(trx, `Square customer ${c.id}`, () =>
+      trx
+        .insertInto("customers")
+        .values({
+          business_id: ctx.businessId,
+          name: c.name,
+          phone: c.phone,
+          email: c.email,
+          square_customer_id: c.id,
+        })
+        .execute(),
+    );
+    if (saved) summary.customersAdded++;
+    else summary.customersLeftOut++;
   }
   for (const l of customers.link) {
-    await linkCustomer(trx, l.customerId, l.square.id, l.fill);
-    summary.customersLinked++;
+    const saved = await keepGoing(trx, `Square customer ${l.square.id}`, () =>
+      linkCustomer(trx, l.customerId, l.square.id, l.fill),
+    );
+    if (saved) summary.customersLinked++;
+    else summary.customersLeftOut++;
   }
 
   await trx
@@ -210,6 +224,24 @@ export async function applySquareSync(
     })
     .execute();
   return summary;
+}
+
+/**
+ * Runs one row's writes inside a savepoint. If the database refuses the row (a phone another
+ * customer has, say), only that row is undone and logged, and the sync goes on. False if refused.
+ */
+async function keepGoing(trx: Trx, what: string, write: () => Promise<unknown>): Promise<boolean> {
+  await sql`SAVEPOINT square_row`.execute(trx);
+  try {
+    await write();
+    await sql`RELEASE SAVEPOINT square_row`.execute(trx);
+    return true;
+  } catch (e) {
+    await sql`ROLLBACK TO SAVEPOINT square_row`.execute(trx);
+    const why = e as { message?: string; constraint?: string };
+    console.error(`square sync: left out ${what}: ${why.constraint ?? ""} ${why.message ?? String(e)}`);
+    return false;
+  }
 }
 
 /** Links a register customer to Square's, filling in a phone or email the register didn't have. */
