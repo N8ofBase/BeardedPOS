@@ -31,13 +31,26 @@ export interface SyncPreview {
 }
 export interface SyncResult {
   preview: SyncPreview;
-  applied?: { productsAdded: number; pricesChanged: number; stockChanged: number; customersAdded: number };
+  applied?: {
+    productsAdded: number;
+    pricesChanged: number;
+    stockChanged: number;
+    customersAdded: number;
+    productsLeftOut?: number;
+    customersLeftOut?: number;
+  };
 }
 
 export const squareStatus = () => posFetch<SquareStatus>("square/status", {});
 export const squareSync = (apply: boolean) => posFetch<SyncResult>("square/sync", { apply });
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** ". 3 couldn't be saved" when the register refused some of Square's rows. */
+function leftOut(a: { productsLeftOut?: number; customersLeftOut?: number }): string {
+  const n = (a.productsLeftOut ?? 0) + (a.customersLeftOut ?? 0);
+  return n > 0 ? `. ${n} couldn't be saved (another customer has the same phone or email, most likely)` : "";
+}
 
 export function nothingToDo(p: SyncPreview): boolean {
   return (
@@ -64,7 +77,7 @@ export function SquareSection() {
       const a = r.applied;
       toast(
         a
-          ? `From Square: ${plural(a.productsAdded, "new product")}, ${plural(a.pricesChanged, "price")} and ${plural(a.stockChanged, "count")} changed, ${plural(a.customersAdded, "new customer")}`
+          ? `From Square: ${plural(a.productsAdded, "new product")}, ${plural(a.pricesChanged, "price")} and ${plural(a.stockChanged, "count")} changed, ${plural(a.customersAdded, "new customer")}${leftOut(a)}`
           : "Square sync done",
       );
       for (const key of ["square-status", "products", "product", "customers", "customer"])

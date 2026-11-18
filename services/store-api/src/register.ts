@@ -163,16 +163,18 @@ async function square(ctx: StoreCtx, req: ApiRequest, what: "status" | "sync"): 
       return { status: STATUS[e.code], body };
     }
     console.error("square sync failed", e);
-    // A Postgres error carries a five-character SQLSTATE code: the register's database refused a
-    // row, which no retry fixes. Anything else is Square or the network.
-    const code = (e as { code?: unknown } | null)?.code;
-    const fromSquare = !(typeof code === "string" && /^[0-9A-Z]{5}$/.test(code));
+    // A Postgres error carries a five-character SQLSTATE code: the register's database refused
+    // something. Anything else is Square or the network. Either way the owner sees what failed
+    // (Square's own message names only the request, never the token).
+    const why = e as { code?: unknown; constraint?: unknown; message?: unknown } | null;
+    const detail = typeof why?.message === "string" ? why.message.slice(0, 200) : "";
+    const fromDatabase = typeof why?.code === "string" && /^[0-9A-Z]{5}$/.test(why.code);
     return {
       status: 502,
       body: {
-        error: fromSquare
-          ? "Square didn't answer. Try again in a minute."
-          : "The register couldn't save what came from Square. Nothing was changed.",
+        error: fromDatabase
+          ? `The register couldn't save what came from Square. Nothing was changed. (${typeof why?.constraint === "string" ? why.constraint : detail})`
+          : `Square didn't answer. Try again in a minute. (${detail})`,
       },
     };
   }

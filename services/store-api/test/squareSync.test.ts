@@ -339,6 +339,24 @@ describe("the Square sync", () => {
     expect(saved).toEqual([{ name: "Phone Shop", email: null }]);
   });
 
+  it("leaves out a Square customer the database refuses, and brings the rest in", async () => {
+    // A sample customer isn't compared with Square, but still holds its phone.
+    await pg.query(
+      "INSERT INTO customers (business_id, name, phone, is_demo) VALUES ($1, 'Pat (DEMO)', '3145550101', true)",
+      [BIZ_A],
+    );
+    const r = await sync(true);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect((r.body as { applied: object }).applied).toMatchObject({
+      customersAdded: 1,
+      customersLeftOut: 1,
+      productsAdded: 1,
+    });
+    expect(await rows("SELECT name FROM customers WHERE square_customer_id IS NOT NULL")).toEqual([
+      { name: "Sam" },
+    ]);
+  });
+
   it("says plainly when Square can't be reached", async () => {
     square.fail.add("GET /v2/catalog/list");
     const r = await sync(false);
