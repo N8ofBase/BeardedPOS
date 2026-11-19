@@ -63,7 +63,9 @@ export async function readSquareShelf(api: SquareApiStore): Promise<SquareShelfI
   );
   const items: (SquareShelfItem & { tracks: boolean })[] = [];
   for (const item of objects) {
-    if (item.type !== "ITEM" || !item.item_data || !soldAt(item, locationId)) continue;
+    // An archived item is no longer sold: it stays in the register as it is, listed as "only in the register".
+    if (item.type !== "ITEM" || !item.item_data || item.item_data.is_archived || !soldAt(item, locationId))
+      continue;
     const data = item.item_data as NonNullable<CatalogObject["item_data"]> & {
       category_id?: string;
       categories?: { id?: string }[];

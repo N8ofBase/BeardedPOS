@@ -60,6 +60,8 @@ function fakeSquare(): FakeSquare & { fetch: (url: string, init: RequestInit) =>
         ],
         { categories: [{ id: "CAT1" }] },
       ),
+      // Archived in Square: no longer sold, so never brought in.
+      item("I4", "Old Promo", [variation("V4", { price_money: { amount: 100 } })], { is_archived: true }),
       // Can't be rung up at a fixed price.
       item("I3", "Donation", [variation("V3", { pricing_type: "VARIABLE_PRICING" })]),
     ],
