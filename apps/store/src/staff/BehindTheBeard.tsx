@@ -1,14 +1,15 @@
 // Behind the Beard: the staff page. Sign in with a one-time code, then approve reviews, read store
-// stats and sort through what to keep from the old site. Hidden from shoppers: no links to it, no tracking, and search engines are told to skip it.
+// stats, change the site's words and pictures, and sort through what to keep from the old site. Hidden from shoppers: no links to it, no tracking, and search engines are told to skip it.
 import { useEffect, useState, type FormEvent } from "react";
 import type { StaffMe, StaffSquare } from "@bearded/store-core";
 import { errorText, looksLikeEmail, useStore, type Loadable } from "../api/store.ts";
 import { BuddiesTab } from "./BuddiesTab.tsx";
 import { OldSiteTab } from "./OldSiteTab.tsx";
 import { ReviewsTab } from "./ReviewsTab.tsx";
+import { SiteTab } from "./SiteTab.tsx";
 import { StatsTab } from "./StatsTab.tsx";
 
-type Tab = "reviews" | "stats" | "buddies" | "old-site";
+type Tab = "reviews" | "stats" | "buddies" | "site" | "old-site";
 
 export function BehindTheBeard() {
   const store = useStore();
@@ -81,6 +82,7 @@ function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void })
     ["reviews", "Reviews"],
     ["stats", "Stats"],
     ["buddies", "Beard Buddies"],
+    ["site", "Site content"],
     ["old-site", "Old site"],
   ];
   return (
@@ -116,6 +118,8 @@ function SignedIn({ me, onSignedOut }: { me: StaffMe; onSignedOut: () => void })
           <StatsTab />
         ) : tab === "buddies" ? (
           <BuddiesTab />
+        ) : tab === "site" ? (
+          <SiteTab />
         ) : (
           <OldSiteTab />
         )}

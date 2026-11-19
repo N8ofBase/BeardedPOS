@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode }
 import { useLocation } from "react-router";
 import type { StoreEvent } from "@bearded/store-core";
 import { useStore, type StoreApi } from "../api/store.ts";
+import { isPreviewing } from "../content/SiteProvider.tsx";
 import { readKey, writeKey } from "../storage.ts";
 
 export const VISITOR_KEY = "bbg.visitor";
@@ -59,7 +60,8 @@ export function makeTracker(store: StoreApi): Tracker & { flush(): void; start()
     visitorId: id,
     track: (e) => {
       const path = e.path ?? currentPath();
-      if (!untracked(path)) queue.push({ ...e, path });
+      // Staff previewing a draft aren't shoppers either.
+      if (!untracked(path) && !isPreviewing()) queue.push({ ...e, path });
     },
     flush,
     start: () => {

@@ -9,7 +9,7 @@ import type { StoreCtx } from "./context.ts";
 import { openPglite } from "./db.ts";
 import { parseCookies, type ApiRequest } from "./http.ts";
 import { logMailer } from "./mailer.ts";
-import { handle } from "./router.ts";
+import { handle, MAX_UPLOAD_BODY, UPLOAD_PATH } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
 import type { SquareStore } from "./square/types.ts";
@@ -50,13 +50,13 @@ export async function devContext(): Promise<StoreCtx> {
   };
 }
 
-function readBody(req: IncomingMessage): Promise<string> {
+function readBody(req: IncomingMessage, max: number): Promise<string> {
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks: Buffer[] = [];
     req.on("data", (c: Buffer) => {
       size += c.length;
-      if (size > MAX_BODY) {
+      if (size > max) {
         reject(new Error("too big"));
         req.destroy();
       } else chunks.push(c);
@@ -82,7 +82,7 @@ export function apiMiddleware(ready: Promise<StoreCtx>) {
     let body: unknown;
     let text: string;
     try {
-      text = await readBody(req);
+      text = await readBody(req, url.pathname === UPLOAD_PATH ? MAX_UPLOAD_BODY : MAX_BODY);
       body = text ? JSON.parse(text) : undefined;
     } catch {
       return send(400, { error: "That request didn’t make sense. Refresh the page and try again." });
@@ -100,6 +100,10 @@ export function apiMiddleware(ready: Promise<StoreCtx>) {
       rawBody: text,
     };
     const out = await handle(await ready, apiReq);
+    if (out.bytes) {
+      res.writeHead(out.status, { "Cache-Control": "no-store", ...out.headers });
+      return void res.end(Buffer.from(out.bytes));
+    }
     send(out.status, out.body, out.headers);
   };
 }

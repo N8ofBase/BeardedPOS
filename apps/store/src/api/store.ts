@@ -16,9 +16,12 @@ import type {
   ReviewAction,
   LedgerEntry,
   ReviewInput,
+  PublishedSite,
+  SiteContent,
   SquareCatalog,
   StaffBuddy,
   StaffMe,
+  StaffSite,
   StaffSquare,
   StaffReview,
   StoreStats,
@@ -44,6 +47,15 @@ export interface StaffApi {
   /** Shoppers with a Beard Buddy account, and one shopper's Bucks history. */
   buddies(): Promise<StaffBuddy[]>;
   buddyHistory(id: string): Promise<LedgerEntry[]>;
+  /** Site content: the draft, what's live, and earlier publishes. */
+  site(): Promise<StaffSite>;
+  saveSite(content: SiteContent): Promise<StaffSite>;
+  /** The saved draft goes live. */
+  publishSite(): Promise<StaffSite>;
+  /** Puts an earlier publish back in the draft. */
+  restoreSite(versionId: string): Promise<StaffSite>;
+  /** Keeps a picture (base64 of a JPEG, PNG or WebP file) and returns its id. */
+  uploadImage(data: string): Promise<{ id: string }>;
 }
 
 /** Beard Buddy: a shopper's own account, signed in with an email code. */
@@ -58,6 +70,8 @@ export interface BuddyApi {
 
 export interface StoreApi {
   catalog(): Promise<SquareCatalog>;
+  /** The site wording staff published (only what they changed). */
+  site(): Promise<PublishedSite>;
   /** Starts checkout for these lines; resolves to the page to send the shopper to (Square's, once live). */
   checkout(lines: CartLine[], visitorId?: string, rewards?: number): Promise<CheckoutResponse>;
   /** Approved reviews, newest first. */
@@ -112,6 +126,7 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
   const id = (s: string) => encodeURIComponent(s);
   return {
     catalog: () => call("GET", "/catalog"),
+    site: () => call("GET", "/site"),
     checkout: (lines, visitorId, rewards) =>
       call("POST", "/checkout", { lines, visitorId, ...(rewards ? { rewards } : {}) }),
     reviews: () => call("GET", "/reviews"),
@@ -139,6 +154,11 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
         call("POST", `/staff/old-site/${id(itemId)}`, { decision, note }),
       buddies: () => call("GET", "/staff/buddies"),
       buddyHistory: (buddyId) => call("GET", `/staff/buddies/${id(buddyId)}`),
+      site: () => call("GET", "/staff/site"),
+      saveSite: (content) => call("POST", "/staff/site/draft", { content }),
+      publishSite: () => call("POST", "/staff/site/publish", {}),
+      restoreSite: (versionId) => call("POST", `/staff/site/restore/${id(versionId)}`, {}),
+      uploadImage: (data) => call("POST", "/staff/site/images", { data }),
     },
     buddy: {
       requestCode: (email) => call("POST", "/account/code", { email }),

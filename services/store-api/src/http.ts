@@ -15,6 +15,8 @@ export interface ApiRequest {
 export interface ApiResponse {
   status: number;
   body?: unknown;
+  /** A file instead of JSON (an uploaded picture); its Content-Type goes in headers. */
+  bytes?: Uint8Array;
   headers?: Record<string, string>;
 }
 

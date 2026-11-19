@@ -14,7 +14,7 @@ import { withBusiness } from "./db.ts";
 import { openPostgres, type PostgresOptions } from "./postgres.ts";
 import { openRegister, readMigrations, storeSetup } from "./register-postgres.ts";
 import { catchUpRegisterStock } from "./registerStock.ts";
-import { handle } from "./router.ts";
+import { handle, MAX_UPLOAD_BODY, UPLOAD_PATH } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SquarePosTerminal } from "./square/pos.ts";
 import { sendStockToSquare } from "./square/registerSync.ts";
@@ -46,10 +46,18 @@ export interface HttpResult {
   headers: Record<string, string>;
   cookies?: string[];
   body?: string;
+  isBase64Encoded?: boolean;
 }
 
 const result = (r: ApiResponse): HttpResult => {
   const { "Set-Cookie": cookie, ...headers } = r.headers ?? {};
+  if (r.bytes)
+    return {
+      statusCode: r.status,
+      headers: { "Cache-Control": "no-store", ...headers },
+      body: Buffer.from(r.bytes).toString("base64"),
+      isBase64Encoded: true,
+    };
   return {
     statusCode: r.status,
     headers: {
@@ -71,8 +79,12 @@ export async function serve(ctx: StoreCtx, event: HttpEvent): Promise<HttpResult
     : "";
   let body: unknown;
   try {
-    if (text.length > (event.rawPath.startsWith("/api/pos/") ? MAX_REGISTER_BODY : MAX_BODY))
-      throw new Error("too big");
+    const max = event.rawPath.startsWith("/api/pos/")
+      ? MAX_REGISTER_BODY
+      : event.rawPath === UPLOAD_PATH
+        ? MAX_UPLOAD_BODY
+        : MAX_BODY;
+    if (text.length > max) throw new Error("too big");
     body = text ? JSON.parse(text) : undefined;
   } catch {
     return result({

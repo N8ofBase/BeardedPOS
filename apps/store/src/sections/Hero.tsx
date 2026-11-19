@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import meeple from "../assets/meeple.webp";
-import { brand } from "../content/site.ts";
+import { useSite } from "../content/SiteProvider.tsx";
 import { roll, type Link as RollTarget, type RollResult } from "../roll.ts";
 import { useTracker } from "../track/Tracker.tsx";
 
@@ -20,6 +20,7 @@ function RollLink({ link }: { link: RollTarget }) {
 }
 
 export function Hero() {
+  const { brand, text } = useSite();
   const { track } = useTracker();
   const [result, setResult] = useState<RollResult | null>(null);
   const [face, setFace] = useState(20);
@@ -88,11 +89,8 @@ export function Hero() {
             <img src={meeple} alt="" width="520" height="508" />
             <span>{brand.name}</span>
           </div>
-          <h1>{brand.motto}</h1>
-          <p className="lede">
-            We make quick, fun games that are easy to teach and hard to put down. Made by people who play WAY
-            too many games. Your next game night starts here.
-          </p>
+          <h1>{text.heroTitle}</h1>
+          <p className="lede">{text.heroLede}</p>
           <div className="row">
             <a className="btn go" href="#shop">
               Shop the games

@@ -13,6 +13,15 @@ import {
 import { logEvents } from "./handlers/events.ts";
 import { chooseOldSite, oldSiteChoices } from "./handlers/oldSite.ts";
 import { joinVip, listReviews, submitReview } from "./handlers/people.ts";
+import {
+  getStaffSite,
+  publishedSite,
+  publishSite,
+  restoreVersion,
+  saveDraft,
+  siteImage,
+  uploadImage,
+} from "./handlers/site.ts";
 import { checkout, getCatalog, getOrderStatus, getPreviewOrder, payPreviewOrder } from "./handlers/shop.ts";
 import {
   me,
@@ -61,7 +70,18 @@ const ROUTES: Route[] = [
   ["GET", /^\/api\/staff\/buddies$/, staffBuddies],
   ["GET", /^\/api\/staff\/buddies\/([^/]+)$/, staffBuddyHistory],
   ["POST", /^\/api\/staff\/old-site\/([^/]+)$/, chooseOldSite],
+  ["GET", /^\/api\/site$/, publishedSite],
+  ["GET", /^\/api\/site\/images\/([^/]+)$/, siteImage],
+  ["GET", /^\/api\/staff\/site$/, getStaffSite],
+  ["POST", /^\/api\/staff\/site\/draft$/, saveDraft],
+  ["POST", /^\/api\/staff\/site\/publish$/, publishSite],
+  ["POST", /^\/api\/staff\/site\/images$/, uploadImage],
+  ["POST", /^\/api\/staff\/site\/restore\/([^/]+)$/, restoreVersion],
 ];
+
+/** Picture uploads are bigger than any other store request (the editor shrinks them first). */
+export const UPLOAD_PATH = "/api/staff/site/images";
+export const MAX_UPLOAD_BODY = 3 * 1024 * 1024;
 
 export async function handle(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
   const matches = ROUTES.filter(([, pattern]) => pattern.test(req.path));

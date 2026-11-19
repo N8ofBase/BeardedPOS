@@ -23,6 +23,7 @@ export const fakeAccount = (over: Partial<Account> = {}): Account => ({
 export function fakeStore(over: Partial<StoreApi> = {}): StoreApi {
   return {
     catalog: async () => snapshot,
+    site: async () => ({ content: {}, publishedAt: null }),
     checkout: async () => ({ url: "/thanks?preview=1", orderId: "" }),
     reviews: async () => [],
     submitReview: async () => {},
@@ -43,6 +44,11 @@ export function fakeStore(over: Partial<StoreApi> = {}): StoreApi {
       chooseOldSite: () => Promise.reject(new Error("no server")),
       buddies: async () => [],
       buddyHistory: async () => [],
+      site: () => Promise.reject(new Error("no server")),
+      saveSite: () => Promise.reject(new Error("no server")),
+      publishSite: () => Promise.reject(new Error("no server")),
+      restoreSite: () => Promise.reject(new Error("no server")),
+      uploadImage: () => Promise.reject(new Error("no server")),
     },
     buddy: {
       requestCode: async () => ({ sent: true }),
