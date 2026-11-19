@@ -87,6 +87,8 @@ describe("reading the catalog", () => {
           present_at_all_locations: false,
         },
         { ...item("I5", "Gone", [variation("V5", { price_money: { amount: 100 } })]), is_deleted: true },
+        // Archived in Square's dashboard: no longer sold.
+        item("I7", "Archived", [variation("V7", { price_money: { amount: 100 } })], { is_archived: true }),
         item("I6", "Seasons", [variation("V6", { price_money: { amount: 1500 }, track_inventory: true })]),
       ],
       new Map([["V1", 7]]),

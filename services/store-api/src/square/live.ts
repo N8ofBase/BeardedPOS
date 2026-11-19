@@ -49,6 +49,8 @@ export interface CatalogObject {
   absent_at_location_ids?: string[];
   item_data?: {
     name?: string;
+    /** Archived in Square's dashboard: kept for reports, no longer sold. */
+    is_archived?: boolean;
     product_type?: string;
     image_ids?: string[];
     variations?: CatalogObject[];
@@ -94,7 +96,8 @@ export function toCatalog(
   const items: SquareItem[] = [];
   let currency = "USD";
   for (const item of objects) {
-    if (item.type !== "ITEM" || !item.item_data || !soldAt(item, locationId)) continue;
+    if (item.type !== "ITEM" || !item.item_data || item.item_data.is_archived || !soldAt(item, locationId))
+      continue;
     const data = item.item_data;
     for (const v of data.variations ?? []) {
       const vd = v.item_variation_data;
