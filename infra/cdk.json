@@ -9,7 +9,7 @@
     "storeSubdomain": "bbg",
     "liveSubdomain": "bbg-live",
     "shopDomain": "beardedboardgames.com",
-    "shopDomainStage": "copy",
+    "shopDomainStage": "attach",
     "storeDistributionDomain": "",
     "storeSiteDir": "../apps/store/dist",
     "storeStaff": ["adam@beardedboardgames.com", "n8gr8@prismcortex.net"],
