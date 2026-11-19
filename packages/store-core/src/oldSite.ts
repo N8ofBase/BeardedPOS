@@ -63,7 +63,7 @@ export const oldSite: OldSitePage[] = [
           ],
           (i) => `Pack Lash photo ${i}`,
         ),
-        suggestion: "A photo gallery on the Pack Lash game page.",
+        suggestion: "Done: a photo gallery on the Pack Lash game page (Nov 19).",
       },
       {
         id: "footer-badges",
@@ -71,7 +71,7 @@ export const oldSite: OldSitePage[] = [
         text: "Every page ends with a GAMA member icon and an Indie Game Alliance logo that links to indiegamealliance.com.",
         images: [{ src: `${OLD}/731dc39c-863d-gama_member_icon.png`, alt: "GAMA member" }],
         links: [{ label: "Indie Game Alliance", href: "https://www.indiegamealliance.com/" }],
-        suggestion: "The new site's footer.",
+        suggestion: "Done: the GAMA badge and an Indie Game Alliance link are in the footer (Nov 19).",
       },
     ],
   },
@@ -83,13 +83,14 @@ export const oldSite: OldSitePage[] = [
         id: "adam-bio",
         title: "Adam’s full bio",
         text: "Adam Collins, Chief Creative Officer. Adam has proudly sported a beard for years—its length and style evolving with time, though his son and daughter have played a key role in ensuring it turns steadily grey. A lifelong gamer, Adam’s love for tabletop and video games runs deep, fueling countless late-night sessions and friendly debates over mechanics, strategy, and storytelling. In recent years, he’s taken his passion to the next level, diving into game design and reviewing. Through his podcast and YouTube channel (co-hosted with The Son), he explores what makes games great, offering insights, critiques, and the occasional heated father-son discussion. Whether breaking down the latest releases or reminiscing about classics, Adam brings a mix of expertise, humor, and genuine enthusiasm to his content. Until his gaming empire takes off, Adam pays the bills as a Project Manager at a local university, where he applies his strategic thinking and problem-solving skills in a slightly different arena. When he's not gaming, designing, or wrangling projects, you can probably find him enjoying a good book, indulging in nerdy pop culture, or engaging in a spirited debate over the superiority of various RPG systems.",
-        suggestion: "“Meet the beards” has a short version. Could become Adam’s own page.",
+        suggestion: "Done: Adam’s own page, /beards/adam, linked from his card (Nov 19).",
       },
       {
         id: "adam-photo",
         title: "Adam’s photo",
         images: [{ src: `${OLD}/1625753652499-Adam---Shark-Hunt.PNG`, alt: "Adam - Shark Hunt" }],
-        suggestion: "“Meet the beards” already has a photo of Adam. Use this one instead?",
+        suggestion:
+          "Done: it’s the same drawing as his card photo, which is on his card and his own page (Nov 19).",
       },
     ],
   },
@@ -113,7 +114,7 @@ export const oldSite: OldSitePage[] = [
         id: "nate-bio",
         title: "N8’s bio",
         text: "Nate (N8) met Adam and Edward at Protospiel STL in 2023 debuting his first game “I Crit You Not!” with his design company PRISMCORTEX. They became fast friends and have started developing many new games and entertaining people at the local farmer’s markets. He plays many instruments, including trumpet and drums for the St. Louis City Soccer Team supporters band: Fluer de Noise!",
-        suggestion: "“Meet the beards” has a version of this. Could link to the Videos page.",
+        suggestion: "Done: N8’s own page, /beards/n8, with a link to the Videos page (Nov 19).",
       },
     ],
   },
@@ -150,7 +151,7 @@ export const oldSite: OldSitePage[] = [
           { label: "Father Geek on The Ranch", href: "https://fathergeek.com/fences-the-ranch_prepub/" },
           { label: "BoardGameGeek", href: "https://boardgamegeek.com/boardgame/246409/fences" },
         ],
-        suggestion: "A “What reviewers say” list on the Fences game page.",
+        suggestion: "Done: “What reviewers say” on the Fences game page (Nov 19).",
       },
       {
         id: "fences-files",
@@ -162,7 +163,7 @@ export const oldSite: OldSitePage[] = [
           { label: "Farmer Cards", href: `${OLD}/Farmer-Cards.pdf` },
           { label: "Instructions - The Ranch", href: `${OLD}/Tha-Ranch-Rules.pdf` },
         ],
-        suggestion: "Downloads on the Fences game page. The rules link is already on the site.",
+        suggestion: "Done: “Free downloads” on the Fences game page, served from this site (Nov 19).",
       },
       {
         id: "fences-gallery",
@@ -178,7 +179,7 @@ export const oldSite: OldSitePage[] = [
           },
           { src: `${OLD}/1579623253324-Review-Top.png`, alt: "Review Top" },
         ],
-        suggestion: "A photo gallery on the Fences game page.",
+        suggestion: "Done: a photo gallery on the Fences game page (Nov 19).",
       },
     ],
   },
@@ -214,7 +215,7 @@ export const oldSite: OldSitePage[] = [
             alt: "Share of the booty",
           },
         ],
-        suggestion: "A photo gallery on the Locked Out game page.",
+        suggestion: "Done: the tin and cards on the Locked Out game page (Nov 19).",
       },
     ],
   },
@@ -270,7 +271,8 @@ export const oldSite: OldSitePage[] = [
           { src: `${OLD}/1789706068856-RulesFront2.png`, alt: "Rules, front" },
           { src: `${OLD}/1789706068852-RulesBack2.png`, alt: "Rules, back" },
         ],
-        suggestion: "A rules page at the same address, linked from the Soccer Blocker game page.",
+        suggestion:
+          "Done: a rules page at /soccerblocker, linked from the Soccer Blocker game page (Nov 19).",
       },
     ],
   },
@@ -317,7 +319,7 @@ export const oldSite: OldSitePage[] = [
           { src: `${OLD}/1776876544035-MFLogo.png`, alt: "Mine & Find logo" },
           { src: `${OLD}/1776876553762-SBBoxLogo.png`, alt: "Soccer Blocker box" },
         ],
-        suggestion: "Pictures for each sell sheet on the Wholesale page.",
+        suggestion: "Done: a picture for each sell sheet on the Wholesale page (Nov 19).",
       },
     ],
   },
@@ -373,18 +375,20 @@ export const oldSite: OldSitePage[] = [
 
 export const oldSiteItemIds = new Set(oldSite.flatMap((p) => p.items.map((i) => i.id)));
 
-/** Old Squarespace addresses and where they land on the new site. */
+/**
+ * Old Squarespace addresses and where they land on the new site. /soccerblocker isn't here: it is
+ * its own page again (the rules sheet), since a QR code on the box may point to it.
+ */
 export const oldSiteRedirects: Record<string, string> = {
   "/home": "/",
-  "/adam-collins": "/#beards",
+  "/adam-collins": "/beards/adam",
   "/tim-forbis": "/#beards",
-  "/nate-sloan": "/#beards",
+  "/nate-sloan": "/beards/n8",
   "/fences": "/games/fences",
   "/locked-out": "/games/locked-out",
   "/pack-lash": "/games/pack-lash",
   "/mine-find": "/games/mine-and-find",
   "/soccer-blocker": "/games/soccer-blocker",
-  "/soccerblocker": "/games/soccer-blocker",
   "/fences-the-roll-write": "/games/fences-roll-and-write",
   "/for-retailers": "/wholesale",
   "/bb2026-vip": "/#buddy",

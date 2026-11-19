@@ -35,24 +35,66 @@ export const brand = {
     },
     {
       label: "Fences",
+      picture: "/old-site/web/1776873479919-Fences-Box-Art.webp",
+      alt: "Fences box art",
       url: "https://drive.google.com/uc?export=download&id=1FfvXH4uF-uC2kbcace0HziArKI-gc20B",
     },
     {
       label: "Locked Out",
+      picture: "/old-site/web/1776873492340-lockedoutbox.webp",
+      alt: "Locked Out box",
       url: "https://drive.google.com/uc?export=download&id=1jAimgA9tk2Wi6RDCoVidAmq-RXwSobu5",
     },
     {
       label: "Mine & Find",
+      picture: "/old-site/web/1776876544035-MFLogo.webp",
+      alt: "Mine & Find logo",
       url: "https://drive.google.com/uc?export=download&id=1DWE10g_flxQtQqZCUMcd1wAf0Ahh_E7K",
     },
     {
       label: "Soccer Blocker",
+      picture: "/old-site/web/1776876553762-SBBoxLogo.webp",
+      alt: "Soccer Blocker box",
       url: "https://drive.google.com/uc?export=download&id=1KBapTt5Wh4aRkpt-V9quUUgsU2C9gK6q",
     },
   ],
+  /** Memberships shown in the footer of every page, as on the old site. */
+  memberships: {
+    gama: { label: "GAMA member", src: "/old-site/web/731dc39c-863d-gama_member_icon.webp" },
+    iga: { label: "Indie Game Alliance", href: "https://www.indiegamealliance.com/" },
+  },
 };
 
 export type GameStatus = "available" | "preorder" | "coming-soon";
+
+/** A picture from the old Squarespace site: a web-size copy, and the original to open full size. */
+export interface Picture {
+  src: string;
+  full: string;
+  alt: string;
+  caption?: string;
+}
+
+/** `file` is in public/old-site; its web-size copy (tools: see public/old-site/web) is the same name as .webp. */
+const old = (file: string, alt: string, caption?: string): Picture => ({
+  src: `/old-site/web/${file.replace(/\.[^.]+$/, "")}.webp`,
+  full: `/old-site/${file}`,
+  alt,
+  caption,
+});
+
+export interface PressQuote {
+  quote: string;
+  who: string;
+  href: string;
+}
+
+export interface Download {
+  label: string;
+  href: string;
+  /** Like "PDF, 5 MB". */
+  size: string;
+}
 
 export interface Game {
   slug: string;
@@ -76,7 +118,14 @@ export interface Game {
   clip?: { src: string; poster: string; caption: string };
   /** A how-to-play video, shown under "Learn to play" on the game's page. */
   tutorial?: Video;
-  links: { rules?: string; bgg?: string };
+  /** Photos under "How it plays". */
+  gallery?: Picture[];
+  /** "What reviewers say" on the game's page, with more reviews to read. */
+  press?: { quotes: PressQuote[]; more: { label: string; href: string }[] };
+  /** Free files on the game's page, besides the rules. */
+  downloads?: Download[];
+  /** `rules` is a PDF (opens in a new tab) or a page here, like /soccerblocker. */
+  links: { rules?: string; rulesLabel?: string; bgg?: string };
 }
 
 export const statusText = (g: Game) => g.when ?? statusLabel[g.status];
@@ -99,6 +148,61 @@ export const games: Game[] = [
     story: [
       "Fences was funded on Kickstarter in January 2019. Every Farmer Profile card in the game is a real backer from the campaign who pledged at that level.",
     ],
+    gallery: [
+      old("1605540054950-Fences.jpg", "Fences on the table", "Photo by Daniel Blackbourne"),
+      old("1605475747795-gameplay.jpg", "A finished 4-player farm", "A 4-player finished game"),
+      old("1605475808037-steep.jpg", "Painted wooden animals and farmers", "Painted wooden components"),
+      old("1605476059942-zoom.jpg", "Close-up of the tile art", "High-quality artwork"),
+      old(
+        "1605476170914-IMG_2117.png",
+        "Fences and The Ranch boxes with all the pieces",
+        "Fences and The Ranch",
+      ),
+    ],
+    press: {
+      quotes: [
+        {
+          quote: "The Farmer Profile is where it’s at.",
+          who: "Father Geek",
+          href: "https://fathergeek.com/fences/",
+        },
+        {
+          quote: "The most common thing heard after finishing a game of Fences: “Can we play again?”",
+          who: "Dastardly Design",
+          href: "https://www.dastardlydesignco.com/post/fences-a-dastardly-review",
+        },
+        {
+          quote: "…a nice title for beginners and easily digested by the little ones…",
+          who: "Sandro Sacchini",
+          href: "https://www.instagram.com/p/BpeES4tB94C/",
+        },
+        {
+          quote:
+            "Huge amount of replayability due to mixing Farmer Powers from Fences and the 9 expansions in The Ranch.",
+          who: "Dastardly Design, on The Ranch",
+          href: "https://www.dastardlydesignco.com/post/the-ranch-dastardly-review-136",
+        },
+        {
+          quote:
+            "The expansions do provide the next level of depth you would want to experience after you are familiar…",
+          who: "Father Geek, on The Ranch",
+          href: "https://fathergeek.com/fences-the-ranch_prepub/",
+        },
+      ],
+      more: [
+        { label: "The Pawn’s Perspective", href: "https://pawnsperspective.com/fences-preview/" },
+        {
+          label: "Meeple Mountain",
+          href: "https://www.meeplemountain.com/reviews/fences-review-good-fences-make-good-neighbors/",
+        },
+        { label: "BoardGameGeek", href: "https://boardgamegeek.com/boardgame/246409/fences" },
+      ],
+    },
+    downloads: [
+      { label: "The Ranch rules", href: "/old-site/Tha-Ranch-Rules.pdf", size: "PDF, 0.9 MB" },
+      { label: "Black-and-white print and play", href: "/old-site/pnp_bw_fences.pdf", size: "PDF, 5 MB" },
+      { label: "Farmer cards", href: "/old-site/Farmer-Cards.pdf", size: "PDF, 20 KB" },
+    ],
     links: {
       rules: "/old-site/Fences-Instructions.pdf",
       bgg: "https://boardgamegeek.com/boardgame/246409/fences",
@@ -120,6 +224,15 @@ export const games: Game[] = [
     story: [
       "Winner of The Game Crafter’s design competition, sponsored by Eat Lunch and Board Game and Bearded Board Games.",
       "Make your way through the ship gathering resources, tools and loot. Use the tools to open new areas and get closer to the control room. Search the rooms for more items, share some with your gang, and accuse your teammates of hoarding all the good stuff.",
+    ],
+    gallery: [
+      old("bf196b96-523c-sticker-0.20a-tin-top.jpg", "The Locked Out tin lid", "The tin"),
+      old("1694814101493-card-A-programmable-keycard.png", "Programmable keycard card"),
+      old("1694814101493-card-E-fuel.png", "Fuel card"),
+      old("1694814339677-card-E-oxygen.png", "Oxygen card"),
+      old("1694814102409-card-H-memory-module.png", "Memory module card"),
+      old("1694814102573-card-M-plasma-gun.png", "Plasma gun card"),
+      old("1694814103445-card-M-share-of-the-booty-3.png", "Share of the booty card"),
     ],
     links: {},
   },
@@ -153,7 +266,11 @@ export const games: Game[] = [
       poster: posterLearnSoccerBlocker,
       seconds: 318,
     },
-    links: { bgg: "https://boardgamegeek.com/boardgame/466697/soccer-blocker" },
+    links: {
+      rules: "/soccerblocker",
+      rulesLabel: "Rules sheet",
+      bgg: "https://boardgamegeek.com/boardgame/466697/soccer-blocker",
+    },
   },
   {
     slug: "mine-and-find",
@@ -196,6 +313,18 @@ export const games: Game[] = [
     badge: "New",
     designer: "Craig Hughes",
     artist: "Hailey Fetting",
+    gallery: [
+      "1774467681418-IMG_0901.JPG",
+      "1774467664573-IMG_0905.JPG",
+      "1774467664385-IMG_0907.JPG",
+      "1774467669405-IMG_0918.JPG",
+      "1774467669726-IMG_0935.JPG",
+      "1774467672834-IMG_0936.JPG",
+      "1774467673174-IMG_0937.JPG",
+      "1774467676824-IMG_0939.JPG",
+      "1774467677168-IMG_0940.JPG",
+      "1774467680873-IMG_0941.JPG",
+    ].map((f, i) => old(f, `Playing Pack Lash, photo ${i + 1}`)),
     links: { bgg: "https://boardgamegeek.com/boardgame/407307/pack-lash" },
   },
   {
@@ -229,6 +358,10 @@ export interface TeamMember {
   beard: string;
   bio: string;
   art?: string;
+  /** The full bio from the old site, on the person's own page (/beards/<id>). No story, no page. */
+  story?: string[];
+  /** Links on their own page. */
+  links?: { label: string; href: string }[];
 }
 
 export const team: TeamMember[] = [
@@ -239,6 +372,11 @@ export const team: TeamMember[] = [
     art: teamAdam,
     beard: "Long-standing. Grayed steadily by two kids.",
     bio: "Lifelong gamer turned designer and reviewer. Co-hosts a podcast and YouTube channel with his son, Edward, which mostly means arguing about game mechanics on camera. Project manager by day.",
+    story: [
+      "Adam Collins, Chief Creative Officer. Adam has proudly sported a beard for years—its length and style evolving with time, though his son and daughter have played a key role in ensuring it turns steadily grey.",
+      "A lifelong gamer, Adam’s love for tabletop and video games runs deep, fueling countless late-night sessions and friendly debates over mechanics, strategy, and storytelling. In recent years, he’s taken his passion to the next level, diving into game design and reviewing. Through his podcast and YouTube channel (co-hosted with The Son), he explores what makes games great, offering insights, critiques, and the occasional heated father-son discussion. Whether breaking down the latest releases or reminiscing about classics, Adam brings a mix of expertise, humor, and genuine enthusiasm to his content.",
+      "Until his gaming empire takes off, Adam pays the bills as a Project Manager at a local university, where he applies his strategic thinking and problem-solving skills in a slightly different arena. When he’s not gaming, designing, or wrangling projects, you can probably find him enjoying a good book, indulging in nerdy pop culture, or engaging in a spirited debate over the superiority of various RPG systems.",
+    ],
   },
   {
     id: "edward",
@@ -262,7 +400,18 @@ export const team: TeamMember[] = [
     art: teamN8,
     beard: "Varies by tour schedule.",
     bio: "Debuted I Crit You Not! at Protospiel STL in 2023 and joined the beards soon after. Plays trumpet and drums in Fluer de Noise, the St. Louis CITY SC supporters band. Runs the farmers market demo table.",
+    story: [
+      "Nate (N8) met Adam and Edward at Protospiel STL in 2023 debuting his first game “I Crit You Not!” with his design company PRISMCORTEX. They became fast friends and have started developing many new games and entertaining people at the local farmer’s markets.",
+      "He plays many instruments, including trumpet and drums for the St. Louis City Soccer Team supporters band: Fluer de Noise!",
+    ],
+    links: [{ label: "Hear N8’s board game songs", href: "/videos" }],
   },
+];
+
+/** The Soccer Blocker rules sheet, at its old address /soccerblocker (a QR code on the box may point there). */
+export const soccerBlockerRules: Picture[] = [
+  old("1789706068856-RulesFront2.png", "Soccer Blocker rules, front of the sheet", "Front"),
+  old("1789706068852-RulesBack2.png", "Soccer Blocker rules, back of the sheet", "Back"),
 ];
 
 /** Wording on the home page and wholesale page that isn't about one game or person. */

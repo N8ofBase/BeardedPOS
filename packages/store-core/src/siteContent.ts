@@ -133,6 +133,10 @@ export const siteGroups: SiteGroup[] = [
       line(`team.${m.id}.role`, "Role", 80),
       line(`team.${m.id}.beard`, "Beard status", 120),
       text(`team.${m.id}.bio`, "Bio", 600),
+      text(`team.${m.id}.story`, "Full bio", 3000, {
+        optional: true,
+        hint: "On their own page, linked from their card. Leave a blank line between paragraphs. Leave empty for no page.",
+      }),
       {
         key: `team.${m.id}.photo`,
         label: "Photo",
