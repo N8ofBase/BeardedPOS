@@ -1871,7 +1871,7 @@ body {
   font-weight: 400;
   color: var(--muted);
 }
-.press .press-banner {
+.press-banner {
   display: block;
   width: min(340px, 100%);
   height: auto;
@@ -1980,14 +1980,35 @@ body {
   margin-bottom: 6px;
 }
 
-/* Membership badges in the footer */
-.site-foot .badges {
+/* Footer: GAMA badge and Indie Game Alliance logo on either side, as on the old site */
+.site-foot .wrap {
   align-items: center;
 }
-.site-foot .badges img {
+.site-foot .middle {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.site-foot .badge,
+.site-foot .badge img {
   display: block;
-  height: 47px;
-  width: auto;
-  background: #fff;
+  height: auto;
   border-radius: 4px;
+  background: #fff;
+}
+.site-foot img.badge {
+  width: 96px;
+}
+.site-foot a.badge img {
+  width: 88px;
+}
+@media (max-width: 560px) {
+  .site-foot .wrap {
+    justify-content: center;
+  }
+  .site-foot .middle {
+    order: -1;
+    width: 100%;
+  }
 }
