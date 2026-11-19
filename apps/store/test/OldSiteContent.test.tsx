@@ -17,7 +17,11 @@ describe("game pages", () => {
     expect(within(photos).getAllByRole("img")).toHaveLength(5);
     expect(within(photos).getByText("Photo by Daniel Blackbourne")).toBeTruthy();
 
-    const press = section("What reviewers say");
+    expect(screen.getByRole("link", { name: "Read what reviewers say" }).getAttribute("href")).toBe(
+      "#reviews",
+    );
+    const press = section("Reviews");
+    expect(within(press).getByRole("heading", { level: 3, name: "What reviewers say" })).toBeTruthy();
     expect(within(press).getByText("The Farmer Profile is where it’s at.")).toBeTruthy();
     expect(within(press).getByRole("link", { name: "Father Geek" }).getAttribute("href")).toBe(
       "https://fathergeek.com/fences/",
@@ -49,6 +53,20 @@ describe("game pages", () => {
     renderStore("/games/soccer-blocker");
     await screen.findByRole("heading", { level: 1, name: "Soccer Blocker" });
     expect(screen.getByRole("link", { name: "Rules sheet" }).getAttribute("href")).toBe("/soccerblocker");
+  });
+});
+
+describe("reviewer quotes and shop pictures", () => {
+  it("shows the Fences reviewer quotes on the Reviews page", async () => {
+    renderStore("/reviews");
+    expect(await screen.findByText("The Farmer Profile is where it’s at.")).toBeTruthy();
+  });
+
+  it("opens a game's page from a shop item's picture", async () => {
+    renderStore("/shop");
+    await screen.findAllByRole("button", { name: /Add .* to cart/ });
+    const link = document.querySelector('.product a.art[href="/games/locked-out"]');
+    expect(link?.querySelector("img")).toBeTruthy();
   });
 });
 

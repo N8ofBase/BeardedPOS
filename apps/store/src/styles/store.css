@@ -1871,7 +1871,7 @@ body {
   font-weight: 400;
   color: var(--muted);
 }
-.press .press-banner {
+.press-banner {
   display: block;
   width: min(340px, 100%);
   height: auto;

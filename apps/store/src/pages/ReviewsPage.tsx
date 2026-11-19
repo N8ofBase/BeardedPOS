@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useReviews } from "../api/data.tsx";
+import { PressQuotes } from "../components/PressQuotes.tsx";
 import { ReviewForm } from "../components/ReviewForm.tsx";
 import { ReviewList } from "../components/ReviewList.tsx";
 import { games } from "../content/site.ts";
@@ -7,6 +8,7 @@ import { games } from "../content/site.ts";
 export function ReviewsPage() {
   const reviews = useReviews();
   const [game, setGame] = useState("");
+  const press = games.filter((g) => g.press && (!game || g.slug === game));
   const shown = reviews.state === "ready" ? reviews.value.filter((r) => !game || r.game === game) : [];
   return (
     <section className="wrap pad reviews-page">
@@ -32,6 +34,11 @@ export function ReviewsPage() {
           </button>
         ))}
       </div>
+      {press.length > 0 && <h3>What reviewers say</h3>}
+      {press.map((g) => (
+        <PressQuotes key={g.slug} game={g} showGame />
+      ))}
+      {press.length > 0 && <h3>What players say</h3>}
       {reviews.state === "loading" && <p>Loading reviews…</p>}
       {reviews.state === "failed" && <p>We couldn’t load reviews just now. Refresh the page to try again.</p>}
       {reviews.state === "ready" && (

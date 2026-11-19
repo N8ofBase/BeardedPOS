@@ -6,7 +6,16 @@ import { useCart } from "../cart/CartProvider.tsx";
 import { useSite } from "../content/SiteProvider.tsx";
 import { gamePath } from "../roll.ts";
 
-export function ProductCard({ product, showGame = true }: { product: Product; showGame?: boolean }) {
+/** `linkArt`: the picture opens the item's game page (off on that page itself). */
+export function ProductCard({
+  product,
+  showGame = true,
+  linkArt = true,
+}: {
+  product: Product;
+  showGame?: boolean;
+  linkArt?: boolean;
+}) {
   const cart = useCart();
   const { games } = useSite();
   const game = games.find((g) => g.slug === product.game);
@@ -19,9 +28,23 @@ export function ProductCard({ product, showGame = true }: { product: Product; sh
       className={`product ${buyable ? "" : "out"}`}
       style={{ "--c": game?.color ?? "#14614F" } as CSSProperties}
     >
-      <div className="art">
-        {art ? <img src={art} alt="" loading="lazy" /> : <span className="art-fallback">{product.name}</span>}
-      </div>
+      {linkArt && game ? (
+        <Link className="art" to={gamePath(game.slug)} tabIndex={-1} aria-hidden="true">
+          {art ? (
+            <img src={art} alt="" loading="lazy" />
+          ) : (
+            <span className="art-fallback">{product.name}</span>
+          )}
+        </Link>
+      ) : (
+        <div className="art">
+          {art ? (
+            <img src={art} alt="" loading="lazy" />
+          ) : (
+            <span className="art-fallback">{product.name}</span>
+          )}
+        </div>
+      )}
       <div className="body">
         {showGame && game && (
           <Link className="tag" to={gamePath(game.slug)}>

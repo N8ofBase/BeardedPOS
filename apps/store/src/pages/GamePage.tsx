@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { useProducts, useReviewsFor } from "../api/data.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { ReviewForm } from "../components/ReviewForm.tsx";
+import { PressQuotes } from "../components/PressQuotes.tsx";
 import { ReviewList } from "../components/ReviewList.tsx";
 import { Gallery } from "../components/Gallery.tsx";
 import { VideoCard } from "../components/VideoCard.tsx";
@@ -95,6 +96,10 @@ export function GamePage() {
                 <Stars value={rating.average} size="1.3rem" /> {rating.average} from {rating.count} review
                 {rating.count === 1 ? "" : "s"}
               </p>
+            ) : game.press ? (
+              <p className="rating">
+                <a href="#reviews">Read what reviewers say</a>
+              </p>
             ) : (
               <p className="rating none">No reviews yet</p>
             )}
@@ -160,41 +165,6 @@ export function GamePage() {
         </section>
       )}
 
-      {game.press && (
-        <section className="wrap pad press">
-          <img
-            className="press-banner"
-            src="/old-site/web/1579623253324-Review-Top.webp"
-            alt=""
-            loading="lazy"
-          />
-          <h2>What reviewers say</h2>
-          <div className="quotes">
-            {game.press.quotes.map((q) => (
-              <blockquote key={q.quote}>
-                <p>{q.quote}</p>
-                <footer>
-                  <a href={q.href} target="_blank" rel="noopener">
-                    {q.who}
-                  </a>
-                </footer>
-              </blockquote>
-            ))}
-          </div>
-          <p className="links">
-            More reviews:{" "}
-            {game.press.more.map((l, i) => (
-              <span key={l.href}>
-                {i > 0 && " · "}
-                <a href={l.href} target="_blank" rel="noopener">
-                  {l.label}
-                </a>
-              </span>
-            ))}
-          </p>
-        </section>
-      )}
-
       {game.tutorial && (
         <section className="wrap pad learn">
           <h2>Learn to play</h2>
@@ -215,7 +185,7 @@ export function GamePage() {
             (mine.length > 0 ? (
               <div className="grid">
                 {mine.map((p) => (
-                  <ProductCard key={p.id} product={p} showGame={false} />
+                  <ProductCard key={p.id} product={p} showGame={false} linkArt={false} />
                 ))}
               </div>
             ) : (
@@ -228,6 +198,19 @@ export function GamePage() {
 
       <section className="wrap pad game-reviews" id="reviews">
         <h2>Reviews</h2>
+        {game.press && (
+          <>
+            <img
+              className="press-banner"
+              src="/old-site/web/1579623253324-Review-Top.webp"
+              alt=""
+              loading="lazy"
+            />
+            <h3>What reviewers say</h3>
+            <PressQuotes game={game} />
+            <h3>What players say</h3>
+          </>
+        )}
         <ReviewList reviews={reviews} empty={`No reviews of ${game.name} yet. Be the first.`} />
         <h3 className="write">Write a review</h3>
         <ReviewForm game={game.slug} />
