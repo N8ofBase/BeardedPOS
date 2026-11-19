@@ -4,6 +4,7 @@ import { useProducts, useReviewsFor } from "../api/data.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { ReviewForm } from "../components/ReviewForm.tsx";
 import { ReviewList } from "../components/ReviewList.tsx";
+import { Gallery } from "../components/Gallery.tsx";
 import { VideoCard } from "../components/VideoCard.tsx";
 import { Stars } from "../components/Stars.tsx";
 import { statusText } from "../content/site.ts";
@@ -120,12 +121,16 @@ export function GamePage() {
           </p>
         )}
         {game.clip && <LoopClip {...game.clip} />}
+        {game.gallery && <Gallery pictures={game.gallery} label={`${game.name} photos`} />}
         <p className="links">
-          {game.links.rules && (
-            <a href={game.links.rules} target="_blank" rel="noopener">
-              Rules (PDF)
-            </a>
-          )}
+          {game.links.rules &&
+            (game.links.rules.endsWith(".pdf") ? (
+              <a href={game.links.rules} target="_blank" rel="noopener">
+                {game.links.rulesLabel ?? "Rules"} (PDF)
+              </a>
+            ) : (
+              <Link to={game.links.rules}>{game.links.rulesLabel ?? "Rules"}</Link>
+            ))}
           {game.links.bgg && (
             <a href={game.links.bgg} target="_blank" rel="noopener">
               BoardGameGeek
@@ -138,6 +143,57 @@ export function GamePage() {
           )}
         </p>
       </section>
+
+      {game.downloads && (
+        <section className="wrap pad downloads">
+          <h2>Free downloads</h2>
+          <ul>
+            {game.downloads.map((d) => (
+              <li key={d.href}>
+                <a href={d.href} target="_blank" rel="noopener">
+                  {d.label}
+                </a>{" "}
+                <span className="size">({d.size})</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {game.press && (
+        <section className="wrap pad press">
+          <img
+            className="press-banner"
+            src="/old-site/web/1579623253324-Review-Top.webp"
+            alt=""
+            loading="lazy"
+          />
+          <h2>What reviewers say</h2>
+          <div className="quotes">
+            {game.press.quotes.map((q) => (
+              <blockquote key={q.quote}>
+                <p>{q.quote}</p>
+                <footer>
+                  <a href={q.href} target="_blank" rel="noopener">
+                    {q.who}
+                  </a>
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+          <p className="links">
+            More reviews:{" "}
+            {game.press.more.map((l, i) => (
+              <span key={l.href}>
+                {i > 0 && " · "}
+                <a href={l.href} target="_blank" rel="noopener">
+                  {l.label}
+                </a>
+              </span>
+            ))}
+          </p>
+        </section>
+      )}
 
       {game.tutorial && (
         <section className="wrap pad learn">

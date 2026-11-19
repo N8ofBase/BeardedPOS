@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import type { TeamMember } from "../content/site.ts";
 import { useSite } from "../content/SiteProvider.tsx";
 
@@ -37,6 +38,11 @@ export function Beards() {
               </p>
               <p className="beard">Beard status: {t.beard}</p>
               <p>{t.bio}</p>
+              {t.story && t.story.length > 0 && (
+                <p>
+                  <Link to={`/beards/${t.id}`}>More about {t.name.split(" ")[0]}</Link>
+                </p>
+              )}
             </article>
           ))}
         </div>

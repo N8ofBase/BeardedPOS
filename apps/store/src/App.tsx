@@ -5,12 +5,14 @@ import { BuddyProvider } from "./buddy/BuddyProvider.tsx";
 import { CartProvider } from "./cart/CartProvider.tsx";
 import { CartDrawer } from "./components/CartDrawer.tsx";
 import { AccountPage } from "./pages/AccountPage.tsx";
+import { BeardPage } from "./pages/BeardPage.tsx";
 import { CartPage } from "./pages/CartPage.tsx";
 import { CheckoutPreviewPage } from "./pages/CheckoutPreviewPage.tsx";
 import { GamePage } from "./pages/GamePage.tsx";
 import { Home } from "./pages/Home.tsx";
 import { NotFound } from "./pages/NotFound.tsx";
 import { ReviewsPage } from "./pages/ReviewsPage.tsx";
+import { SoccerBlockerRulesPage } from "./pages/RulesPage.tsx";
 import { ShopPage } from "./pages/ShopPage.tsx";
 import { ThanksPage } from "./pages/ThanksPage.tsx";
 import { VideosPage } from "./pages/VideosPage.tsx";
@@ -53,6 +55,8 @@ export function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/shop" element={<ShopPage />} />
                     <Route path="/games/:slug" element={<GamePage />} />
+                    <Route path="/beards/:id" element={<BeardPage />} />
+                    <Route path="/soccerblocker" element={<SoccerBlockerRulesPage />} />
                     <Route path="/reviews" element={<ReviewsPage />} />
                     <Route path="/videos" element={<VideosPage />} />
                     <Route path="/cart" element={<CartPage />} />

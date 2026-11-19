@@ -46,6 +46,7 @@ export function originals(): SiteContent {
     out[`team.${m.id}.role`] = m.role;
     out[`team.${m.id}.beard`] = m.beard;
     out[`team.${m.id}.bio`] = m.bio;
+    out[`team.${m.id}.story`] = (m.story ?? []).join("\n\n");
     out[`team.${m.id}.photo`] = m.art ?? "";
   }
   for (const g of games) {
@@ -106,6 +107,7 @@ export function buildSite(content: SiteContent): Site {
         role: k("role") ?? m.role,
         beard: k("beard") ?? m.beard,
         bio: k("bio") ?? m.bio,
+        story: k("story") !== undefined ? paragraphs(k("story")!) : m.story,
         art: pictureUrl(k("photo"), m.art ?? "") || undefined,
       };
     }),

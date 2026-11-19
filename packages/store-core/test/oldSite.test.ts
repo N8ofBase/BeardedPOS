@@ -15,6 +15,10 @@ describe("old Squarespace site", () => {
     expect(oldSiteRedirect("/For-Retailers/")).toBe("/wholesale");
     expect(oldSiteRedirect("/shop/locked-out")).toBe("/games/locked-out");
     expect(oldSiteRedirect("/nowhere")).toBeUndefined();
+    expect(oldSiteRedirect("/Adam-Collins")).toBe("/beards/adam");
+    expect(oldSiteRedirect("/nate-sloan")).toBe("/beards/n8");
+    // Its own page again (the rules sheet), since a QR code on the box may point there.
+    expect(oldSiteRedirect("/soccerblocker")).toBeUndefined();
   });
 
   it("lists every page from the old site's map", () => {
