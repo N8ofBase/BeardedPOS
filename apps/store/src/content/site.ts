@@ -1,5 +1,7 @@
 // Store wording: brand, games, team. Moved from the "bearded-square-preview" content.js so the copy
 // written for the Square Online preview stays in one place. Edit words here, not in the sections.
+// This is the original wording. Staff can change most of it from Behind the Beard (Site content);
+// what they publish is layered on top by content/SiteProvider.tsx, so read it there with useSite().
 import coverFences from "../assets/cover-fences.webp";
 import coverLockedOut from "../assets/cover-locked-out.webp";
 import coverMineAndFind from "../assets/cover-mine-and-find.webp";
@@ -220,6 +222,8 @@ export const statusLabel: Record<GameStatus, string> = {
 };
 
 export interface TeamMember {
+  /** Stable id for site content (SITE_TEAM in @bearded/store-core). */
+  id: string;
   name: string;
   role: string;
   beard: string;
@@ -229,6 +233,7 @@ export interface TeamMember {
 
 export const team: TeamMember[] = [
   {
+    id: "adam",
     name: "Adam Collins",
     role: "Owner, designer and podcaster",
     art: teamAdam,
@@ -236,6 +241,7 @@ export const team: TeamMember[] = [
     bio: "Lifelong gamer turned designer and reviewer. Co-hosts a podcast and YouTube channel with his son, Edward, which mostly means arguing about game mechanics on camera. Project manager by day.",
   },
   {
+    id: "edward",
     name: "Edward",
     role: "Designer and tester",
     art: teamEdward,
@@ -243,12 +249,14 @@ export const team: TeamMember[] = [
     bio: "Adam’s son and his co-host on their podcast and YouTube channel, so the debates about game mechanics never really end. Designs games, tests everyone else’s, and is, by the team’s own description, also a board game crazy person.",
   },
   {
+    id: "tim",
     name: "Tim Forbis",
     role: "Engineer of fun",
     beard: "Only four years old. Still in its awkward phase.",
     bio: "Engineer for over a decade who discovered board game design and never looked back. Runs gaming simulations for fun. Wife and three daughters keep him outnumbered.",
   },
   {
+    id: "n8",
     name: "Nate “N8” Sloan",
     role: "Designer, promoter and master musician",
     art: teamN8,
@@ -256,6 +264,20 @@ export const team: TeamMember[] = [
     bio: "Debuted I Crit You Not! at Protospiel STL in 2023 and joined the beards soon after. Plays trumpet and drums in Fluer de Noise, the St. Louis CITY SC supporters band. Runs the farmers market demo table.",
   },
 ];
+
+/** Wording on the home page and wholesale page that isn't about one game or person. */
+export const pageText = {
+  heroLede:
+    "We make quick, fun games that are easy to teach and hard to put down. Made by people who play WAY too many games. Your next game night starts here.",
+  shelfLede:
+    "Bearded classics, a couple of Prism Cortex collaborations, and some things still cooling off the printer.",
+  teamHeading: "Meet the beards.",
+  playHeading: "Come play with us.",
+  playText:
+    "Find us demoing at St. Louis farmers markets, Protospiel and game stores around town. Follow along for event dates and playtest calls.",
+  sellHeading: "Sell our games in your store",
+  sellText: "Email us and we’ll reply within 1–3 business days with a wholesale order form.",
+};
 
 export const about =
   "We are firm in our belief that board games build bridges, so we publish games that are quick, fun and easy for everyone to enjoy. Help the board game community grow by supporting us and other independent designers, publishers and retailers.";

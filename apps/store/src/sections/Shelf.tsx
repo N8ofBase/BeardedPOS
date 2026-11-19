@@ -1,7 +1,8 @@
 import { useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "react-router";
 import { gamePath } from "../roll.ts";
-import { games, statusLabel, statusText, type Game, type GameStatus } from "../content/site.ts";
+import { statusLabel, statusText, type Game, type GameStatus } from "../content/site.ts";
+import { useSite } from "../content/SiteProvider.tsx";
 
 type Filter = "all" | GameStatus;
 const FILTERS: { id: Filter; label: string }[] = [
@@ -11,7 +12,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "coming-soon", label: statusLabel["coming-soon"] },
 ];
 
-export const shelfGames = (filter: Filter) =>
+export const shelfGames = (games: Game[], filter: Filter) =>
   filter === "all" ? games : games.filter((g) => g.status === filter);
 
 /** Clicks on a link, button or the "How it plays" toggle do their own thing; the rest open the game. */
@@ -57,8 +58,8 @@ function GameCard({ game }: { game: Game }) {
         <p>{game.tagline}</p>
         {game.facts.length > 0 && (
           <ul className="facts">
-            {game.facts.slice(0, 3).map((f) => (
-              <li key={f}>{f}</li>
+            {game.facts.slice(0, 3).map((f, i) => (
+              <li key={i}>{f}</li>
             ))}
           </ul>
         )}
@@ -88,15 +89,13 @@ function GameCard({ game }: { game: Game }) {
 }
 
 export function Shelf() {
+  const { games, text } = useSite();
   const [filter, setFilter] = useState<Filter>("all");
   return (
     <section className="shelf" id="games">
       <div className="wrap pad">
         <h2>On the shelf</h2>
-        <p className="lede">
-          Bearded classics, a couple of Prism Cortex collaborations, and some things still cooling off the
-          printer.
-        </p>
+        <p className="lede">{text.shelfLede}</p>
         <div className="row filters" role="group" aria-label="Filter games">
           {FILTERS.map((f) => (
             <button
@@ -111,7 +110,7 @@ export function Shelf() {
           ))}
         </div>
         <div className="grid">
-          {shelfGames(filter).map((g) => (
+          {shelfGames(games, filter).map((g) => (
             <GameCard key={g.slug} game={g} />
           ))}
         </div>

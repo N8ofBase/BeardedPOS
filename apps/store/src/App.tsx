@@ -17,6 +17,7 @@ import { VideosPage } from "./pages/VideosPage.tsx";
 import { WholesalePage } from "./pages/WholesalePage.tsx";
 import { Footer } from "./sections/Footer.tsx";
 import { Header } from "./sections/Header.tsx";
+import { NoticeBar, PreviewBar, SiteProvider } from "./content/SiteProvider.tsx";
 import { BehindTheBeard } from "./staff/BehindTheBeard.tsx";
 import { TrackerProvider } from "./track/Tracker.tsx";
 import { BuddyPopup } from "./buddy/BuddyPopup.tsx";
@@ -34,39 +35,43 @@ function ScrollOnNavigate() {
 
 export function App() {
   return (
-    <TrackerProvider>
-      <DataProvider>
-        <CartProvider>
-          <BuddyProvider>
-            <div className="bbg">
-              <a className="skip" href="#main">
-                Skip to content
-              </a>
-              <ScrollOnNavigate />
-              <Header />
-              <main id="main">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/shop" element={<ShopPage />} />
-                  <Route path="/games/:slug" element={<GamePage />} />
-                  <Route path="/reviews" element={<ReviewsPage />} />
-                  <Route path="/videos" element={<VideosPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/account" element={<AccountPage />} />
-                  <Route path="/checkout-preview/:id" element={<CheckoutPreviewPage />} />
-                  <Route path="/thanks" element={<ThanksPage />} />
-                  <Route path="/wholesale" element={<WholesalePage />} />
-                  <Route path="/behind-the-beard" element={<BehindTheBeard />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-              <Footer />
-              <CartDrawer />
-              <BuddyPopup />
-            </div>
-          </BuddyProvider>
-        </CartProvider>
-      </DataProvider>
-    </TrackerProvider>
+    <SiteProvider>
+      <TrackerProvider>
+        <DataProvider>
+          <CartProvider>
+            <BuddyProvider>
+              <div className="bbg">
+                <a className="skip" href="#main">
+                  Skip to content
+                </a>
+                <ScrollOnNavigate />
+                <PreviewBar />
+                <NoticeBar />
+                <Header />
+                <main id="main">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/games/:slug" element={<GamePage />} />
+                    <Route path="/reviews" element={<ReviewsPage />} />
+                    <Route path="/videos" element={<VideosPage />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/checkout-preview/:id" element={<CheckoutPreviewPage />} />
+                    <Route path="/thanks" element={<ThanksPage />} />
+                    <Route path="/wholesale" element={<WholesalePage />} />
+                    <Route path="/behind-the-beard" element={<BehindTheBeard />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <CartDrawer />
+                <BuddyPopup />
+              </div>
+            </BuddyProvider>
+          </CartProvider>
+        </DataProvider>
+      </TrackerProvider>
+    </SiteProvider>
   );
 }

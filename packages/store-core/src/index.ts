@@ -7,3 +7,4 @@ export * from "./events.ts";
 export * from "./listing.ts";
 export * from "./oldSite.ts";
 export * from "./reviews.ts";
+export * from "./siteContent.ts";

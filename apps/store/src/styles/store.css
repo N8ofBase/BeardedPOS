@@ -1339,6 +1339,7 @@ body {
 .tabs {
   display: flex;
   gap: 4px;
+  overflow-x: auto;
   border-bottom: 2px solid var(--ink);
   margin-bottom: 20px;
 }
@@ -1698,4 +1699,128 @@ body {
 }
 .buddy .balance {
   margin-left: auto;
+}
+
+/* The announcement bar and the draft preview bar, above the header. */
+.notice-bar,
+.preview-bar {
+  padding: 8px 16px;
+  text-align: center;
+  font-weight: 700;
+}
+.notice-bar {
+  background: var(--mustard);
+  color: var(--ink);
+}
+.notice-bar p,
+.preview-bar p {
+  margin: 0;
+}
+.notice-bar a {
+  color: inherit;
+}
+.preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+}
+.preview-bar .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.preview-bar .btn {
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+/* Behind the Beard: Site content. */
+.site-editor {
+  max-width: 760px;
+}
+.site-status {
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: #fff;
+  padding: 12px 16px;
+  margin: 16px 0 20px;
+}
+.site-status p {
+  margin: 0 0 6px;
+}
+.site-status .row,
+.site-editor .confirm .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.site-editor .confirm {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--butter);
+}
+.site-editor .bbg button.link,
+.site-editor button.link {
+  margin-top: 0;
+}
+.site-part-label {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.site-editor select,
+.site-editor input[type="text"],
+.site-editor input[type="url"],
+.site-editor input[type="email"],
+.site-editor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: 500 16px var(--text);
+  padding: 9px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: #fff;
+}
+.site-editor textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+.site-group {
+  margin-top: 16px;
+  display: grid;
+  gap: 18px;
+}
+.site-field-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 6px;
+}
+.site-field-head label {
+  font-weight: 800;
+}
+.site-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: var(--mint);
+}
+.site-history {
+  margin-top: 36px;
 }

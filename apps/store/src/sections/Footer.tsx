@@ -1,6 +1,7 @@
-import { brand } from "../content/site.ts";
+import { useSite } from "../content/SiteProvider.tsx";
 
 export function Footer() {
+  const { brand } = useSite();
   const s = brand.socials;
   return (
     <footer className="site-foot">

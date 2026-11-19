@@ -6,7 +6,8 @@ import { ReviewForm } from "../components/ReviewForm.tsx";
 import { ReviewList } from "../components/ReviewList.tsx";
 import { VideoCard } from "../components/VideoCard.tsx";
 import { Stars } from "../components/Stars.tsx";
-import { brand, games, statusText } from "../content/site.ts";
+import { statusText } from "../content/site.ts";
+import { useSite } from "../content/SiteProvider.tsx";
 import { averageStars } from "@bearded/store-core";
 import { NotFound } from "./NotFound.tsx";
 
@@ -42,6 +43,7 @@ function LoopClip({ src, poster, caption }: { src: string; poster: string; capti
 
 export function GamePage() {
   const { slug } = useParams();
+  const { brand, games } = useSite();
   const game = games.find((g) => g.slug === slug);
   const products = useProducts();
   const reviews = useReviewsFor(slug);
@@ -96,8 +98,8 @@ export function GamePage() {
               <p className="rating none">No reviews yet</p>
             )}
             <ul className="facts">
-              {game.facts.map((f) => (
-                <li key={f}>{f}</li>
+              {game.facts.map((f, i) => (
+                <li key={i}>{f}</li>
               ))}
             </ul>
           </div>
@@ -107,8 +109,8 @@ export function GamePage() {
       <section className="wrap pad about-game">
         <h2>How it plays</h2>
         <p>{game.blurb}</p>
-        {game.story?.map((para) => (
-          <p key={para}>{para}</p>
+        {game.story?.map((para, i) => (
+          <p key={i}>{para}</p>
         ))}
         {(game.designer || game.artist) && (
           <p className="by">

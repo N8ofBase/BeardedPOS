@@ -1,13 +1,13 @@
-import bridges from "../assets/banner-bridges.webp";
-import { brand } from "../content/site.ts";
+import { useSite } from "../content/SiteProvider.tsx";
 
 export function Retailers() {
+  const { brand, text } = useSite();
   const s = brand.socials;
   return (
     <section className="retail" id="wholesale">
       <div className="bridges">
         <img
-          src={bridges}
+          src={text.retailBanner}
           alt="Board games build bridges: the St. Louis skyline and Arch over a stone bridge"
           width="1400"
           height="517"
@@ -16,11 +16,8 @@ export function Retailers() {
       </div>
       <div className="wrap pad">
         <div>
-          <h2>Come play with us.</h2>
-          <p>
-            Find us demoing at St. Louis farmers markets, Protospiel and game stores around town. Follow along
-            for event dates and playtest calls.
-          </p>
+          <h2>{text.playHeading}</h2>
+          <p>{text.playText}</p>
           <div className="row">
             <a className="btn" href={s.tiktok} target="_blank" rel="noopener">
               TikTok
@@ -34,8 +31,8 @@ export function Retailers() {
           </div>
         </div>
         <div className="panel">
-          <h3>Sell our games in your store</h3>
-          <p>Email us and we’ll reply within 1–3 business days with a wholesale order form.</p>
+          <h3>{text.sellHeading}</h3>
+          <p>{text.sellText}</p>
           <p className="sheets">
             {brand.sellSheets.map((sheet, i) => (
               <span key={sheet.label}>

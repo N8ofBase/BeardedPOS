@@ -3,11 +3,12 @@ import { Link } from "react-router";
 import { formatCents, stockLabel, type Product } from "@bearded/store-core";
 import { canBuy } from "@bearded/store-core";
 import { useCart } from "../cart/CartProvider.tsx";
-import { games } from "../content/site.ts";
+import { useSite } from "../content/SiteProvider.tsx";
 import { gamePath } from "../roll.ts";
 
 export function ProductCard({ product, showGame = true }: { product: Product; showGame?: boolean }) {
   const cart = useCart();
+  const { games } = useSite();
   const game = games.find((g) => g.slug === product.game);
   const label = stockLabel(product);
   const art = product.imageUrl ?? game?.art;
