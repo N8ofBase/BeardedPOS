@@ -118,6 +118,7 @@ describe("footer and wholesale", () => {
   it("shows the GAMA badge and the Indie Game Alliance link on every page", () => {
     renderStore("/shop");
     expect(screen.getByAltText("GAMA member")).toBeTruthy();
+    expect(screen.getByAltText("Indie Game Alliance")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Indie Game Alliance" }).getAttribute("href")).toBe(
       "https://www.indiegamealliance.com/",
     );

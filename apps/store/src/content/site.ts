@@ -61,7 +61,12 @@ export const brand = {
   /** Memberships shown in the footer of every page, as on the old site. */
   memberships: {
     gama: { label: "GAMA member", src: "/old-site/web/731dc39c-863d-gama_member_icon.webp" },
-    iga: { label: "Indie Game Alliance", href: "https://www.indiegamealliance.com/" },
+    // The logo was cut from N8's screenshot of the old footer (Nov 19); swap in a sharper file when there is one.
+    iga: {
+      label: "Indie Game Alliance",
+      src: "/old-site/web/iga-logo.webp",
+      href: "https://www.indiegamealliance.com/",
+    },
   },
 };
 
