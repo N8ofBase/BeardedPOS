@@ -2,7 +2,7 @@
 // SDK. The access token comes from the server's environment and never reaches the browser.
 import { createHash } from "node:crypto";
 import { REWARD_NAME, type SquareCatalog, type SquareItem } from "@bearded/store-core";
-import type { SquareStore } from "./types.ts";
+import type { SquareAppSale, SquareStore } from "./types.ts";
 
 export const SQUARE_VERSION = "2024-12-18";
 export const SQUARE_URLS = {
@@ -81,6 +81,19 @@ interface SquareOrder {
   tenders?: unknown[];
   net_amount_due_money?: Money;
   total_money?: Money;
+}
+
+/** What appSale() reads from a Square order. */
+interface AppOrder {
+  id: string;
+  state?: string;
+  location_id?: string;
+  customer_id?: string;
+  tenders?: { id?: string; note?: string; customer_id?: string }[];
+  total_money?: Money;
+  total_tax_money?: Money;
+  total_tip_money?: Money;
+  total_service_charge_money?: Money;
 }
 
 const soldAt = (o: CatalogObject, location: string) =>
@@ -320,6 +333,49 @@ export class SquareApiStore implements SquareStore {
       `/v2/orders/${encodeURIComponent(squareOrderId)}`,
     );
     return !!r.order && orderIsPaid(r.order);
+  }
+
+  async appSale(squareOrderId: string): Promise<SquareAppSale | null> {
+    let order: AppOrder | undefined;
+    try {
+      order = (
+        await this.call<{ order?: AppOrder }>("GET", `/v2/orders/${encodeURIComponent(squareOrderId)}`)
+      ).order;
+    } catch (e) {
+      if (e instanceof SquareApiError && e.status === 404) return null;
+      throw e;
+    }
+    if (!order || order.state !== "COMPLETED" || order.location_id !== (await this.locationId())) return null;
+    const tenders = order.tenders ?? [];
+    const customerId = order.customer_id ?? tenders.find((t) => t.customer_id)?.customer_id;
+    let customer: SquareAppSale["customer"] = null;
+    if (customerId) {
+      try {
+        const c = (
+          await this.call<{ customer?: { email_address?: string; phone_number?: string } }>(
+            "GET",
+            `/v2/customers/${encodeURIComponent(customerId)}`,
+          )
+        ).customer;
+        if (c) customer = { email: c.email_address ?? null, phone: c.phone_number ?? null };
+      } catch (e) {
+        if (!(e instanceof SquareApiError && e.status === 404)) throw e;
+      }
+    }
+    const amount = (m?: Money) => m?.amount ?? 0;
+    return {
+      orderId: order.id,
+      paymentIds: tenders.map((t) => t.id).filter((id): id is string => !!id),
+      notes: tenders.map((t) => t.note).filter((n): n is string => !!n),
+      netCents: Math.max(
+        0,
+        amount(order.total_money) -
+          amount(order.total_tax_money) -
+          amount(order.total_tip_money) -
+          amount(order.total_service_charge_money),
+      ),
+      customer,
+    };
   }
 
   private async customerIds(email: string): Promise<string[]> {

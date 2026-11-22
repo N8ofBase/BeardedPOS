@@ -148,7 +148,7 @@ async function saleSums(trx: Trx, saleId: string): Promise<Record<LedgerKind, nu
     .where("sale_id", "=", saleId)
     .groupBy("kind")
     .execute();
-  const out = { earn: 0, birthday: 0, redeem: 0, take_back: 0, give_back: 0, adjust: 0 };
+  const out = { earn: 0, birthday: 0, redeem: 0, take_back: 0, give_back: 0, adjust: 0, welcome: 0 };
   for (const r of rows) out[r.kind] = r.n;
   return out;
 }

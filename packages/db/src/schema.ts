@@ -182,7 +182,7 @@ export interface CustomerEventsTable {
   created_at: CreatedAt;
 }
 
-export type LoyaltyKind = "earn" | "birthday" | "redeem" | "take_back" | "give_back" | "adjust";
+export type LoyaltyKind = "earn" | "birthday" | "redeem" | "take_back" | "give_back" | "adjust" | "welcome";
 
 /** Beard Bucks in and out; a customer's balance is the sum. Append-only. */
 export interface LoyaltyLedgerTable {
@@ -194,6 +194,10 @@ export interface LoyaltyLedgerTable {
   bucks: number;
   note: string | null;
   staff_id: string | null;
+  /** A website order's Bucks (store_orders.id), when the online store shares this database. */
+  web_order_id: Generated<string | null>;
+  /** A sale rung only in the Square app, matched to this customer. */
+  square_order_id: Generated<string | null>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
 }

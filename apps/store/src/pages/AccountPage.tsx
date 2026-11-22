@@ -64,7 +64,8 @@ function SignedIn({ account }: { account: Account }) {
         <p>
           {BUCKS_PER_REWARD} Bucks = {formatCents(REWARD_CENTS)} off any order of{" "}
           {formatCents(MIN_REWARD_ORDER_CENTS)} or more. You earn 1 Buck for every dollar you spend. Use them
-          in your cart at checkout.
+          in your cart at checkout. It’s one balance in the shop too: give the counter your email and your
+          Bucks are there.
         </p>
         {account.held > 0 && (
           <p className="fine">
@@ -84,7 +85,10 @@ function SignedIn({ account }: { account: Account }) {
         <ul className="ledger">
           {account.history.map((e, i) => (
             <li key={`${e.at}-${i}`}>
-              <span>{LEDGER_LABEL[e.kind]}</span>
+              <span>
+                {LEDGER_LABEL[e.kind]}
+                {e.atShop ? " in the shop" : ""}
+              </span>
               <span className="when">{when.format(new Date(e.at))}</span>
               <strong className={e.bucks < 0 ? "minus" : "plus"}>
                 {e.bucks > 0 ? "+" : "−"}

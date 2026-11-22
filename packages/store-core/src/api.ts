@@ -121,6 +121,8 @@ export interface LedgerEntry {
   at: string;
   /** The web order it belongs to, when there is one. */
   orderId: string | null;
+  /** Earned or spent in the shop (a register or Square app sale), once the balance is joined. */
+  atShop?: boolean;
 }
 
 /** A signed-in shopper's Beard Buddy account. */
