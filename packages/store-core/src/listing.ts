@@ -21,7 +21,12 @@ export interface StoreItem {
 export const gameItems: { game: string; names?: string[]; items: StoreItem[] }[] = [
   {
     game: "fences",
+    // The live Bearded Square names come first; the older names are the Sandbox demo's.
     items: [
+      { square: "Fences - Base Game", kind: "game", name: "Fences" },
+      { square: "Fences - 5/6 player extension", kind: "expansion", name: "Fences 5–6 Player Expansion" },
+      { square: "The Ranch", kind: "expansion", name: "Fences: The Ranch" },
+      { square: "Fences - Seasons", kind: "expansion", name: "Fences: Seasons" },
       { square: "Fences", kind: "game" },
       { square: "Fences 5–6 Player Expansion", kind: "expansion" },
       { square: "Fences: The Ranch", kind: "expansion" },
@@ -42,6 +47,8 @@ export const gameItems: { game: string; names?: string[]; items: StoreItem[] }[]
 
 /** Square items that don't belong to one of our games, placed by hand. Unlisted ones are placed by their Square category and name. */
 export const extraItems: StoreItem[] = [
+  { square: "Jibe", kind: "game" },
+  { square: "Jibe: Monster Edition", kind: "game" },
   { square: "Jibe Card Game", kind: "game" },
   { square: "Future Board Gamer Onesie", kind: "merch" },
   { square: "Board Gamer in Training Kids Tee", kind: "merch" },
@@ -52,7 +59,12 @@ export const extraItems: StoreItem[] = [
  * carry but don't sell on the site. A name here also hides every item whose Square name starts
  * with it ("Xeno" hides "Xeno: Deluxe"). Everything else in Square shows.
  */
-export const hiddenItems: string[] = ["Soccer Blocker Version Zero Limited Edition", "Whole Hog", "Xeno"];
+export const hiddenItems: string[] = [
+  "Soccer Blocker Version Zero Limited Edition",
+  "Whole Hog",
+  "Xeno",
+  "Xenoferra",
+];
 
 /** Square product types the store sells. Donations, gift cards, services and events stay at the counter. */
 export const sellableTypes = ["REGULAR", "DIGITAL"];
