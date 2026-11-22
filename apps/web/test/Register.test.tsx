@@ -3,7 +3,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CheckoutResult, ProductRow } from "@bearded/api";
 import { PaymentPanel } from "../src/pages/register/PaymentPanel.tsx";
 import { receiptText } from "@bearded/core";
-import { addProduct, EMPTY_TICKET, priceTicket, setQty, toInput } from "../src/pages/register/ticket.ts";
+import {
+  addProduct,
+  EMPTY_TICKET,
+  priceTicket,
+  setQty,
+  toInput,
+  withCustomer,
+} from "../src/pages/register/ticket.ts";
 import { todayRange } from "../src/pages/SalesPage.tsx";
 import { CameraButton, cameraErrorMessage } from "../src/ui/scanner/CameraScanner.tsx";
 import { createDeduper } from "../src/ui/scanner/detector.ts";
@@ -24,8 +31,6 @@ const food: ProductRow = {
   priceCents: 6499,
   costCents: 4300,
   wholesaleCents: null,
-  royaltyMpct: 0,
-  royaltyPayee: null,
   taxClass: "standard",
   reorderAt: 6,
   onHand: 14,
@@ -33,6 +38,26 @@ const food: ProductRow = {
 };
 
 describe("ticket", () => {
+  it("rings a retailer at wholesale prices, and says when a game has none", () => {
+    const retailer = {
+      card: { id: "c1", kind: "retailer", company: "Dice Den" },
+      loyalty: null,
+      usuallyBuys: [],
+      lastVisit: null,
+    } as unknown as Parameters<typeof withCustomer>[1];
+    const game = { ...food, wholesaleCents: 3200 };
+    let t = withCustomer(addProduct(EMPTY_TICKET, game, 6), retailer);
+    expect(t.wholesale).toBe(true);
+    expect(priceTicket(t, 0).priced?.subtotalCents).toBe(6 * 3200);
+    expect(toInput(t)).toMatchObject({ customerId: "c1", wholesale: true });
+
+    t = addProduct(t, { ...food, id: "p2", name: "Sleeves" });
+    expect(priceTicket(t, 0).problem).toMatch(/Sleeves has no wholesale price yet/);
+    // Dropping the retailer goes back to regular prices.
+    expect(withCustomer(t, null).wholesale).toBe(false);
+    expect(toInput(withCustomer(t, null))).not.toHaveProperty("wholesale");
+  });
+
   it("adds, merges, counts and removes lines, and prices as it goes", () => {
     let t = addProduct(EMPTY_TICKET, food);
     t = addProduct(t, food);

@@ -151,7 +151,7 @@ describe("products", () => {
     ]);
   });
 
-  it("reads wholesale price, our cost and royalty, from the column names stores use", async () => {
+  it("reads wholesale price and our cost, from the column names stores use", async () => {
     const { warnings } = await importAll(owner, "products", [
       {
         sku: "G-1",
@@ -159,24 +159,19 @@ describe("products", () => {
         price: "25",
         wholesale: "12.50",
         cost: "6",
-        royalty: "10%",
-        royaltyPayee: "Ada",
       },
-      { sku: "G-2", name: "Locked Out", price: "20", wholesale: "lots", royalty: "120" },
+      { sku: "G-2", name: "Locked Out", price: "20", wholesale: "lots" },
     ]);
     expect(warnings.map((w) => w.message)).toEqual([
       'Wholesale price "lots" isn\'t an amount, left as it was',
-      'Royalty "120" isn\'t a percent from 0 to 100, left as it was',
     ]);
     const all = await products();
     expect(all.find((p) => p.sku === "G-1")).toMatchObject({
       priceCents: 2500,
       wholesaleCents: 1250,
       costCents: 600,
-      royaltyMpct: 10_000,
-      royaltyPayee: "Ada",
     });
-    expect(all.find((p) => p.sku === "G-2")).toMatchObject({ wholesaleCents: null, royaltyMpct: 0 });
+    expect(all.find((p) => p.sku === "G-2")).toMatchObject({ wholesaleCents: null });
   });
 
   it("matches by barcode without renaming our SKU", async () => {
@@ -275,15 +270,13 @@ describe("undo", () => {
   });
 
   it("puts a blank wholesale price back to blank", async () => {
-    const { batchId } = await importAll(owner, "products", [{ sku: "0001", wholesale: "40", royalty: "5" }]);
+    const { batchId } = await importAll(owner, "products", [{ sku: "0001", wholesale: "40" }]);
     expect((await products()).find((p) => p.sku === "0001")).toMatchObject({
       wholesaleCents: 4000,
-      royaltyMpct: 5000,
     });
     await invoke(db, manager, "undoImport", { batchId });
     expect((await products()).find((p) => p.sku === "0001")).toMatchObject({
       wholesaleCents: null,
-      royaltyMpct: 0,
     });
     const log = await withBusiness(db, owner.businessId, (trx) =>
       trx

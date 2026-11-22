@@ -22,9 +22,6 @@ export interface ProductRow {
   costCents: number;
   /** What a retailer pays; null when not sold wholesale. */
   wholesaleCents: number | null;
-  /** Royalty on net profit, thousandths of a percent. */
-  royaltyMpct: number;
-  royaltyPayee: string | null;
   taxClass: TaxClass;
   reorderAt: number;
   onHand: number;
@@ -55,8 +52,6 @@ export function productQuery(trx: Transaction<DB>) {
       "p.price_cents as priceCents",
       "p.cost_cents as costCents",
       "p.wholesale_cents as wholesaleCents",
-      "p.royalty_mpct as royaltyMpct",
-      "p.royalty_payee as royaltyPayee",
       "p.tax_class as taxClass",
       "p.reorder_at as reorderAt",
       eb.fn.coalesce("l.on_hand", sql<number>`0`).as("onHand"),
@@ -169,8 +164,6 @@ export const saveProduct = defineHandler<SaveProductInput, { id: string }>({
       tax_class: p.taxClass,
       reorder_at: p.reorderAt,
       ...(p.wholesaleCents !== undefined ? { wholesale_cents: p.wholesaleCents } : {}),
-      ...(p.royaltyMpct !== undefined ? { royalty_mpct: p.royaltyMpct } : {}),
-      ...(p.royaltyPayee !== undefined ? { royalty_payee: p.royaltyPayee } : {}),
     };
 
     try {

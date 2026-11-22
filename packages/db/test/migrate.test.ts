@@ -46,4 +46,39 @@ describe("migrate", () => {
     );
     expect(tables.rows.map((r) => r.t)).toEqual(["ok", "schema_migrations"]);
   });
+
+  it("moves each game's one royalty to the new per-person rates on upgrade", async () => {
+    const pg = new PGlite(PGLITE_OPTIONS);
+    const upTo = MIGRATIONS.findIndex((m) => m.name === "042_royalties");
+    await migrate(pg, MIGRATIONS.slice(0, upTo));
+    const b = (
+      await pg.query<{ id: string }>(
+        "INSERT INTO businesses (name, slug) VALUES ('Shop', 'shop') RETURNING id",
+      )
+    ).rows[0]!.id;
+    await pg.query(
+      `INSERT INTO products (business_id, sku, name, price_cents, royalty_mpct, royalty_payee) VALUES
+        ($1, 'F', 'Fences', 2500, 10000, ' Ada '),
+        ($1, 'L', 'Locked Out', 2000, 7500, 'ada'),
+        ($1, 'S', 'Sleeves', 500, 0, NULL)`,
+      [b],
+    );
+    await migrate(pg);
+    const { rows } = await pg.query<{
+      name: string;
+      payee: string;
+      basis: string;
+      r: number;
+      o: number;
+      w: number;
+    }>(
+      `SELECT p.name, r.name AS payee, g.basis, g.retail_mpct AS r, g.online_mpct AS o, g.wholesale_mpct AS w
+       FROM game_royalties g JOIN products p ON p.id = g.product_id JOIN royalty_payees r ON r.id = g.payee_id
+       ORDER BY p.name`,
+    );
+    expect(rows).toEqual([
+      { name: "Fences", payee: "Ada", basis: "profit", r: 10000, o: 10000, w: 10000 },
+      { name: "Locked Out", payee: "Ada", basis: "profit", r: 7500, o: 7500, w: 7500 },
+    ]);
+  });
 });

@@ -32,6 +32,7 @@ import {
   saveTicket,
   setQty,
   toInput,
+  withCustomer,
   type Ticket,
   type TicketDiscountState,
 } from "./ticket.ts";
@@ -416,14 +417,22 @@ function TicketView({
 }) {
   const { me } = useSession();
   const p = price.priced;
+  const shownPrice = (prod: ProductRow) =>
+    ticket.wholesale && prod.wholesaleCents !== null ? prod.wholesaleCents : prod.priceCents;
   const lineDiscounts = (key: string) => p?.discounts.filter((d) => d.lineKey === key) ?? [];
 
   return (
     <>
       <CustomerBox
         customer={ticket.customer}
-        onAttach={(c) => onTicket({ ...ticket, customer: c, rewards: 0 })}
-        onDrop={() => onTicket({ ...ticket, customer: null, rewards: 0 })}
+        onAttach={(c) => {
+          // A retailer starts a wholesale sale, unless a game on the ticket has no wholesale price yet.
+          const next = withCustomer(ticket, c);
+          onTicket(next.wholesale && priceTicket(next, 0).problem ? { ...next, wholesale: false } : next);
+        }}
+        onDrop={() => onTicket(withCustomer(ticket, null))}
+        wholesale={ticket.wholesale}
+        onWholesale={(on) => onTicket({ ...ticket, wholesale: on, rewards: on ? 0 : ticket.rewards })}
         onAddProduct={(prod) => onTicket(addProduct(ticket, prod))}
         rewards={ticket.rewards}
         netCents={p ? p.subtotalCents - p.discountCents : 0}
@@ -438,7 +447,8 @@ function TicketView({
               <span>
                 <b>{l.product.name}</b>
                 <span className="sub mono">
-                  {l.product.sku} · {formatMoney(l.product.priceCents)}
+                  {l.product.sku} · {formatMoney(shownPrice(l.product))}
+                  {ticket.wholesale && " wholesale"}
                 </span>
                 {l.qty > l.product.onHand && (
                   <span className="sub" style={{ color: "var(--warn)" }}>
@@ -452,7 +462,7 @@ function TicketView({
                 ))}
               </span>
               <span style={{ display: "grid", justifyItems: "end", gap: 4 }}>
-                <b className="num">{formatMoney(pl?.grossCents ?? l.product.priceCents * l.qty)}</b>
+                <b className="num">{formatMoney(pl?.grossCents ?? shownPrice(l.product) * l.qty)}</b>
                 <span className="qty">
                   <button
                     type="button"

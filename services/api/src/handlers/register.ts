@@ -44,6 +44,8 @@ export interface TicketInput {
   discounts: { discountId: string; lineKey: string | null; note?: string; approvedBy?: string | null }[];
   /** Beard Bucks rewards to use, $5 off for each 100 Bucks. */
   rewards?: number;
+  /** Rung for a retailer at the games' wholesale prices. */
+  wholesale?: boolean;
 }
 
 interface Loaded {
@@ -74,11 +76,17 @@ async function loadTicket(trx: Trx, ctx: Ctx, t: TicketInput): Promise<Loaded> {
         "An item on the ticket isn't for sale anymore. Remove it and scan again.",
       );
     requireInt(l.qty, `Quantity for ${p.name}`, { min: 1, max: 9999 });
+    const unitPriceCents = t.wholesale ? p.wholesaleCents : p.priceCents;
+    if (unitPriceCents === null)
+      throw new AppError(
+        "invalid",
+        `${p.name} has no wholesale price yet. Add one in Inventory, or take it off this wholesale sale.`,
+      );
     return {
       key: l.key,
       productId: p.id,
       name: p.name,
-      unitPriceCents: p.priceCents,
+      unitPriceCents,
       qty: l.qty,
       taxClass: p.taxClass,
     };
@@ -175,14 +183,23 @@ export interface CheckoutResult {
 export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
   action: "register.use",
   async run(trx, ctx, t) {
+    let kind: string | null = null;
     if (t.customerId) {
       const c = await trx
         .selectFrom("customers")
-        .select("id")
+        .select(["id", "kind"])
         .where("id", "=", t.customerId)
         .executeTakeFirst();
       if (!c) throw new AppError("invalid", "That customer doesn't exist anymore. Change the customer.");
+      kind = c.kind;
     }
+    if (t.wholesale && kind !== "retailer")
+      throw new AppError(
+        "invalid",
+        "Wholesale sales are for retailers. Add the store as the customer first.",
+      );
+    if (t.wholesale && (t.rewards ?? 0) > 0)
+      throw new AppError("invalid", "Beard Bucks rewards can't be used on a wholesale sale.");
     const L = await loadTicket(trx, ctx, t);
     const p = L.priced;
     const receiptNumber = await nextReceiptNumber(trx, ctx.businessId);
@@ -199,6 +216,7 @@ export const startCheckout = defineHandler<TicketInput, CheckoutResult>({
         tax_cents: p.taxCents,
         total_cents: p.totalCents,
         tax_rate_mpct: L.taxRateMpct,
+        sale_type: t.wholesale ? "wholesale" : "retail",
       })
       .returning("id")
       .executeTakeFirstOrThrow();

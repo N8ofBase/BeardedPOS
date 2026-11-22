@@ -68,9 +68,6 @@ export interface ProductsTable {
   cost_cents: Generated<number>;
   /** What a retailer pays per unit; null when not sold wholesale. */
   wholesale_cents: number | null;
-  /** Royalty on net profit in thousandths of a percent: 7.5% = 7500. */
-  royalty_mpct: Generated<number>;
-  royalty_payee: string | null;
   tax_class: Generated<TaxClass>;
   reorder_at: Generated<number>;
   active: Generated<boolean>;
@@ -292,6 +289,8 @@ export interface SalesTable {
   receipt_number: number | null;
   status: Generated<SaleStatus>;
   source: Generated<"register" | "import">;
+  /** A wholesale sale is rung for a retailer at wholesale prices. */
+  sale_type: Generated<"retail" | "wholesale">;
   subtotal_cents: number;
   discount_cents: Generated<number>;
   tax_cents: Generated<number>;
@@ -578,6 +577,50 @@ export interface SquareSyncRunsTable {
   updated_at: UpdatedAt;
 }
 
+/** Someone who earns royalties on games: a designer, an artist. */
+export interface RoyaltyPayeesTable {
+  id: Generated<string>;
+  business_id: string;
+  name: string;
+  email: string | null;
+  notes: string | null;
+  active: Generated<boolean>;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+/** Who earns what on one game. Rates are thousandths of a percent: 7.5% = 7500. */
+export interface GameRoyaltiesTable {
+  id: Generated<string>;
+  business_id: string;
+  product_id: string;
+  payee_id: string;
+  basis: Generated<"profit" | "sales">;
+  retail_mpct: Generated<number>;
+  online_mpct: Generated<number>;
+  wholesale_mpct: Generated<number>;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+/** A paid website order's line, matched to a register product. Totals are before tax. */
+export interface WebSaleLinesTable {
+  id: Generated<string>;
+  business_id: string;
+  order_id: string;
+  position: number;
+  product_id: string;
+  qty: number;
+  line_total_cents: number;
+  unit_cost_cents: number;
+  sold_at: Date;
+  is_demo: Generated<boolean>;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
 export interface DB {
   businesses: BusinessesTable;
   locations: LocationsTable;
@@ -616,6 +659,9 @@ export interface DB {
   email_sends: EmailSendsTable;
   email_suppressions: EmailSuppressionsTable;
   loyalty_ledger: LoyaltyLedgerTable;
+  royalty_payees: RoyaltyPayeesTable;
+  game_royalties: GameRoyaltiesTable;
+  web_sale_lines: WebSaleLinesTable;
 }
 
 export type Business = Selectable<BusinessesTable>;

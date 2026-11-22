@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
-import { formatMoney, formatTaxPercent, todayIso } from "@bearded/core";
+import { formatMoney, todayIso } from "@bearded/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 
@@ -73,7 +73,6 @@ export function ProfitPage() {
           <Kpi label="Revenue" value={money(report.data.totals.revenueCents)} />
           <Kpi label="Our cost" value={money(report.data.totals.costCents)} />
           <Kpi label="Net profit" value={money(report.data.totals.profitCents)} />
-          <Kpi label="Royalties owed" value={formatMoney(report.data.totals.royaltyCents)} />
         </div>
       )}
       <div className="tablewrap">
@@ -85,8 +84,6 @@ export function ProfitPage() {
               <th className="r">Revenue</th>
               <th className="r">Our cost</th>
               <th className="r">Net profit</th>
-              <th className="r">Royalty</th>
-              <th>Paid to</th>
             </tr>
           </thead>
           <tbody>
@@ -105,22 +102,11 @@ export function ProfitPage() {
                 <td className="r num">
                   <b>{money(g.profitCents)}</b>
                 </td>
-                <td className="r num">
-                  {g.royaltyMpct ? (
-                    <>
-                      {formatMoney(g.royaltyCents)}
-                      <span className="sub">{formatTaxPercent(g.royaltyMpct)} of profit</span>
-                    </>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td>{g.royaltyPayee ?? (g.royaltyMpct ? "Not set" : "")}</td>
               </tr>
             ))}
             {report.data && report.data.games.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={5} className="muted">
                   No games sold in these dates.
                 </td>
               </tr>
@@ -130,8 +116,8 @@ export function ProfitPage() {
       </div>
       <p className="muted small">
         Revenue is what customers paid after discounts, before tax, less refunds. Our cost counts every unit
-        that left the shelf, including refunds that weren't put back. Royalties are the rate on each game's
-        net profit; a game with no profit owes none.
+        that left the shelf, including refunds that weren't put back. Counter sales only; royalties for
+        counter, website and wholesale sales are under <Link to="../royalties">Royalties</Link>.
         {estimated &&
           " * Some sales were rung before costs were saved on each sale, so they use today's cost."}
       </p>

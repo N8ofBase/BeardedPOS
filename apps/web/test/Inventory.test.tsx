@@ -17,8 +17,6 @@ const food: ProductRow = {
   priceCents: 6499,
   costCents: 4300,
   wholesaleCents: null,
-  royaltyMpct: 0,
-  royaltyPayee: null,
   taxClass: "standard",
   reorderAt: 6,
   onHand: 4,

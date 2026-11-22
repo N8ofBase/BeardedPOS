@@ -81,30 +81,21 @@ describe("saveProduct", () => {
     ]);
   });
 
-  it("saves wholesale price and royalty, and audits a wholesale change", async () => {
-    const { id } = await invoke(db, owner, "saveProduct", {
-      ...product,
-      wholesaleCents: 1100,
-      royaltyMpct: 7500,
-      royaltyPayee: "  Ada Designer ",
-    });
+  it("saves wholesale price, and audits a wholesale change", async () => {
+    const { id } = await invoke(db, owner, "saveProduct", { ...product, wholesaleCents: 1100 });
     expect((await invoke(db, owner, "getProduct", { id })).product).toMatchObject({
       wholesaleCents: 1100,
-      royaltyMpct: 7500,
-      royaltyPayee: "Ada Designer",
     });
     // Left out: unchanged.
     await invoke(db, owner, "saveProduct", { ...product, id, name: "Renamed" });
     expect((await invoke(db, owner, "getProduct", { id })).product).toMatchObject({
       wholesaleCents: 1100,
-      royaltyMpct: 7500,
     });
     expect(await auditRows()).toEqual([]);
 
-    await invoke(db, owner, "saveProduct", { ...product, id, wholesaleCents: null, royaltyPayee: "" });
+    await invoke(db, owner, "saveProduct", { ...product, id, wholesaleCents: null });
     expect((await invoke(db, owner, "getProduct", { id })).product).toMatchObject({
       wholesaleCents: null,
-      royaltyPayee: null,
     });
     expect(await auditRows()).toEqual([
       {
@@ -117,10 +108,7 @@ describe("saveProduct", () => {
     ]);
   });
 
-  it("refuses a royalty over 100% or a negative wholesale price", async () => {
-    await expect(invoke(db, owner, "saveProduct", { ...product, royaltyMpct: 100_001 })).rejects.toThrow(
-      "Royalty must be 0 to 100%.",
-    );
+  it("refuses a negative wholesale price", async () => {
     await expect(invoke(db, owner, "saveProduct", { ...product, wholesaleCents: -1 })).rejects.toThrow(
       "Wholesale price can't be negative.",
     );

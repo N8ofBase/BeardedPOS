@@ -75,8 +75,6 @@ export const IMPORT_TYPES: Record<ImportType, ImportTypeDef> = {
       f("price", "Price", "19.99", ["retail", "retail price", "sell price"]),
       f("wholesale", "Wholesale price", "15.00", ["wholesale", "retailer price", "dealer price"]),
       f("cost", "Our cost", "12.00", ["cost", "unit cost", "landed cost"]),
-      f("royalty", "Royalty %", "10", ["royalty", "royalty percent", "royalty rate"]),
-      f("royaltyPayee", "Royalty payee", "", ["royalty to", "payee", "designer"]),
       f("onHand", "On hand", "8", ["qty", "quantity", "stock", "on hand qty"]),
       f("reorderAt", "Reorder at", "3", ["reorder", "reorder point", "min"]),
     ],

@@ -12,10 +12,6 @@ export interface ProductInput {
   reorderAt: number;
   /** What a retailer pays; null when not sold wholesale. Left out: unchanged. */
   wholesaleCents?: number | null;
-  /** Royalty on net profit, thousandths of a percent (7.5% = 7500). Left out: unchanged. */
-  royaltyMpct?: number;
-  /** Who the royalty is paid to. Left out: unchanged. */
-  royaltyPayee?: string | null;
 }
 
 export type FieldErrors<T> = Partial<Record<keyof T, string>>;
@@ -34,7 +30,6 @@ export function cleanProduct(input: ProductInput): ProductInput {
     name: input.name.trim(),
     brand: blankToNull(input.brand),
     category: input.category.trim() || "Other",
-    ...(input.royaltyPayee !== undefined ? { royaltyPayee: blankToNull(input.royaltyPayee) } : {}),
   };
 }
 
@@ -52,13 +47,6 @@ export function validateProduct(p: ProductInput): FieldErrors<ProductInput> {
     if (!isCents(p.wholesaleCents)) e.wholesaleCents = "Enter a wholesale price like 15.00.";
     else if (p.wholesaleCents < 0) e.wholesaleCents = "Wholesale price can't be negative.";
   }
-  if (
-    p.royaltyMpct !== undefined &&
-    (!Number.isInteger(p.royaltyMpct) || p.royaltyMpct < 0 || p.royaltyMpct > 100_000)
-  )
-    e.royaltyMpct = "Royalty must be 0 to 100%.";
-  if (p.royaltyPayee && p.royaltyPayee.trim().length > 100)
-    e.royaltyPayee = "Royalty payee can be at most 100 characters.";
   if (!Number.isInteger(p.reorderAt) || p.reorderAt < 0) e.reorderAt = "Reorder at must be 0 or more.";
   return e;
 }

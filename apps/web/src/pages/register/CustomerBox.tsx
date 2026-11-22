@@ -28,9 +28,16 @@ export function CustomerBox({
   onAttach: (c: RegisterCustomer) => void;
   onDrop: () => void;
   onAddProduct: (p: ProductRow) => void;
-} & BucksProps) {
+} & BucksProps &
+  WholesaleProps) {
   if (customer) return <Attached c={customer} onDrop={onDrop} onAddProduct={onAddProduct} {...bucks} />;
   return <Lookup onAttach={onAttach} />;
+}
+
+interface WholesaleProps {
+  /** The ticket rings at wholesale prices. */
+  wholesale?: boolean;
+  onWholesale?: (on: boolean) => void;
 }
 
 interface BucksProps {
@@ -45,19 +52,31 @@ function Attached({
   c,
   onDrop,
   onAddProduct,
+  wholesale = false,
+  onWholesale = () => {},
   ...bucks
 }: {
   c: RegisterCustomer;
   onDrop: () => void;
   onAddProduct: (p: ProductRow) => void;
-} & BucksProps) {
+} & BucksProps &
+  WholesaleProps) {
   return (
     <div className="cust">
       <div style={{ flex: 1, minWidth: 0, display: "grid", gap: 4 }}>
         <b>{c.card.name}</b>
         <span className="muted small">{formatPhone(c.card.phone)}</span>
         <BirthdayTag birthday={c.card.birthday} />
-        {c.loyalty && <Bucks loyalty={c.loyalty} {...bucks} />}
+        {c.card.kind === "retailer" && (
+          <label className="check small" style={{ whiteSpace: "normal", alignItems: "flex-start" }}>
+            <input type="checkbox" checked={wholesale} onChange={(e) => onWholesale(e.target.checked)} />
+            <span>
+              Wholesale sale{c.card.company ? ` for ${c.card.company}` : ""}
+              <span className="sub muted">Wholesale prices, no Beard Bucks</span>
+            </span>
+          </label>
+        )}
+        {c.loyalty && !wholesale && <Bucks loyalty={c.loyalty} {...bucks} />}
         {c.usuallyBuys.length > 0 && (
           <div style={{ display: "grid", gap: 4 }}>
             <span className="muted small" style={{ textTransform: "uppercase", letterSpacing: ".05em" }}>

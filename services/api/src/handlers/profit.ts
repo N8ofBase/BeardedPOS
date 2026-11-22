@@ -1,8 +1,8 @@
-// Net profit per game and the royalty it earns. The math is lineProfit() / royaltyCents()
-// in core; this only gathers the lines. Register sales only, like the day totals: imported
+// Net profit per game. The math is lineProfit() in core; this only gathers the lines. Royalties
+// are in royalties.ts. Register sales only, like the day totals: imported
 // orders were sold in the old system and have no cost we can trust.
 import { sql, type Transaction } from "kysely";
-import { addProfit, AppError, lineProfit, NO_PROFIT, royaltyCents, type Profit } from "@bearded/core";
+import { addProfit, AppError, lineProfit, NO_PROFIT, type Profit } from "@bearded/core";
 import type { DB } from "@bearded/db";
 import { defineHandler } from "../handler.ts";
 
@@ -10,16 +10,13 @@ export interface GameProfitRow extends Profit {
   productId: string;
   name: string;
   sku: string | null;
-  royaltyMpct: number;
-  royaltyPayee: string | null;
-  royaltyCents: number;
   /** Lines rung before costs were saved on sales; they use today's cost. */
   estimatedCostLines: number;
 }
 
 export interface ProfitReport {
   games: GameProfitRow[];
-  totals: Profit & { royaltyCents: number };
+  totals: Profit;
 }
 
 /**
@@ -35,8 +32,6 @@ export function profitLineQuery(trx: Transaction<DB>) {
       "p.id as productId",
       "p.name",
       "p.sku",
-      "p.royalty_mpct as royaltyMpct",
-      "p.royalty_payee as royaltyPayee",
       "l.qty",
       "l.line_total_cents as lineTotalCents",
       "l.unit_cost_cents as savedCostCents",
@@ -79,9 +74,6 @@ export const profitByGame = defineHandler<{ from: string; to: string }, ProfitRe
         productId: l.productId,
         name: l.name,
         sku: l.sku,
-        royaltyMpct: l.royaltyMpct,
-        royaltyPayee: l.royaltyPayee,
-        royaltyCents: 0,
         estimatedCostLines: 0,
         ...NO_PROFIT,
       };
@@ -92,12 +84,8 @@ export const profitByGame = defineHandler<{ from: string; to: string }, ProfitRe
       });
     }
 
-    let totals = { ...NO_PROFIT, royaltyCents: 0 };
-    const rows = [...games.values()].map((g) => {
-      const row = { ...g, royaltyCents: royaltyCents(g.profitCents, g.royaltyMpct) };
-      totals = { ...addProfit(totals, row), royaltyCents: totals.royaltyCents + row.royaltyCents };
-      return row;
-    });
+    const rows = [...games.values()];
+    const totals = rows.reduce<Profit>((t, g) => addProfit(t, g), NO_PROFIT);
     rows.sort((a, b) => b.profitCents - a.profitCents || a.name.localeCompare(b.name));
     return { games: rows, totals };
   },

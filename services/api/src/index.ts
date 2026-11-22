@@ -19,6 +19,15 @@ export type {
   RefundableLineView,
 } from "./handlers/refunds.ts";
 export type { GameProfitRow, ProfitReport } from "./handlers/profit.ts";
+export type {
+  GameRoyalty,
+  RoyaltyPayee,
+  RoyaltyReport,
+  RoyaltyReportGame,
+  RoyaltyReportPerson,
+  SaveGameRoyaltiesInput,
+  SavePayeeInput,
+} from "./handlers/royalties.ts";
 export type { SendReceiptInput, SentReceipt } from "./handlers/receipts.ts";
 export type {
   DrawerCountInput,
