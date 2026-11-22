@@ -1721,6 +1721,26 @@ body {
 .notice-bar a {
   color: inherit;
 }
+/* Staff pick where the words sit and how much room the bar has (Site content). Line breaks they
+   type are kept. The page's usual paragraph width doesn't apply, so centered means the whole bar. */
+.notice-bar p {
+  max-width: none;
+  white-space: pre-line;
+}
+.notice-bar.align-left {
+  text-align: left;
+}
+.notice-bar.align-right {
+  text-align: right;
+}
+.notice-bar.spacing-slim {
+  padding: 4px 16px;
+  font-size: 0.92rem;
+}
+.notice-bar.spacing-roomy {
+  padding: 18px 16px;
+  font-size: 1.12rem;
+}
 .preview-bar {
   position: sticky;
   top: 0;
@@ -1813,6 +1833,28 @@ body {
 }
 .site-field-head label {
   font-weight: 800;
+}
+.site-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.site-choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.site-choices label.on {
+  background: var(--mustard);
+}
+.site-choices input {
+  margin: 0;
 }
 .site-image img {
   display: block;

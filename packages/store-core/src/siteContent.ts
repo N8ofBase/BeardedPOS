@@ -18,7 +18,9 @@ export type SiteFieldKind =
   /** A picture uploaded in the editor (its id). */
   | "image"
   /** Out now, Pre-order or Coming soon. */
-  | "status";
+  | "status"
+  /** One of a few set options, like where text sits (see `choices`). */
+  | "choice";
 
 export interface SiteField {
   key: string;
@@ -29,6 +31,8 @@ export interface SiteField {
   /** May be left empty (then that part of the page is hidden). */
   optional?: boolean;
   hint?: string;
+  /** For a "choice" field: the options, in the order the editor shows them. */
+  choices?: readonly { value: string; label: string }[];
 }
 
 export interface SiteGroup {
@@ -48,6 +52,22 @@ export const SITE_STATUS_LABELS: Record<(typeof SITE_STATUSES)[number], string> 
   preorder: "Pre-order",
   "coming-soon": "Coming soon",
 };
+
+/** Where the announcement sits across the bar. Center unless staff pick another. */
+export const NOTICE_ALIGNS = [
+  { value: "left", label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right", label: "Right" },
+] as const;
+export type NoticeAlign = (typeof NOTICE_ALIGNS)[number]["value"];
+
+/** How much room the announcement bar has around its words. Regular unless staff pick another. */
+export const NOTICE_SPACINGS = [
+  { value: "slim", label: "Slim" },
+  { value: "regular", label: "Regular" },
+  { value: "roomy", label: "Roomy" },
+] as const;
+export type NoticeSpacing = (typeof NOTICE_SPACINGS)[number]["value"];
 
 /** The games on the site, in shelf order. Adding a game is still a code change (apps/store content). */
 export const SITE_GAMES = [
@@ -94,8 +114,23 @@ export const siteGroups: SiteGroup[] = [
     fields: [
       text("notice.text", "Announcement", 200, {
         optional: true,
-        hint: "A short note across the top of every page, like holiday hours or a sale. Leave it empty to hide the bar.",
+        hint: "A short note across the top of every page, like holiday hours or a sale. Press Enter for a new line. Leave it empty to hide the bar.",
       }),
+      {
+        key: "notice.align",
+        label: "Where the words sit",
+        kind: "choice",
+        max: 10,
+        choices: NOTICE_ALIGNS,
+      },
+      {
+        key: "notice.spacing",
+        label: "Room around the words",
+        kind: "choice",
+        max: 10,
+        choices: NOTICE_SPACINGS,
+        hint: "Slim keeps the bar thin; Roomy gives a big sale more space.",
+      },
       {
         key: "notice.link",
         label: "Announcement link",
@@ -249,6 +284,8 @@ export function siteValueProblem(field: SiteField, raw: string): string | null {
   if (field.kind === "image" && !isImageId(v)) return `Upload the ${field.label.toLowerCase()} again.`;
   if (field.kind === "status" && !(SITE_STATUSES as readonly string[]).includes(v))
     return `Pick a status for ${field.label}.`;
+  if (field.kind === "choice" && !field.choices?.some((c) => c.value === v))
+    return `Pick one for ${field.label}.`;
   return null;
 }
 

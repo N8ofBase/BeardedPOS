@@ -327,7 +327,9 @@ function FieldEditor({ field, value, original, changed, notLive, onChange, onOri
   return (
     <div className="site-field">
       <div className="site-field-head">
-        <label htmlFor={id}>{field.label}</label>
+        <label id={`${id}-label`} htmlFor={field.kind === "choice" ? undefined : id}>
+          {field.label}
+        </label>
         {tags}
       </div>
       {field.kind === "image" ? (
@@ -340,6 +342,21 @@ function FieldEditor({ field, value, original, changed, notLive, onChange, onOri
             </option>
           ))}
         </select>
+      ) : field.kind === "choice" ? (
+        <div className="site-choices" role="radiogroup" aria-labelledby={`${id}-label`}>
+          {field.choices?.map((c) => (
+            <label key={c.value} className={value === c.value ? "on" : undefined}>
+              <input
+                type="radio"
+                name={id}
+                value={c.value}
+                checked={value === c.value}
+                onChange={() => onChange(c.value)}
+              />
+              {c.label}
+            </label>
+          ))}
+        </div>
       ) : field.kind === "text" || field.kind === "lines" ? (
         <textarea
           id={id}
