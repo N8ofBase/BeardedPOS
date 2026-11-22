@@ -106,7 +106,7 @@ export function NoticeBar() {
   if (!notice) return null;
   const external = notice.link?.startsWith("https://");
   return (
-    <div className="notice-bar">
+    <div className={`notice-bar align-${notice.align} spacing-${notice.spacing}`}>
       <p>
         {!notice.link ? (
           notice.text

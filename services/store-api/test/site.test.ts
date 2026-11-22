@@ -77,6 +77,9 @@ describe("Site content", () => {
     expect((await draft({ "brand.socials.tiktok": "javascript:alert(1)" })).status).toBe(400);
     expect((await draft({ "notice.link": "//evil.example" })).status).toBe(400);
     expect((await draft({ "game.fences.status": "sold" })).status).toBe(400);
+    expect((await draft({ "notice.align": "middle" })).status).toBe(400);
+    expect((await draft({ "notice.spacing": "huge" })).status).toBe(400);
+    expect((await draft({ "notice.align": "right", "notice.spacing": "roomy" })).status).toBe(200);
     expect((await draft({ "hero.lede": 5 })).status).toBe(400);
     expect((await draft({ "notice.link": "/shop", "notice.text": "Closed Thanksgiving." })).status).toBe(200);
   });

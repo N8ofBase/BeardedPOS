@@ -100,6 +100,37 @@ async function signIn(email = "adam@beardedboardgames.com") {
   await screen.findByText(email);
 }
 
+describe("the announcement bar", () => {
+  it("is centered with regular room unless staff pick otherwise", () => {
+    expect(buildSite({ "notice.text": "Sale!" }).notice).toEqual({
+      text: "Sale!",
+      link: null,
+      align: "center",
+      spacing: "regular",
+    });
+    const picked = buildSite({ "notice.text": "Sale!", "notice.align": "right", "notice.spacing": "roomy" });
+    expect(picked.notice).toMatchObject({ align: "right", spacing: "roomy" });
+    // Anything unknown falls back to the defaults rather than breaking the bar.
+    expect(buildSite({ "notice.text": "Sale!", "notice.align": "middle" }).notice?.align).toBe("center");
+  });
+
+  it("shows where staff put the words, line breaks and all", async () => {
+    renderStore(
+      "/",
+      published({
+        "notice.text": "Holiday hours\nOpen noon to 5",
+        "notice.align": "left",
+        "notice.spacing": "slim",
+      }),
+    );
+    const text = await screen.findByText(/Holiday hours/);
+    expect(text.textContent).toBe("Holiday hours\nOpen noon to 5");
+    const bar = text.closest(".notice-bar")!;
+    expect(bar.className).toContain("align-left");
+    expect(bar.className).toContain("spacing-slim");
+  });
+});
+
 describe("Behind the Beard: Site content", () => {
   it("saves a draft, publishes it, and the live site shows it", async () => {
     const { store } = await realServer();
@@ -146,5 +177,18 @@ describe("Behind the Beard: Site content", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use the original" }));
     await waitFor(() => expect((screen.getByLabelText("Tagline") as HTMLInputElement).value).toBe(original));
     expect(screen.getByText("the same as the live site.", { exact: false })).toBeTruthy();
+  });
+  it("picks where the announcement sits from buttons", async () => {
+    const { store } = await realServer();
+    renderStore("/behind-the-beard", store);
+    await signIn();
+    fireEvent.click(screen.getByRole("tab", { name: "Site content" }));
+    fireEvent.change(await screen.findByLabelText("Part of the site"), { target: { value: "notice" } });
+    const where = screen.getByRole("radiogroup", { name: "Where the words sit" });
+    expect((within(where).getByLabelText("Center") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(within(where).getByLabelText("Right"));
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByText("Draft saved. Shoppers don’t see it yet.")).toBeTruthy();
+    expect((await store.staff.site()).draft["notice.align"]).toBe("right");
   });
 });

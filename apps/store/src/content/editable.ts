@@ -3,10 +3,14 @@
 import {
   isImageId,
   lines,
+  NOTICE_ALIGNS,
+  NOTICE_SPACINGS,
   paragraphs,
   siteImageUrl,
   SITE_GAMES,
   SITE_TEAM,
+  type NoticeAlign,
+  type NoticeSpacing,
   type SiteContent,
 } from "@bearded/store-core";
 import bridges from "../assets/banner-bridges.webp";
@@ -19,7 +23,7 @@ export interface Site {
   about: string;
   text: typeof pageText & { heroTitle: string; retailBanner: string };
   /** The announcement bar, or null when there isn't one. */
-  notice: { text: string; link: string | null } | null;
+  notice: { text: string; link: string | null; align: NoticeAlign; spacing: NoticeSpacing } | null;
 }
 
 /** Every editable field's original value, as the editor shows it. Pictures are their address. */
@@ -27,6 +31,8 @@ export function originals(): SiteContent {
   const out: SiteContent = {
     "notice.text": "",
     "notice.link": "",
+    "notice.align": "center",
+    "notice.spacing": "regular",
     "hero.title": brand.motto,
     "hero.lede": pageText.heroLede,
     "shelf.lede": pageText.shelfLede,
@@ -71,6 +77,9 @@ export const pictureUrl = (value: string | undefined, original: string) =>
 
 const orNone = (v: string | undefined) => (v ? v : undefined);
 
+const pick = <T extends string>(options: readonly { value: T }[], v: string | undefined, fallback: T): T =>
+  options.find((o) => o.value === v)?.value ?? fallback;
+
 /** The site as shoppers see it with this content published. */
 export function buildSite(content: SiteContent): Site {
   const get = (key: string, original: string) => content[key] ?? original;
@@ -98,7 +107,14 @@ export function buildSite(content: SiteContent): Site {
       sellText: get("retail.sellText", pageText.sellText),
       retailBanner: pictureUrl(content["retail.banner"], bridges),
     },
-    notice: noticeText ? { text: noticeText, link: orNone(content["notice.link"]?.trim()) ?? null } : null,
+    notice: noticeText
+      ? {
+          text: noticeText,
+          link: orNone(content["notice.link"]?.trim()) ?? null,
+          align: pick(NOTICE_ALIGNS, content["notice.align"], "center"),
+          spacing: pick(NOTICE_SPACINGS, content["notice.spacing"], "regular"),
+        }
+      : null,
     team: team.map((m) => {
       const k = (f: string) => content[`team.${m.id}.${f}`];
       return {
