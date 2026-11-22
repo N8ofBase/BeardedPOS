@@ -16,7 +16,7 @@ import {
 import type { StoreCtx } from "../context.ts";
 import { withBusiness, type Sql } from "../db.ts";
 import { asObject, HttpError, ok, type ApiRequest, type ApiResponse } from "../http.ts";
-import { bucksBalance, orderBucks, settlePaidOrder, storeToday } from "../loyalty.ts";
+import { bucksBalance, lockBucks, orderBucks, settlePaidOrder, storeToday } from "../loyalty.ts";
 import { takeRegisterStock } from "../registerStock.ts";
 import { currentCustomer } from "./account.ts";
 
@@ -90,6 +90,8 @@ export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespo
         [customerId],
       );
       email = rows[0]?.email;
+      // And the register customer whose ledger holds their Bucks, which the counter locks too.
+      await lockBucks(sql, customerId);
     }
     if (rewards > 0) {
       if (!customerId) throw new HttpError(401, "Sign in to use your Beard Bucks.");

@@ -11,7 +11,7 @@ export const BIRTHDAY_BUCKS = 100;
 /** The discount line a reward shows as on the ticket and receipt. */
 export const REWARD_NAME = "Beard Bucks reward";
 
-export type LedgerKind = "earn" | "birthday" | "redeem" | "take_back" | "give_back" | "adjust";
+export type LedgerKind = "earn" | "birthday" | "redeem" | "take_back" | "give_back" | "adjust" | "welcome";
 
 export const LEDGER_LABEL: Record<LedgerKind, string> = {
   earn: "Earned",
@@ -20,6 +20,7 @@ export const LEDGER_LABEL: Record<LedgerKind, string> = {
   take_back: "Refund",
   give_back: "Reward given back",
   adjust: "Adjusted",
+  welcome: "Welcome gift",
 };
 
 /** 1 Beard Buck per whole dollar paid before tax: $43.50 earns 43. */

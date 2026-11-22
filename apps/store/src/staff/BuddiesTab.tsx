@@ -75,7 +75,10 @@ function Buddy({ buddy }: { buddy: StaffBuddy }) {
         <ul className="ledger">
           {history.value.map((e, i) => (
             <li key={`${e.at}-${i}`}>
-              <span>{LEDGER_LABEL[e.kind]}</span>
+              <span>
+                {LEDGER_LABEL[e.kind]}
+                {e.atShop ? " in the shop" : ""}
+              </span>
               <span className="when">{when.format(new Date(e.at))}</span>
               <strong className={e.bucks < 0 ? "minus" : "plus"}>
                 {e.bucks > 0 ? "+" : "−"}

@@ -8,6 +8,7 @@ import { withBusiness } from "../db.ts";
 import { HttpError, ok, type ApiRequest, type ApiResponse } from "../http.ts";
 import { markPaid } from "../handlers/shop.ts";
 import { storeToday } from "../loyalty.ts";
+import { creditSquareAppSale } from "../squareAppBucks.ts";
 
 export const SIGNATURE_HEADER = "x-square-hmacsha256-signature";
 
@@ -66,8 +67,13 @@ export async function squareWebhook(ctx: StoreCtx, req: ApiRequest): Promise<Api
     );
     return rows[0];
   });
-  // Not one of ours (a counter sale, say) or already done: nothing to do, and Square stops retrying.
-  if (!order || order.status !== "open") return ok({ ok: true });
+  // Not a website order: maybe a sale rung in the Square app, which earns its customer's Bucks.
+  if (!order) {
+    await squareAppSale(ctx, squareOrderId);
+    return ok({ ok: true });
+  }
+  // Already done: nothing to do, and Square stops retrying.
+  if (order.status !== "open") return ok({ ok: true });
   // Square may still be finishing the payment; a later event (or the thank-you page) catches it.
   if (!(await ctx.square.orderPaid(squareOrderId))) return ok({ ok: true });
   const marked = await withBusiness(ctx.db, businessId, (sql) =>
@@ -75,4 +81,25 @@ export async function squareWebhook(ctx: StoreCtx, req: ApiRequest): Promise<Api
   );
   if (marked) console.log(`square webhook: order ${order.id} paid`);
   return ok({ ok: true });
+}
+
+/**
+ * Beard Bucks for a sale rung only in the Square app, when the register shares this database. A
+ * failure is logged and never fails the webhook: Square would only retry the same thing.
+ */
+async function squareAppSale(ctx: StoreCtx, squareOrderId: string): Promise<void> {
+  if (!ctx.pos || !ctx.square.appSale) return;
+  try {
+    const sale = await ctx.square.appSale(squareOrderId);
+    if (!sale) return;
+    const result = await withBusiness(ctx.db, ctx.config.businessId, (sql) =>
+      creditSquareAppSale(sql, ctx.config.businessId, sale, storeToday(ctx.now())),
+    );
+    if (result === "credited")
+      console.log(`square webhook: Square app sale ${squareOrderId} earned Beard Bucks`);
+    if (result === "no_match")
+      console.log(`square webhook: Square app sale ${squareOrderId}: no Beard Buddy matches its customer`);
+  } catch (e) {
+    console.error(`square webhook: Square app sale ${squareOrderId} not credited`, e);
+  }
 }

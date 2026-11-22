@@ -13,6 +13,7 @@ import { ensureStore } from "@bearded/db";
 import { withBusiness } from "./db.ts";
 import { openPostgres, type PostgresOptions } from "./postgres.ts";
 import { openRegister, readMigrations, storeSetup } from "./register-postgres.ts";
+import { joinAllBuddies } from "./loyalty.ts";
 import { catchUpRegisterStock } from "./registerStock.ts";
 import { handle, MAX_UPLOAD_BODY, UPLOAD_PATH } from "./router.ts";
 import { SquareApiStore } from "./square/live.ts";
@@ -179,6 +180,11 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
   if (pos)
     await withBusiness(storeDb, businessId, catchUpRegisterStock).catch((e: unknown) =>
       console.error("register stock catch-up failed", e),
+    );
+  // Shoppers who joined Beard Buddy before the register shared this database get one balance now.
+  if (pos)
+    await withBusiness(storeDb, businessId, joinAllBuddies).catch((e: unknown) =>
+      console.error("beard buddy join failed", e),
     );
   const ctx: StoreCtx = {
     db: storeDb,

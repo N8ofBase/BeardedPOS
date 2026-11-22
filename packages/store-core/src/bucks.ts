@@ -23,10 +23,10 @@ export const WELCOME_BUCKS = 100;
 /** A web order must be at least this, before tax and rewards, to use Beard Bucks. */
 export const MIN_REWARD_ORDER_CENTS = 2500;
 
-/** The register's kinds, plus the welcome gift, which only the web store gives. */
-export type LedgerKind = RegisterKind | "welcome";
+/** The register's kinds (the welcome gift among them, which only the web store gives). */
+export type LedgerKind = RegisterKind;
 
-export const LEDGER_LABEL: Record<LedgerKind, string> = { ...REGISTER_LABEL, welcome: "Welcome gift" };
+export const LEDGER_LABEL: Record<LedgerKind, string> = REGISTER_LABEL;
 
 /** The register's rule (one reward per 100 Bucks and per $5), but none below the web order minimum. */
 export function rewardsAllowed(balance: number, subtotalCents: number): number {

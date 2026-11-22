@@ -11,7 +11,14 @@ import {
 import type { StoreCtx } from "../context.ts";
 import { withBusiness, type Sql } from "../db.ts";
 import { asObject, HttpError, ok, type ApiRequest, type ApiResponse } from "../http.ts";
-import { bucksBalance, giveWelcome, ledgerHistory, storeToday } from "../loyalty.ts";
+import {
+  bucksBalance,
+  giveWelcome,
+  ledgerHistory,
+  registerBucksHere,
+  shareDetails,
+  storeToday,
+} from "../loyalty.ts";
 import { CODE_MINUTES, issueCode, newToken, readEmail, sha256, useCode, wrongCode } from "./codes.ts";
 import { requireStaff } from "./staff.ts";
 
@@ -184,6 +191,7 @@ export async function saveAccount(ctx: StoreCtx, req: ApiRequest): Promise<ApiRe
           );
         }
       }
+      await shareDetails(sql, id);
       return loadAccount(sql, id, today);
     }),
   );
@@ -197,6 +205,13 @@ export async function buddySignOut(ctx: StoreCtx, req: ApiRequest): Promise<ApiR
     );
   return { status: 204, headers: { "Set-Cookie": buddyCookie(ctx, "", 0) } };
 }
+
+const WEBSITE_BALANCE =
+  "(SELECT coalesce(sum(bucks), 0)::int FROM store_loyalty_ledger l WHERE l.customer_id = c.id)";
+/** A joined shopper's balance is on the register's ledger, with what they earn and spend in the shop. */
+const JOINED_BALANCE = `(CASE WHEN c.bucks_joined_at IS NOT NULL AND c.register_customer_id IS NOT NULL
+  THEN (SELECT coalesce(sum(bucks), 0)::int FROM loyalty_ledger l WHERE l.customer_id = c.register_customer_id)
+  ELSE ${WEBSITE_BALANCE} END)`;
 
 /** The Beard Buddies tab: every shopper with an account, biggest balance first. */
 export async function staffBuddies(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {
@@ -216,7 +231,7 @@ export async function staffBuddies(ctx: StoreCtx, req: ApiRequest): Promise<ApiR
           created_at: Date;
         }>(
           `SELECT c.id, c.email, c.name, c.created_at,
-             (SELECT coalesce(sum(bucks), 0)::int FROM store_loyalty_ledger l WHERE l.customer_id = c.id) AS balance,
+             ${(await registerBucksHere(sql)) ? JOINED_BALANCE : WEBSITE_BALANCE} AS balance,
              (SELECT count(*)::int FROM store_orders o WHERE o.customer_id = c.id AND o.status = 'paid') AS paid_orders,
              (SELECT max(paid_at) FROM store_orders o WHERE o.customer_id = c.id AND o.status = 'paid') AS last_order_at
            FROM store_customers c
