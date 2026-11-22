@@ -88,6 +88,44 @@ describe("store products from the Square catalog", () => {
     expect(products[0]?.stockStatus).toBe("sold-out");
   });
 
+  it("places the live Bearded Square names: Fences base game first, The Ranch on Fences, Jibe in other games", () => {
+    const names = [
+      "Fences - Seasons",
+      "Jibe",
+      "The Ranch",
+      "Fences - 5/6 player extension",
+      "Xenoferra",
+      "Fences - Base Game",
+      "Onesie",
+    ];
+    const products = storeProducts(
+      catalog(...names.map((name, i) => item({ itemId: `I${i}`, variationId: `V${i}`, name }))),
+    );
+    expect(products.map((p) => [p.name, p.game, p.kind])).toEqual([
+      ["Fences", "fences", "game"],
+      ["Fences 5–6 Player Expansion", "fences", "expansion"],
+      ["Fences: The Ranch", "fences", "expansion"],
+      ["Fences: Seasons", "fences", "expansion"],
+      ["Jibe", null, "game"],
+      ["Onesie", null, "merch"],
+    ]);
+  });
+
+  it("puts a game's own unlisted base game before its expansions", () => {
+    const products = storeProducts(
+      catalog(
+        item({ itemId: "A", variationId: "VA", name: "Locked Out - Big Box" }),
+        item({ itemId: "B", variationId: "VB", name: "Pack Lash - Base Game" }),
+        item({ itemId: "C", variationId: "VC", name: "Pack Lash - Add On" }),
+      ),
+    );
+    expect(products.map((p) => [p.name, p.kind])).toEqual([
+      ["Locked Out - Big Box", "expansion"],
+      ["Pack Lash - Base Game", "game"],
+      ["Pack Lash - Add On", "expansion"],
+    ]);
+  });
+
   it("hides Whole Hog and Xeno, and anything whose name starts with them", () => {
     const products = storeProducts(
       catalog(

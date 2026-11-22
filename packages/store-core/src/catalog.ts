@@ -126,7 +126,7 @@ export function placeItem(name: string, category: string | null = null): Listing
         ? "digital"
         : /\b(pre ?order|reservation)\b/.test(w)
           ? "preorder"
-          : rest === "" || /^((the )?(board |card )?game|deluxe|edition|.* edition)$/.test(rest)
+          : rest === "" || /^((the )?(base |board |card )?game|base|deluxe|edition|.* edition)$/.test(rest)
             ? "game"
             : "expansion";
     return { square: name, kind, game: own.game };
@@ -139,6 +139,9 @@ export function placeItem(name: string, category: string | null = null): Listing
   if (/\b(board|card|dice) games?\b/.test(w)) return { square: name, kind: "game", game: null };
   return { square: name, kind: "merch", game: null };
 }
+
+/** Within a game, unlisted items sort the game itself first, merch last. */
+const KIND_ORDER: ProductKind[] = ["game", "preorder", "expansion", "digital", "merch"];
 
 /**
  * The products the store sells: every Square item with a fixed price (only the listed ones unless
@@ -173,11 +176,21 @@ export function storeProducts(catalog: SquareCatalog): Product[] {
       // Our games first, in shelf order (even when Square spells an item differently), then the rest.
       const shelf = listing.game ? gameSlugs.indexOf(listing.game) : gameSlugs.length;
       const listed = order.indexOf(key);
-      return [{ product, shelf, rank: listed === -1 ? order.length : listed, name: item.name.toLowerCase() }];
+      return [
+        {
+          product,
+          shelf,
+          rank: listed === -1 ? order.length : listed,
+          kind: KIND_ORDER.indexOf(listing.kind),
+          name: item.name.toLowerCase(),
+        },
+      ];
     })
     .sort(
       (a, b) =>
-        a.shelf - b.shelf || a.rank - b.rank || (a.rank === order.length ? a.name.localeCompare(b.name) : 0),
+        a.shelf - b.shelf ||
+        a.rank - b.rank ||
+        (a.rank === order.length ? a.kind - b.kind || a.name.localeCompare(b.name) : 0),
     )
     .map((r) => r.product);
 }
