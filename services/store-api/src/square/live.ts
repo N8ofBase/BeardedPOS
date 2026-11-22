@@ -52,6 +52,9 @@ export interface CatalogObject {
     /** Archived in Square's dashboard: kept for reports, no longer sold. */
     is_archived?: boolean;
     product_type?: string;
+    category_id?: string;
+    categories?: { id?: string }[];
+    reporting_category?: { id?: string };
     image_ids?: string[];
     variations?: CatalogObject[];
   };
@@ -63,6 +66,7 @@ export interface CatalogObject {
     location_overrides?: { location_id?: string; track_inventory?: boolean }[];
   };
   image_data?: { url?: string };
+  category_data?: { name?: string };
 }
 interface SquareOrder {
   id: string;
@@ -93,12 +97,19 @@ export function toCatalog(
   const images = new Map(
     objects.filter((o) => o.type === "IMAGE" && o.image_data?.url).map((o) => [o.id, o.image_data!.url!]),
   );
+  const categories = new Map(
+    objects
+      .filter((o) => o.type === "CATEGORY" && o.category_data?.name)
+      .map((o) => [o.id, o.category_data!.name!]),
+  );
   const items: SquareItem[] = [];
   let currency = "USD";
   for (const item of objects) {
     if (item.type !== "ITEM" || !item.item_data || item.item_data.is_archived || !soldAt(item, locationId))
       continue;
     const data = item.item_data;
+    const categoryId = data.reporting_category?.id ?? data.categories?.[0]?.id ?? data.category_id;
+    const category = (categoryId && categories.get(categoryId)) || null;
     for (const v of data.variations ?? []) {
       const vd = v.item_variation_data;
       if (!vd || !soldAt(v, locationId)) continue;
@@ -116,6 +127,7 @@ export function toCatalog(
         tracksStock,
         stock: tracksStock ? (counts.get(v.id) ?? 0) : null,
         imageUrl: images.get(data.image_ids?.[0] ?? "") ?? null,
+        category,
       });
     }
   }
@@ -208,7 +220,7 @@ export class SquareApiStore implements SquareStore {
     const objects: CatalogObject[] = [];
     let cursor: string | undefined;
     do {
-      const q = new URLSearchParams({ types: "ITEM,IMAGE" });
+      const q = new URLSearchParams({ types: "ITEM,IMAGE,CATEGORY" });
       if (cursor) q.set("cursor", cursor);
       const page = await this.call<{ objects?: CatalogObject[]; cursor?: string }>(
         "GET",
@@ -240,7 +252,9 @@ export class SquareApiStore implements SquareStore {
         countCursor = page.cursor;
       } while (countCursor);
     }
-    return toCatalog(objects, counts, locationId, new Date(at).toISOString());
+    const catalog = toCatalog(objects, counts, locationId, new Date(at).toISOString());
+    // The live store is the shop's own Square account, so everything in it shows.
+    return this.mode === "live" ? { ...catalog, everyItem: true } : catalog;
   }
 
   async createPaymentLink(order: {

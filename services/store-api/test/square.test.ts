@@ -106,6 +106,7 @@ describe("reading the catalog", () => {
         tracksStock: true,
         stock: 7,
         imageUrl: "https://img/fences.png",
+        category: null,
       },
       expect.objectContaining({ variationId: "V2", priceCents: null }),
       // The location says stock isn't tracked there.
@@ -114,6 +115,56 @@ describe("reading the catalog", () => {
       expect.objectContaining({ variationId: "V6", tracksStock: true, stock: 0 }),
     ]);
     expect(catalog.locationId).toBe(LOC);
+  });
+
+  it("reads each item's Square category, reporting category first", () => {
+    const catalog = toCatalog(
+      [
+        { type: "CATEGORY", id: "C1", category_data: { name: "Apparel" } },
+        { type: "CATEGORY", id: "C2", category_data: { name: "Games" } },
+        item("I1", "Logo Tee", [variation("V1", { price_money: { amount: 2000 } })], {
+          categories: [{ id: "C1" }],
+        }),
+        item("I2", "Jibe", [variation("V2", { price_money: { amount: 1000 } })], {
+          categories: [{ id: "C1" }],
+          reporting_category: { id: "C2" },
+        }),
+        item("I3", "Old Style", [variation("V3", { price_money: { amount: 1000 } })], { category_id: "C2" }),
+        item("I4", "No Category", [variation("V4", { price_money: { amount: 1000 } })]),
+      ],
+      new Map(),
+      LOC,
+      "2026-10-24T00:00:00.000Z",
+    );
+    expect(catalog.items.map((i) => [i.name, i.category])).toEqual([
+      ["Logo Tee", "Apparel"],
+      ["Jibe", "Games"],
+      ["Old Style", "Games"],
+      ["No Category", null],
+    ]);
+  });
+
+  it("shows every item from the shop's own (live) Square account, and only listed ones from the Sandbox", async () => {
+    const routes = {
+      "GET /v2/catalog/list": () => ({
+        objects: [item("I1", "Jibe", [variation("V1", { price_money: { amount: 1000 } })])],
+      }),
+      "POST /v2/inventory/counts/batch-retrieve": () => ({}),
+    };
+    const live = new SquareApiStore({
+      mode: "live",
+      token: "t",
+      locationId: LOC,
+      fetch: fakeSquare(routes).fetch,
+    });
+    const sandbox = new SquareApiStore({
+      mode: "sandbox",
+      token: "t",
+      locationId: LOC,
+      fetch: fakeSquare(routes).fetch,
+    });
+    expect((await live.catalog()).everyItem).toBe(true);
+    expect((await sandbox.catalog()).everyItem).toBeUndefined();
   });
 
   it("follows every page, asks for stock at the store's location, and reuses the answer for a minute", async () => {

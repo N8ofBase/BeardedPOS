@@ -25,7 +25,16 @@ export function ShopPage() {
 function ShopGroups({ products }: { products: Product[] }) {
   const groups = [
     ...games.map((g) => ({ key: g.slug, title: g.name, items: products.filter((p) => p.game === g.slug) })),
-    { key: "more", title: "More from the beards", items: products.filter((p) => p.game === null) },
+    {
+      key: "more",
+      title: "More games",
+      items: products.filter((p) => p.game === null && p.kind !== "merch"),
+    },
+    {
+      key: "merch",
+      title: "Shirts and merch",
+      items: products.filter((p) => p.game === null && p.kind === "merch"),
+    },
   ].filter((g) => g.items.length > 0);
   return (
     <>
