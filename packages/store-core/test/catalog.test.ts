@@ -62,6 +62,43 @@ describe("store products from the Square catalog", () => {
     expect(stockLabel(p!)).toBe("Sold out");
   });
 
+  it("treats Square's sold-out mark as no stock, even when stock isn't tracked", () => {
+    const [p] = storeProducts(catalog(item({ name: "Fences", soldOut: true })));
+    expect(p).toMatchObject({ stock: 0, stockStatus: "sold-out" });
+    expect(stockLabel(p!)).toBe("Sold out");
+    const [q] = storeProducts(catalog(item({ name: "Fences", soldOut: true, tracksStock: true, stock: 9 })));
+    expect(q?.stockStatus).toBe("sold-out");
+  });
+
+  it("keeps our games first in shelf order, even when Square spells them differently", () => {
+    const products = storeProducts(
+      catalog(
+        item({ itemId: "A", variationId: "VA", name: "Jibe Card Game" }),
+        item({ itemId: "B", variationId: "VB", name: "Locked Out" }),
+        item({ itemId: "C", variationId: "VC", name: "Fences Board Game", soldOut: true }),
+        item({ itemId: "D", variationId: "VD", name: "Logo Tee" }),
+      ),
+    );
+    expect(products.map((p) => p.name)).toEqual([
+      "Fences Board Game",
+      "Locked Out",
+      "Jibe Card Game",
+      "Logo Tee",
+    ]);
+    expect(products[0]?.stockStatus).toBe("sold-out");
+  });
+
+  it("hides Whole Hog and Xeno, and anything whose name starts with them", () => {
+    const products = storeProducts(
+      catalog(
+        item({ itemId: "A", variationId: "VA", name: "Whole Hog" }),
+        item({ itemId: "B", variationId: "VB", name: "XENO: Deluxe Edition" }),
+        item({ itemId: "C", variationId: "VC", name: "Xenophobe" }),
+      ),
+    );
+    expect(products.map((p) => p.name)).toEqual(["Xenophobe"]);
+  });
+
   it("leaves out hidden items, donations and other non-goods", () => {
     const products = storeProducts(
       catalog(

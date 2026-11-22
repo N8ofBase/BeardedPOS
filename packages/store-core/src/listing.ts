@@ -48,10 +48,11 @@ export const extraItems: StoreItem[] = [
 ];
 
 /**
- * Square items that never show online (matched like the names above): things only sold at the
- * counter or at markets. Keep this short: everything else in Square shows.
+ * Square items that never show online: things only sold at the counter or at markets, or games we
+ * carry but don't sell on the site. A name here also hides every item whose Square name starts
+ * with it ("Xeno" hides "Xeno: Deluxe"). Everything else in Square shows.
  */
-export const hiddenItems: string[] = ["Soccer Blocker Version Zero Limited Edition"];
+export const hiddenItems: string[] = ["Soccer Blocker Version Zero Limited Edition", "Whole Hog", "Xeno"];
 
 /** Square product types the store sells. Donations, gift cards, services and events stay at the counter. */
 export const sellableTypes = ["REGULAR", "DIGITAL"];

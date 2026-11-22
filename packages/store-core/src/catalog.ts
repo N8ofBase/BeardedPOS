@@ -3,6 +3,7 @@
 import {
   extraItems,
   gameItems,
+  gameSlugs,
   hiddenItems,
   lowStockAt,
   sellableTypes,
@@ -23,6 +24,11 @@ export interface SquareItem {
   /** Units on hand at the store's Square location; null when Square doesn't track stock for it. */
   stock: number | null;
   imageUrl: string | null;
+  /**
+   * Marked sold out in Square at the store's location (by hand in the Square app, or by Square
+   * when tracked stock hits 0). The store treats it as no stock.
+   */
+  soldOut?: boolean;
   /** The item's Square category name (reporting category first), when it has one. */
   category?: string | null;
 }
@@ -79,7 +85,6 @@ const listings = new Map<string, Listing>(
     ...extraItems.map((i) => ({ ...i, game: null })),
   ].map((l) => [matchKey(l.square), l]),
 );
-const hidden = new Set(hiddenItems.map(matchKey));
 
 /** Lowercase words only: "Mine & Find: Deluxe" → "mine and find deluxe". For matching game names. */
 const words = (name: string) =>
@@ -88,6 +93,13 @@ const words = (name: string) =>
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+
+const hidden = hiddenItems.map(words);
+/** On the hide list: the name, or a name that starts with it as whole words. */
+export const isHidden = (name: string) => {
+  const w = words(name);
+  return hidden.some((h) => w === h || w.startsWith(`${h} `));
+};
 
 /** Each game's names as words, longest first, so "Fences Roll and Write" wins over "Fences". */
 const gameNames = gameItems
@@ -131,7 +143,7 @@ export function placeItem(name: string, category: string | null = null): Listing
 /**
  * The products the store sells: every Square item with a fixed price (only the listed ones unless
  * `everyItem`), except hidden ones and donations, gift cards and the like. Listed items come first,
- * in listed order, then the rest by name. Items with several variations become one product per
+ * in shelf order, then the rest by name. Items with several variations become one product per
  * variation. Sold-out items stay, marked.
  */
 export function storeProducts(catalog: SquareCatalog): Product[] {
@@ -139,14 +151,14 @@ export function storeProducts(catalog: SquareCatalog): Product[] {
   return catalog.items
     .flatMap((item) => {
       const key = matchKey(item.name);
-      if (hidden.has(key) || !sellableTypes.includes(item.productType || "REGULAR")) return [];
+      if (isHidden(item.name) || !sellableTypes.includes(item.productType || "REGULAR")) return [];
       if (item.priceCents === null || !Number.isInteger(item.priceCents)) return [];
       const listing =
         listings.get(key) ?? (catalog.everyItem ? placeItem(item.name, item.category ?? null) : null);
       if (!listing) return [];
       const several = catalog.items.filter((i) => i.itemId === item.itemId).length > 1;
       const name = listing.name ?? item.name;
-      const stock = item.tracksStock ? item.stock : null;
+      const stock = item.soldOut ? 0 : item.tracksStock ? item.stock : null;
       const product: Product = {
         id: item.variationId,
         itemId: item.itemId,
@@ -158,10 +170,15 @@ export function storeProducts(catalog: SquareCatalog): Product[] {
         stockStatus: stockStatus(stock),
         imageUrl: item.imageUrl,
       };
-      const rank = order.indexOf(key);
-      return [{ product, rank: rank === -1 ? order.length : rank, name: item.name.toLowerCase() }];
+      // Our games first, in shelf order (even when Square spells an item differently), then the rest.
+      const shelf = listing.game ? gameSlugs.indexOf(listing.game) : gameSlugs.length;
+      const listed = order.indexOf(key);
+      return [{ product, shelf, rank: listed === -1 ? order.length : listed, name: item.name.toLowerCase() }];
     })
-    .sort((a, b) => a.rank - b.rank || (a.rank === order.length ? a.name.localeCompare(b.name) : 0))
+    .sort(
+      (a, b) =>
+        a.shelf - b.shelf || a.rank - b.rank || (a.rank === order.length ? a.name.localeCompare(b.name) : 0),
+    )
     .map((r) => r.product);
 }
 

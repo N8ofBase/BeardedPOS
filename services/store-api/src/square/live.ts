@@ -63,7 +63,14 @@ export interface CatalogObject {
     pricing_type?: string;
     price_money?: Money;
     track_inventory?: boolean;
-    location_overrides?: { location_id?: string; track_inventory?: boolean }[];
+    location_overrides?: {
+      location_id?: string;
+      track_inventory?: boolean;
+      /** Square's "sold out" mark at that location, set by hand or when tracked stock runs out. */
+      sold_out?: boolean;
+      /** A by-hand mark can end on its own: past this time the item is back. */
+      sold_out_valid_until?: string;
+    }[];
   };
   image_data?: { url?: string };
   category_data?: { name?: string };
@@ -117,6 +124,8 @@ export function toCatalog(
       if (vd.price_money?.currency) currency = vd.price_money.currency;
       const override = vd.location_overrides?.find((l) => l.location_id === locationId);
       const tracksStock = override?.track_inventory ?? vd.track_inventory ?? false;
+      const until = override?.sold_out_valid_until ? Date.parse(override.sold_out_valid_until) : NaN;
+      const soldOut = override?.sold_out === true && !(until <= Date.parse(capturedAt));
       items.push({
         itemId: item.id,
         variationId: v.id,
@@ -128,6 +137,7 @@ export function toCatalog(
         stock: tracksStock ? (counts.get(v.id) ?? 0) : null,
         imageUrl: images.get(data.image_ids?.[0] ?? "") ?? null,
         category,
+        ...(soldOut ? { soldOut } : {}),
       });
     }
   }
