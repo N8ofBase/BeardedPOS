@@ -126,12 +126,13 @@ describe("store products from the Square catalog", () => {
     ]);
   });
 
-  it("hides Whole Hog and Xeno, and anything whose name starts with them", () => {
+  it("hides Whole Hog, Xeno and Jibe: Monster Edition, and anything whose name starts with them", () => {
     const products = storeProducts(
       catalog(
         item({ itemId: "A", variationId: "VA", name: "Whole Hog" }),
         item({ itemId: "B", variationId: "VB", name: "XENO: Deluxe Edition" }),
         item({ itemId: "C", variationId: "VC", name: "Xenophobe" }),
+        item({ itemId: "D", variationId: "VD", name: "Jibe: Monster Edition" }),
       ),
     );
     expect(products.map((p) => p.name)).toEqual(["Xenophobe"]);

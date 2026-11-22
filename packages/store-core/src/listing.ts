@@ -48,7 +48,6 @@ export const gameItems: { game: string; names?: string[]; items: StoreItem[] }[]
 /** Square items that don't belong to one of our games, placed by hand. Unlisted ones are placed by their Square category and name. */
 export const extraItems: StoreItem[] = [
   { square: "Jibe", kind: "game" },
-  { square: "Jibe: Monster Edition", kind: "game" },
   { square: "Jibe Card Game", kind: "game" },
   { square: "Future Board Gamer Onesie", kind: "merch" },
   { square: "Board Gamer in Training Kids Tee", kind: "merch" },
@@ -64,6 +63,7 @@ export const hiddenItems: string[] = [
   "Whole Hog",
   "Xeno",
   "Xenoferra",
+  "Jibe: Monster Edition",
 ];
 
 /** Square product types the store sells. Donations, gift cards, services and events stay at the counter. */

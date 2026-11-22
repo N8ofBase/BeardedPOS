@@ -23,7 +23,6 @@ describe("the saved Square snapshot", () => {
       "The Ranch",
       "Fences - Seasons",
       "Jibe",
-      "Jibe: Monster Edition",
     ]);
   });
   it("keeps Prism Cortex-only items, donations and market items off the store", () => {
