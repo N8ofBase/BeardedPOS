@@ -48,15 +48,13 @@ describe("column matching", () => {
     });
   });
 
-  it("matches the three game prices and the royalty columns", () => {
-    const headers = ["SKU", "Sell price", "Wholesale", "Unit cost", "Royalty %", "Designer"];
+  it("matches the three game prices", () => {
+    const headers = ["SKU", "Sell price", "Wholesale", "Unit cost"];
     expect(autoMatch("products", headers)).toEqual({
       sku: 0,
       price: 1,
       wholesale: 2,
       cost: 3,
-      royalty: 4,
-      royaltyPayee: 5,
     });
     // An older file with plain "Cost" still lands on our cost.
     expect(autoMatch("products", ["SKU", "Price", "Cost"])).toEqual({ sku: 0, price: 1, cost: 2 });

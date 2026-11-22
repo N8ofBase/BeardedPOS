@@ -24,9 +24,22 @@ export interface Ticket {
   discounts: TicketDiscountState[];
   /** Beard Bucks rewards used, $5 off each. */
   rewards: number;
+  /** Rung for a retailer at the games' wholesale prices. */
+  wholesale: boolean;
 }
 
-export const EMPTY_TICKET: Ticket = { lines: [], customer: null, discounts: [], rewards: 0 };
+export const EMPTY_TICKET: Ticket = {
+  lines: [],
+  customer: null,
+  discounts: [],
+  rewards: 0,
+  wholesale: false,
+};
+
+/** A retailer's ticket starts as a wholesale sale; anyone else's is a regular one. */
+export function withCustomer(t: Ticket, customer: RegisterCustomer | null): Ticket {
+  return { ...t, customer, rewards: 0, wholesale: customer?.card.kind === "retailer" };
+}
 
 /** True when nothing is on the ticket to pay for. */
 export function isEmpty(t: Ticket): boolean {
@@ -78,6 +91,7 @@ export function toInput(t: Ticket): TicketInput {
       approvedBy: d.approvedBy,
     })),
     rewards: t.rewards,
+    ...(t.wholesale ? { wholesale: true } : {}),
   };
 }
 
@@ -86,10 +100,20 @@ function ticketLines(t: Ticket): TicketLine[] {
     key: l.key,
     productId: l.product.id,
     name: l.product.name,
-    unitPriceCents: l.product.priceCents,
+    unitPriceCents: unitPrice(t, l.product),
     qty: l.qty,
     taxClass: l.product.taxClass,
   }));
+}
+
+/** The price a line rings at: the wholesale price on a wholesale sale. */
+export function unitPrice(t: Ticket, p: ProductRow): number {
+  if (!t.wholesale) return p.priceCents;
+  if (p.wholesaleCents === null)
+    throw new Error(
+      `${p.name} has no wholesale price yet. Add one in Inventory, or take it off this wholesale sale.`,
+    );
+  return p.wholesaleCents;
 }
 
 export interface TicketPrice {
@@ -131,7 +155,8 @@ export function loadTicket(staffId: string): Ticket {
 
 export function saveTicket(staffId: string, t: Ticket): void {
   try {
-    if (isEmpty(t) && !t.customer && !t.discounts.length && !t.rewards) localStorage.removeItem(KEY(staffId));
+    if (isEmpty(t) && !t.customer && !t.discounts.length && !t.rewards && !t.wholesale)
+      localStorage.removeItem(KEY(staffId));
     else localStorage.setItem(KEY(staffId), JSON.stringify(t));
   } catch {
     // Private mode: the ticket just won't survive a reload.

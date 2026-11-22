@@ -73,6 +73,13 @@ import {
   sendTestEmail,
 } from "./handlers/email.ts";
 import { profitByGame } from "./handlers/profit.ts";
+import {
+  gameRoyalties,
+  listRoyaltyPayees,
+  royaltyReport,
+  saveGameRoyalties,
+  saveRoyaltyPayee,
+} from "./handlers/royalties.ts";
 import { sendReceipt } from "./handlers/receipts.ts";
 import { refundPreview, refundSale } from "./handlers/refunds.ts";
 import { getSettings, updateSettings } from "./handlers/settings.ts";
@@ -126,6 +133,11 @@ export const handlers = {
   getSale,
   listSales,
   profitByGame,
+  listRoyaltyPayees,
+  saveRoyaltyPayee,
+  gameRoyalties,
+  saveGameRoyalties,
+  royaltyReport,
   refundPreview,
   refundSale,
   sendReceipt,

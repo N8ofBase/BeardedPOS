@@ -3,9 +3,9 @@
 //
 // ensureDemo() fills in whatever part is missing, so a browser seeded by an
 // earlier version picks up new sample data after an update without a reset.
-import type { Kysely, Transaction } from "kysely";
+import type { Insertable, Kysely, Transaction } from "kysely";
 import { addDays, isIsoDate, todayIso, type Role } from "@bearded/core";
-import type { DB } from "../src/schema.ts";
+import type { DB, GameRoyaltiesTable } from "../src/schema.ts";
 
 const DEMO_STAFF: { name: string; email: string; role: Role }[] = [
   { name: "Sample Owner (DEMO)", email: "owner.demo@example.com", role: "owner" },
@@ -51,6 +51,7 @@ export async function seedDemoParts(
   await once(trx, businessId, "discounts", "discounts", seedDiscounts);
   await once(trx, businessId, "crm", "tags", seedCrm);
   await once(trx, businessId, "loyalty", "loyalty_ledger", seedLoyalty);
+  await once(trx, businessId, "royalties", "royalty_payees", seedRoyalties);
 }
 
 /**
@@ -61,7 +62,7 @@ async function once(
   trx: Transaction<DB>,
   businessId: string,
   part: string,
-  table: "products" | "customers" | "discounts" | "tags" | "loyalty_ledger",
+  table: "products" | "customers" | "discounts" | "tags" | "loyalty_ledger" | "royalty_payees",
   seed: (trx: Transaction<DB>, businessId: string) => Promise<void>,
 ): Promise<void> {
   const done = await trx
@@ -199,6 +200,64 @@ async function seedInventory(trx: Transaction<DB>, businessId: string, openingSt
         .execute();
     }
   }
+}
+
+/**
+ * Two people who earn royalties on sample games: a designer on net profit and an artist on sales,
+ * each earning less on wholesale. Those games get a wholesale price (halfway between our cost and the
+ * sell price) so the sample retailer can be rung a wholesale sale.
+ */
+async function seedRoyalties(trx: Transaction<DB>, businessId: string): Promise<void> {
+  const games = await trx
+    .selectFrom("products")
+    .select(["id", "price_cents", "cost_cents", "wholesale_cents"])
+    .where("business_id", "=", businessId)
+    .where("is_demo", "=", true)
+    .where("sku", "in", ["0002", "0003"])
+    .orderBy("sku")
+    .execute();
+  if (!games.length) return;
+  for (const g of games)
+    if (g.wholesale_cents === null)
+      await trx
+        .updateTable("products")
+        .set({ wholesale_cents: g.cost_cents + Math.floor((g.price_cents - g.cost_cents) / 2) })
+        .where("id", "=", g.id)
+        .execute();
+
+  const base = { business_id: businessId, is_demo: true };
+  const [designer, artist] = await trx
+    .insertInto("royalty_payees")
+    .values([
+      {
+        ...base,
+        name: "Ada Designer (DEMO)",
+        email: "ada.demo@example.com",
+        notes: "Paid by check, monthly",
+      },
+      { ...base, name: "Sam Artist (DEMO)", email: "sam.demo@example.com", notes: "Box art" },
+    ])
+    .returning("id")
+    .execute();
+  const terms: Insertable<GameRoyaltiesTable>[] = games.map((g) => ({
+    ...base,
+    product_id: g.id,
+    payee_id: designer!.id,
+    basis: "profit",
+    retail_mpct: 10_000,
+    online_mpct: 10_000,
+    wholesale_mpct: 5_000,
+  }));
+  terms.push({
+    ...base,
+    product_id: games[0]!.id,
+    payee_id: artist!.id,
+    basis: "sales",
+    retail_mpct: 3_000,
+    online_mpct: 3_000,
+    wholesale_mpct: 1_500,
+  });
+  await trx.insertInto("game_royalties").values(terms).execute();
 }
 
 // Phone numbers are in the fictional 555-01xx range. Dates are relative to the

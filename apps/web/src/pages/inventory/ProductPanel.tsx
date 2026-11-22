@@ -1,13 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import {
-  CATEGORIES,
-  centsToInput,
-  parseMoney,
-  parseTaxPercent,
-  taxPercentInput,
-  type ProductInput,
-} from "@bearded/core";
+import { CATEGORIES, centsToInput, can, parseMoney, type ProductInput } from "@bearded/core";
 import type { MoveRow, ProductRow } from "@bearded/api";
 import { useSession } from "../../session.tsx";
 import { errorMessage, fieldErrors } from "../../ui/errors.ts";
@@ -15,6 +8,7 @@ import { SlideOver } from "../../ui/SlideOver.tsx";
 import { useToast } from "../../ui/Toast.tsx";
 import { CameraButton } from "../../ui/scanner/CameraScanner.tsx";
 import { TwoTapButton } from "../../ui/TwoTapButton.tsx";
+import { RoyaltiesSection } from "./RoyaltiesSection.tsx";
 
 interface Form {
   sku: string;
@@ -25,8 +19,6 @@ interface Form {
   price: string;
   cost: string;
   wholesale: string;
-  royalty: string;
-  royaltyPayee: string;
   taxClass: "standard" | "exempt";
   reorderAt: string;
   onHand: string;
@@ -41,8 +33,6 @@ const EMPTY: Form = {
   price: "",
   cost: "",
   wholesale: "",
-  royalty: "",
-  royaltyPayee: "",
   taxClass: "standard",
   reorderAt: "3",
   onHand: "0",
@@ -58,8 +48,6 @@ function toForm(p: ProductRow): Form {
     price: centsToInput(p.priceCents),
     cost: p.costCents ? centsToInput(p.costCents) : "",
     wholesale: p.wholesaleCents === null ? "" : centsToInput(p.wholesaleCents),
-    royalty: p.royaltyMpct ? taxPercentInput(p.royaltyMpct) : "",
-    royaltyPayee: p.royaltyPayee ?? "",
     taxClass: p.taxClass,
     reorderAt: String(p.reorderAt),
     onHand: String(p.onHand),
@@ -76,8 +64,6 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
   const wholesale = f.wholesale.trim() ? parseMoney(f.wholesale) : null;
   if (f.wholesale.trim() && wholesale === null)
     errors.wholesaleCents = "Enter a wholesale price like 15.00, or leave it blank.";
-  const royalty = f.royalty.trim() ? parseTaxPercent(f.royalty) : 0;
-  if (royalty === null) errors.royaltyMpct = "Enter a percent from 0 to 100, like 10 or 7.5.";
   const reorder = Number(f.reorderAt || "0");
   return {
     errors,
@@ -92,8 +78,6 @@ function toInput(f: Form): { input: ProductInput; errors: Record<string, string>
       taxClass: f.taxClass,
       reorderAt: reorder,
       wholesaleCents: wholesale,
-      royaltyMpct: royalty ?? 0,
-      royaltyPayee: f.royaltyPayee.trim() || null,
     },
   };
 }
@@ -149,7 +133,7 @@ function ProductForm({
   initialBarcode: string | null;
   onClose: () => void;
 }) {
-  const { api } = useSession();
+  const { api, me } = useSession();
   const qc = useQueryClient();
   const toast = useToast();
   const [f, setF] = useState<Form>(product ? toForm(product) : { ...EMPTY, barcode: initialBarcode ?? "" });
@@ -319,31 +303,6 @@ function ProductForm({
           </p>
         )}
 
-        <div className="form">
-          <label>
-            Royalty (% of net profit)
-            <input
-              value={f.royalty}
-              onChange={set("royalty")}
-              inputMode="decimal"
-              placeholder="0"
-              {...inv("royaltyMpct")}
-            />
-            {err("royaltyMpct")}
-          </label>
-          <label>
-            Royalty paid to
-            <input
-              value={f.royaltyPayee}
-              onChange={set("royaltyPayee")}
-              placeholder="e.g. the designer"
-              maxLength={100}
-              {...inv("royaltyPayee")}
-            />
-            {err("royaltyPayee")}
-          </label>
-        </div>
-
         <div className="actions">
           <button className="primary" type="submit" disabled={save.isPending}>
             {save.isPending ? "Saving…" : "Save product"}
@@ -370,6 +329,8 @@ function ProductForm({
           )}
         </div>
       </form>
+
+      {product && can(me.staff.role, "products.edit") && <RoyaltiesSection productId={product.id} />}
 
       {product && (
         <section style={{ display: "grid", gap: 6 }}>

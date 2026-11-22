@@ -11,6 +11,7 @@ import { ReceiptSend } from "./sales/ReceiptSend.tsx";
 import { EndOfDayPage } from "./sales/EndOfDay.tsx";
 import { ProfitPage } from "./sales/ProfitPage.tsx";
 import { RefundPanel } from "./sales/RefundPanel.tsx";
+import { RoyaltiesPage } from "./sales/RoyaltiesPage.tsx";
 
 export function SalesRoutes() {
   return (
@@ -18,6 +19,7 @@ export function SalesRoutes() {
       <Route index element={<SalesPage />} />
       <Route path="close" element={<EndOfDayPage />} />
       <Route path="profit" element={<ProfitPage />} />
+      <Route path="royalties" element={<RoyaltiesPage />} />
     </Routes>
   );
 }
@@ -76,6 +78,7 @@ export function SalesPage() {
           })}
         </span>
         <Link to="profit">Profit by game</Link>
+        <Link to="royalties">Royalties</Link>
         {can(me.staff.role, "drawer.count") && <Link to="close">Close the day</Link>}
       </div>
       <div className="toolbar">

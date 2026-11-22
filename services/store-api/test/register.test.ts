@@ -265,6 +265,33 @@ describe("website orders", () => {
     });
   });
 
+  it("copies a paid order's lines for royalties, once, with the order's price", async () => {
+    const store = register();
+    const orderId = await buy(store, LOCKED_OUT, 2);
+    await store.call("POST", `/api/checkout-preview/${orderId}/pay`, {});
+    const lines = async () =>
+      (
+        await pg.query<{ qty: number; line_total_cents: number; name: string }>(
+          `SELECT w.qty, w.line_total_cents, p.name FROM web_sale_lines w JOIN products p ON p.id = w.product_id
+           WHERE w.order_id = $1`,
+          [orderId],
+        )
+      ).rows;
+    const order = (
+      await pg.query<{ subtotal_cents: number }>("SELECT subtotal_cents FROM store_orders WHERE id = $1", [
+        orderId,
+      ])
+    ).rows[0]!;
+    expect(await lines()).toEqual([{ qty: 2, line_total_cents: order.subtotal_cents, name: "Locked Out" }]);
+
+    // An order paid before this was added is copied at the next cold start, once.
+    await pg.query("DELETE FROM web_sale_lines WHERE order_id = $1", [orderId]);
+    const catchUp = () => withBusiness(pg as unknown as Database, BIZ_A, catchUpRegisterStock);
+    await catchUp();
+    await catchUp();
+    expect(await lines()).toHaveLength(1);
+  });
+
   it("catches up a paid order that never came off the shelf, once", async () => {
     const store = register();
     const before = await onHand("Locked Out");

@@ -13,7 +13,7 @@ let manager: Ctx;
 let cashier: Ctx;
 let gameId: string;
 
-// $25.00 game that costs us $19.00, 10% royalty to its designer. Not taxed, so totals stay round.
+// $25.00 game that costs us $19.00. Not taxed, so totals stay round.
 const fences: ProductInput = {
   sku: "FENCES",
   barcode: null,
@@ -23,8 +23,6 @@ const fences: ProductInput = {
   priceCents: 2500,
   costCents: 1900,
   wholesaleCents: 1250,
-  royaltyMpct: 10_000,
-  royaltyPayee: "Ada Designer",
   taxClass: "exempt",
   reorderAt: 0,
 };
@@ -70,7 +68,7 @@ async function fencesRow(ctx: Ctx = owner) {
 }
 
 describe("profit by game", () => {
-  it("is revenue less our cost, with the royalty on net profit", async () => {
+  it("is revenue less our cost", async () => {
     await sell(3);
     expect(await fencesRow()).toMatchObject({
       name: "Fences",
@@ -78,9 +76,6 @@ describe("profit by game", () => {
       revenueCents: 7500,
       costCents: 5700,
       profitCents: 1800,
-      royaltyMpct: 10_000,
-      royaltyPayee: "Ada Designer",
-      royaltyCents: 180,
       estimatedCostLines: 0,
     });
   });
@@ -94,7 +89,6 @@ describe("profit by game", () => {
       units: 2,
       costCents: 4100,
       profitCents: 900,
-      royaltyCents: 90,
     });
   });
 
@@ -120,13 +114,12 @@ describe("profit by game", () => {
       restock: false,
       reason: "damaged",
     });
-    // The damaged copy brings in nothing and still cost $19: profit drops to −$13, so no royalty.
+    // The damaged copy brings in nothing and still cost $19: profit drops to −$13.
     expect(await fencesRow()).toMatchObject({
       units: 1,
       revenueCents: 2500,
       costCents: 3800,
       profitCents: -1300,
-      royaltyCents: 0,
     });
   });
 
@@ -161,14 +154,13 @@ describe("profit by game", () => {
   it("adds every game into the totals", async () => {
     await sell(3);
     const r = await invoke(db, owner, "profitByGame", range());
-    const sum = (k: "units" | "revenueCents" | "costCents" | "profitCents" | "royaltyCents") =>
+    const sum = (k: "units" | "revenueCents" | "costCents" | "profitCents") =>
       r.games.reduce((n, g) => n + g[k], 0);
     expect(r.totals).toEqual({
       units: sum("units"),
       revenueCents: sum("revenueCents"),
       costCents: sum("costCents"),
       profitCents: sum("profitCents"),
-      royaltyCents: sum("royaltyCents"),
     });
   });
 

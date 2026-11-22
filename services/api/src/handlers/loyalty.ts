@@ -115,9 +115,16 @@ export async function redeemRewards(
 export async function earnOnSale(
   trx: Trx,
   ctx: Ctx,
-  sale: { id: string; customer_id: string | null; subtotal_cents: number; discount_cents: number },
+  sale: {
+    id: string;
+    customer_id: string | null;
+    subtotal_cents: number;
+    discount_cents: number;
+    sale_type?: "retail" | "wholesale";
+  },
 ): Promise<void> {
-  if (!sale.customer_id || !(await loyaltyEnabled(trx, ctx))) return;
+  // A store buying at wholesale isn't a Beard Buddy shopper.
+  if (!sale.customer_id || sale.sale_type === "wholesale" || !(await loyaltyEnabled(trx, ctx))) return;
   await add(trx, ctx, {
     customerId: sale.customer_id,
     saleId: sale.id,

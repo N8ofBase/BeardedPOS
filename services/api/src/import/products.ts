@@ -1,5 +1,5 @@
 import { sql } from "kysely";
-import { parseCount, parseMoney, parseTaxPercent } from "@bearded/core";
+import { parseCount, parseMoney } from "@bearded/core";
 import { audit, currentLocationId } from "../shared.ts";
 import { diff, Skip, text, type Row, type RowCtx, type RowResult } from "./base.ts";
 
@@ -61,15 +61,6 @@ export async function productRow(r: Row, rc: RowCtx): Promise<RowResult> {
     if (wholesale === null) rc.warn(`Wholesale price "${r.wholesale}" isn't an amount, left as it was`);
     else values.wholesale_cents = wholesale;
   }
-  if (text(r.royalty)) {
-    // Royalty rates use the same thousandths-of-a-percent form as tax rates.
-    const rate = parseTaxPercent(r.royalty!);
-    if (rate === null) rc.warn(`Royalty "${r.royalty}" isn't a percent from 0 to 100, left as it was`);
-    else values.royalty_mpct = rate;
-  }
-  const payee = text(r.royaltyPayee);
-  if (payee && payee.length > 100) rc.warn("Royalty payee is over 100 characters, left as it was");
-  else if (payee) values.royalty_payee = payee;
   const onHand = count(rc, r.onHand, "On hand");
 
   let productId: string;
