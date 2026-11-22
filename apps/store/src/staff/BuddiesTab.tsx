@@ -30,7 +30,7 @@ export function BuddiesTab() {
     <div className="buddies">
       <p className="hint">
         {buddies.value.length} Beard {buddies.value.length === 1 ? "Buddy" : "Buddies"}, biggest balance
-        first. Bucks are earned and used on paid web orders.
+        first. It’s one balance with the shop: Bucks earned or used at the counter count here too.
       </p>
       <ul className="staff-list">
         {buddies.value.map((b) => (
