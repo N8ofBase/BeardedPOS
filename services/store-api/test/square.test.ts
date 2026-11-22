@@ -117,6 +117,35 @@ describe("reading the catalog", () => {
     expect(catalog.locationId).toBe(LOC);
   });
 
+  it("reads Square's sold-out mark at the store's location, until it runs out", () => {
+    const mark = (id: string, over: object) =>
+      item(id, id, [
+        variation(`V${id}`, {
+          price_money: { amount: 1000 },
+          location_overrides: [{ location_id: LOC, ...over }],
+        }),
+      ]);
+    const catalog = toCatalog(
+      [
+        mark("Marked", { sold_out: true }),
+        mark("Ended", { sold_out: true, sold_out_valid_until: "2026-10-23T00:00:00Z" }),
+        mark("Until later", { sold_out: true, sold_out_valid_until: "2026-10-25T00:00:00Z" }),
+        mark("Other place", { location_id: "ELSEWHERE", sold_out: true }),
+        mark("Open", {}),
+      ],
+      new Map(),
+      LOC,
+      "2026-10-24T00:00:00.000Z",
+    );
+    expect(catalog.items.map((i) => [i.name, i.soldOut ?? false])).toEqual([
+      ["Marked", true],
+      ["Ended", false],
+      ["Until later", true],
+      ["Other place", false],
+      ["Open", false],
+    ]);
+  });
+
   it("reads each item's Square category, reporting category first", () => {
     const catalog = toCatalog(
       [

@@ -62,6 +62,17 @@ describe("checkout", () => {
     });
   });
 
+  it("refuses an item marked sold out in Square, even when Square isn't counting its stock", async () => {
+    const snap = loadSnapshot();
+    const items = snap.items.map((i) => (i.variationId === LOCKED_OUT ? { ...i, soldOut: true } : i));
+    const store = makeStore(db, { square: new SnapshotStore({ ...snap, items }) });
+    const res = await store.call("POST", "/api/checkout", { lines: [{ productId: LOCKED_OUT, qty: 1 }] });
+    expect(res).toMatchObject({
+      status: 409,
+      body: { error: "Locked Out just sold out. Remove it to check out." },
+    });
+  });
+
   it("refuses more than Square has, and sold-out items, by name", async () => {
     const snap = loadSnapshot();
     const tight = snap.items.map((i) =>
