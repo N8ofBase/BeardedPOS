@@ -3,6 +3,7 @@ import {
   formatCents,
   matchKey,
   missingItems,
+  placeItem,
   stockLabel,
   stockStatus,
   storeProducts,
@@ -28,18 +29,81 @@ const catalog = (...items: SquareItem[]): SquareCatalog => ({
   locationId: "L1",
   currency: "USD",
   items,
+  everyItem: true,
 });
 
 describe("store products from the Square catalog", () => {
-  it("shows only items listed in the store content, in listed order", () => {
+  it("shows every Square item: listed ones first in listed order, then the rest by name", () => {
     const products = storeProducts(
       catalog(
         item({ itemId: "A", variationId: "VA", name: "Math Force 5" }),
         item({ itemId: "B", variationId: "VB", name: "Locked Out" }),
+        item({ itemId: "D", variationId: "VD", name: "Beard Hat" }),
         item({ itemId: "C", variationId: "VC", name: "Fences" }),
       ),
     );
-    expect(products.map((p) => p.name)).toEqual(["Fences", "Locked Out"]);
+    expect(products.map((p) => p.name)).toEqual(["Fences", "Locked Out", "Beard Hat", "Math Force 5"]);
+  });
+
+  it("shows only listed items when the catalog isn't the shop's own (the Sandbox demo)", () => {
+    const products = storeProducts({
+      ...catalog(
+        item({ itemId: "A", variationId: "VA", name: "Math Force 5" }),
+        item({ itemId: "B", variationId: "VB", name: "Locked Out" }),
+      ),
+      everyItem: false,
+    });
+    expect(products.map((p) => p.name)).toEqual(["Locked Out"]);
+  });
+
+  it("keeps sold-out items, marked sold out", () => {
+    const [p] = storeProducts(catalog(item({ name: "Fences", tracksStock: true, stock: 0 })));
+    expect(p).toMatchObject({ game: "fences", kind: "game", stockStatus: "sold-out" });
+    expect(stockLabel(p!)).toBe("Sold out");
+  });
+
+  it("leaves out hidden items, donations and other non-goods", () => {
+    const products = storeProducts(
+      catalog(
+        item({ itemId: "A", variationId: "VA", name: "Soccer Blocker Version Zero Limited Edition" }),
+        item({ itemId: "B", variationId: "VB", name: "Donation", productType: "DONATION" }),
+        item({ itemId: "C", variationId: "VC", name: "Gift card", productType: "GIFT_CARD" }),
+        item({ itemId: "D", variationId: "VD", name: "Fences PDF", productType: "DIGITAL" }),
+      ),
+    );
+    expect(products.map((p) => p.name)).toEqual(["Fences PDF"]);
+  });
+
+  it("puts unlisted items on a game when the name starts with the game's name", () => {
+    const products = storeProducts(
+      catalog(
+        item({ itemId: "A", variationId: "VA", name: "Fences: Holiday Pack" }),
+        item({ itemId: "B", variationId: "VB", name: "Fences Board Game" }),
+        item({ itemId: "C", variationId: "VC", name: "Fences T-Shirt" }),
+        item({ itemId: "D", variationId: "VD", name: "Mine and Find" }),
+        item({ itemId: "E", variationId: "VE", name: "Fencesitter" }),
+        item({ itemId: "F", variationId: "VF", name: "Fences Roll & Write" }),
+      ),
+    );
+    const by = Object.fromEntries(products.map((p) => [p.name, [p.game, p.kind]]));
+    expect(by).toEqual({
+      "Fences: Holiday Pack": ["fences", "expansion"],
+      "Fences Board Game": ["fences", "game"],
+      "Fences T-Shirt": ["fences", "merch"],
+      "Mine and Find": ["mine-and-find", "game"],
+      Fencesitter: [null, "merch"],
+      "Fences Roll & Write": ["fences-roll-and-write", "game"],
+    });
+  });
+
+  it("places other unlisted items by Square category, then by name", () => {
+    expect(placeItem("Dragon Dice", "Games")).toMatchObject({ kind: "game", game: null });
+    expect(placeItem("Big Box", "Expansions")).toMatchObject({ kind: "expansion", game: null });
+    expect(placeItem("Logo Hoodie", null)).toMatchObject({ kind: "merch", game: null });
+    expect(placeItem("Anything", "Apparel")).toMatchObject({ kind: "merch" });
+    expect(placeItem("Jibe", "Card Games")).toMatchObject({ kind: "game" });
+    expect(placeItem("Space Card Game", null)).toMatchObject({ kind: "game" });
+    expect(placeItem("Mystery thing", null)).toMatchObject({ kind: "merch" });
   });
 
   it("checkout ids are Square variation ids", () => {

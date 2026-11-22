@@ -81,11 +81,22 @@ describe("cart", () => {
 });
 
 describe("shop page", () => {
-  it("groups products by game, with extras at the end", async () => {
+  it("groups products by game, then other games, then shirts and merch", async () => {
     renderStore("/shop");
     await screen.findByText("Fences: The Ranch");
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(["Fences", "Locked Out", "Mine & Find", "Pack Lash", "More from the beards"]);
+    expect(headings).toEqual([
+      "Fences",
+      "Locked Out",
+      "Mine & Find",
+      "Pack Lash",
+      "More games",
+      "Shirts and merch",
+    ]);
+    const merch = screen.getByRole("region", { name: "Shirts and merch" });
+    expect(within(merch).getAllByText("Future Board Gamer Onesie").length).toBeGreaterThan(0);
+    const more = screen.getByRole("region", { name: "More games" });
+    expect(within(more).getAllByText("Jibe Card Game").length).toBeGreaterThan(0);
   });
 });
 
