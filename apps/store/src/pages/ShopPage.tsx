@@ -1,7 +1,9 @@
 import { useProducts } from "../api/data.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
+import { Link } from "react-router";
 import { games } from "../content/site.ts";
-import type { Product } from "@bearded/store-core";
+import { useSite } from "../content/SiteProvider.tsx";
+import { BUNDLE, type Product } from "@bearded/store-core";
 
 export function ShopPage() {
   const products = useProducts();
@@ -23,8 +25,17 @@ export function ShopPage() {
 }
 
 function ShopGroups({ products }: { products: Product[] }) {
+  const { bundle } = useSite();
+  const byGame = games.map((g) => ({
+    key: g.slug,
+    title: g.name,
+    items: products.filter((p) => p.game === g.slug),
+  }));
   const groups = [
-    ...games.map((g) => ({ key: g.slug, title: g.name, items: products.filter((p) => p.game === g.slug) })),
+    // Fences leads the shop; the Bearded Bundle comes right after it.
+    ...byGame.slice(0, 1),
+    { key: BUNDLE, title: bundle.name, items: products.filter((p) => p.game === BUNDLE) },
+    ...byGame.slice(1),
     {
       key: "more",
       title: "More games",
@@ -41,6 +52,11 @@ function ShopGroups({ products }: { products: Product[] }) {
       {groups.map((g) => (
         <section key={g.key} className="group" aria-labelledby={`group-${g.key}`}>
           <h2 id={`group-${g.key}`}>{g.title}</h2>
+          {g.key === BUNDLE && (
+            <p>
+              {bundle.tagline} <Link to="/bundle">See what’s inside</Link>
+            </p>
+          )}
           <div className="grid">
             {g.items.map((p) => (
               <ProductCard key={p.id} product={p} showGame={false} />

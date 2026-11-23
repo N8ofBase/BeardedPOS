@@ -22,6 +22,7 @@ describe("the saved Square snapshot", () => {
       "Fences - 5/6 player extension",
       "The Ranch",
       "Fences - Seasons",
+      "Bearded Bundle(pre-order)",
       "Jibe",
     ]);
   });

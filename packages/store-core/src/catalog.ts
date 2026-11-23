@@ -1,6 +1,8 @@
 // Turns the Square catalog into the store's products. Square owns names, prices and stock, and
 // every Square item with a fixed price shows; listing.ts places items by game and kind.
 import {
+  BUNDLE,
+  bundleItems,
   extraItems,
   gameItems,
   gameSlugs,
@@ -82,6 +84,7 @@ interface Listing extends StoreItem {
 const listings = new Map<string, Listing>(
   [
     ...gameItems.flatMap((g) => g.items.map((i) => ({ ...i, game: g.game }))),
+    ...bundleItems.map((i) => ({ ...i, game: BUNDLE })),
     ...extraItems.map((i) => ({ ...i, game: null })),
   ].map((l) => [matchKey(l.square), l]),
 );
@@ -102,7 +105,7 @@ export const isHidden = (name: string) => {
 };
 
 /** Each game's names as words, longest first, so "Fences Roll and Write" wins over "Fences". */
-const gameNames = gameItems
+const gameNames = [...gameItems, { game: BUNDLE, names: [] }]
   .flatMap((g) =>
     [g.game.replace(/-/g, " "), ...(g.names ?? [])].map((n) => ({ game: g.game, words: words(n) })),
   )
@@ -174,7 +177,9 @@ export function storeProducts(catalog: SquareCatalog): Product[] {
         imageUrl: item.imageUrl,
       };
       // Our games first, in shelf order (even when Square spells an item differently), then the rest.
-      const shelf = listing.game ? gameSlugs.indexOf(listing.game) : gameSlugs.length;
+      // The Bearded Bundle sits right after the first game, so Fences still leads the shop.
+      const shelf =
+        listing.game === BUNDLE ? 0.5 : listing.game ? gameSlugs.indexOf(listing.game) : gameSlugs.length;
       const listed = order.indexOf(key);
       return [
         {

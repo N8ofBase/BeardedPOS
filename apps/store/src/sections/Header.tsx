@@ -18,6 +18,7 @@ export function Header() {
         <nav aria-label="Main">
           <Link to="/#games">Games</Link>
           <Link to="/shop">Shop</Link>
+          <Link to="/bundle">Bundle</Link>
           <Link to="/reviews">Reviews</Link>
           <Link to="/videos">Videos</Link>
           <Link to="/wholesale">Wholesale</Link>

@@ -14,7 +14,18 @@ import {
   type SiteContent,
 } from "@bearded/store-core";
 import bridges from "../assets/banner-bridges.webp";
-import { about, brand, games, pageText, team, type Game, type GameStatus, type TeamMember } from "./site.ts";
+import {
+  about,
+  brand,
+  bundle,
+  games,
+  pageText,
+  team,
+  type Bundle,
+  type Game,
+  type GameStatus,
+  type TeamMember,
+} from "./site.ts";
 
 export interface Site {
   brand: typeof brand;
@@ -22,6 +33,8 @@ export interface Site {
   team: TeamMember[];
   about: string;
   text: typeof pageText & { heroTitle: string; retailBanner: string };
+  /** The Bearded Bundle page. `art` is empty when the page should use Square's picture. */
+  bundle: Bundle & { art: string };
   /** The announcement bar, or null when there isn't one. */
   notice: { text: string; link: string | null; align: NoticeAlign; spacing: NoticeSpacing } | null;
 }
@@ -46,6 +59,13 @@ export function originals(): SiteContent {
     "brand.retailEmail": brand.retailEmail,
     "brand.city": brand.city,
     ...Object.fromEntries(Object.entries(brand.socials).map(([k, v]) => [`brand.socials.${k}`, v])),
+    "bundle.name": bundle.name,
+    "bundle.tagline": bundle.tagline,
+    "bundle.blurb": bundle.blurb,
+    "bundle.when": bundle.when,
+    "bundle.howItWorks": bundle.howItWorks.join("\n"),
+    "bundle.note": bundle.note,
+    "bundle.art": "",
   };
   for (const m of team) {
     out[`team.${m.id}.name`] = m.name;
@@ -106,6 +126,17 @@ export function buildSite(content: SiteContent): Site {
       sellHeading: get("retail.sellHeading", pageText.sellHeading),
       sellText: get("retail.sellText", pageText.sellText),
       retailBanner: pictureUrl(content["retail.banner"], bridges),
+    },
+    bundle: {
+      ...bundle,
+      name: get("bundle.name", bundle.name),
+      tagline: get("bundle.tagline", bundle.tagline),
+      blurb: get("bundle.blurb", bundle.blurb),
+      when: get("bundle.when", bundle.when),
+      howItWorks:
+        content["bundle.howItWorks"] !== undefined ? lines(content["bundle.howItWorks"]) : bundle.howItWorks,
+      note: get("bundle.note", bundle.note),
+      art: pictureUrl(content["bundle.art"], ""),
     },
     notice: noticeText
       ? {
