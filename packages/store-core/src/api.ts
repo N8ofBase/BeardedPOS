@@ -6,7 +6,7 @@ import type { Review } from "./reviews.ts";
 export interface CheckoutRequest {
   lines: CartLine[];
   visitorId?: string;
-  /** Beard Bucks rewards to use: 100 Bucks = $5 off each. Signed-in shoppers only. */
+  /** Beard Bucks rewards to use: 200 Bucks = $5 off each. Signed-in shoppers only. */
   rewards?: number;
 }
 

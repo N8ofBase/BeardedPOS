@@ -211,7 +211,7 @@ function StoreForm({ s, canEdit }: { s: StoreSettings; canEdit: boolean }) {
                 checked={f.loyaltyEnabled}
                 onChange={(e) => setF({ ...f, loyaltyEnabled: e.target.checked })}
               />
-              Beard Buddy loyalty: 1 Beard Buck per dollar, 100 Bucks = $5 off, 100 Bucks on their birthday
+              Beard Buddy loyalty: 1 Beard Buck per dollar, 200 Bucks = $5 off, 100 Bucks on their birthday
             </label>
             <label>
               Brand color

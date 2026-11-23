@@ -28,11 +28,11 @@ describe("earning", () => {
 });
 
 describe("rewards", () => {
-  it("allows one per 100 Bucks while the ticket has $5 left for each", () => {
-    expect(rewardsAllowed(240, 6499)).toBe(2);
-    expect(rewardsAllowed(240, 899)).toBe(1);
-    expect(rewardsAllowed(240, 499)).toBe(0);
-    expect(rewardsAllowed(99, 6499)).toBe(0);
+  it("allows one per 200 Bucks while the ticket has $5 left for each", () => {
+    expect(rewardsAllowed(480, 6499)).toBe(2);
+    expect(rewardsAllowed(480, 899)).toBe(1);
+    expect(rewardsAllowed(480, 499)).toBe(0);
+    expect(rewardsAllowed(199, 6499)).toBe(0);
     expect(rewardsAllowed(-20, 6499)).toBe(0);
   });
 

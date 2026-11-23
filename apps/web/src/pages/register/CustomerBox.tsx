@@ -131,7 +131,7 @@ function Bucks({
             title={netCents < REWARD_CENTS ? "The ticket needs at least $5 on it." : undefined}
             onClick={onUseReward}
           >
-            Use 100 Beard Bucks ($5 off)
+            Use {BUCKS_PER_REWARD} Beard Bucks ($5 off)
           </button>
         </div>
       )}

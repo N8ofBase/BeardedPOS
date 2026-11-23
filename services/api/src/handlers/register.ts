@@ -42,7 +42,7 @@ export interface TicketInput {
     qty: number;
   }[];
   discounts: { discountId: string; lineKey: string | null; note?: string; approvedBy?: string | null }[];
-  /** Beard Bucks rewards to use, $5 off for each 100 Bucks. */
+  /** Beard Bucks rewards to use, $5 off for each 200 Bucks. */
   rewards?: number;
   /** Rung for a retailer at the games' wholesale prices. */
   wholesale?: boolean;

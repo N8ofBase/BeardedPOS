@@ -13,7 +13,7 @@ Status: **Phases 1, 2 (except 2d, real Square) and 3 are done** in demo mode.
 
 - Phase 2c: end of day (drawer count by denomination, card total, over/short and deposit), past orders imported from the old system, and order history on the customer profile.
 
-- Beard Buddy loyalty: customers earn 1 Beard Buck per dollar, trade 100 Bucks for $5 off at the register, and get 100 Bucks in their birthday month.
+- Beard Buddy loyalty: customers earn 1 Beard Buck per dollar, trade 200 Bucks for $5 off at the register or online, get 200 Bucks for joining on the website, and get 100 Bucks in their birthday month.
 
 - Customer sign-in with a one-time code (kept from Phase 4a, the pet store's online booking) for the coming online store.
 

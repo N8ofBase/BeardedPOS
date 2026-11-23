@@ -1,11 +1,11 @@
 // Beard Buddy, the store's own loyalty program. Every customer on a sale earns Beard
 // Bucks on what they pay (after discounts, before tax), gets a birthday gift once a
-// year, and trades 100 Bucks for $5 off a ticket. Bucks are whole numbers; money is cents.
+// year, and trades 200 Bucks for $5 off a ticket. Bucks are whole numbers; money is cents.
 import { assertCents } from "./money.ts";
 import { isIsoDate, todayIso } from "./dates.ts";
 
 export const PROGRAM_NAME = "Beard Buddy";
-export const BUCKS_PER_REWARD = 100;
+export const BUCKS_PER_REWARD = 200;
 export const REWARD_CENTS = 500;
 export const BIRTHDAY_BUCKS = 100;
 /** The discount line a reward shows as on the ticket and receipt. */
@@ -29,7 +29,7 @@ export function bucksEarned(netCents: number): number {
   return netCents > 0 ? Math.floor(netCents / 100) : 0;
 }
 
-/** How many rewards a ticket can take: one per 100 Bucks, each needing $5 left to take off. */
+/** How many rewards a ticket can take: one per 200 Bucks, each needing $5 left to take off. */
 export function rewardsAllowed(balance: number, netCents: number): number {
   return Math.max(0, Math.min(Math.floor(balance / BUCKS_PER_REWARD), Math.floor(netCents / REWARD_CENTS)));
 }

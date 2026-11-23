@@ -314,7 +314,7 @@ async function seedCustomers(trx: Transaction<DB>, businessId: string): Promise<
 
 // Starting Beard Bucks, so the register can show a reward right away.
 async function seedLoyalty(trx: Transaction<DB>, businessId: string): Promise<void> {
-  const opening: Record<string, number> = { "2125550100": 240, "2125550101": 65, "2125550102": 120 };
+  const opening: Record<string, number> = { "2125550100": 480, "2125550101": 65, "2125550102": 120 };
   const rows = await trx
     .selectFrom("customers")
     .select(["id", "phone"])

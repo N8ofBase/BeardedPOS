@@ -91,14 +91,14 @@ describe("one Beard Buddy balance", () => {
     const s = store();
     const address = email();
     const jar = await signInBuddy(s, address);
-    expect((await account(s, jar)).balance).toBe(100);
+    expect((await account(s, jar)).balance).toBe(200);
 
     const customer = (await registerCustomer(address))!;
     expect(customer.name).toBe(address);
     const owner = await signInOwner(s);
     const bucks = await pos<CustomerBucks>(s, owner, "customerBucks", { customerId: customer.id });
-    expect(bucks.balance).toBe(100);
-    expect(bucks.history).toMatchObject([{ kind: "welcome", bucks: 100, note: "On the website" }]);
+    expect(bucks.balance).toBe(200);
+    expect(bucks.history).toMatchObject([{ kind: "welcome", bucks: 200, note: "On the website" }]);
 
     // A name and birthday given online fill in the register's customer.
     await s.call("POST", "/api/account", { name: "Pat Buddy", birthday: "1990-03-04" }, jar);
@@ -113,13 +113,13 @@ describe("one Beard Buddy balance", () => {
     const owner = await signInOwner(s);
     await pos(s, owner, "adjustBucks", {
       customerId: customer.id,
-      bucks: 150,
+      bucks: 250,
       note: "Bought at the counter",
     });
 
     const online = await account(s, jar);
-    expect(online.balance).toBe(250);
-    expect(online.history[0]).toMatchObject({ kind: "adjust", bucks: 150 });
+    expect(online.balance).toBe(450);
+    expect(online.history[0]).toMatchObject({ kind: "adjust", bucks: 250 });
 
     // Two rewards online ($10 off a $50 order) come out of the same balance the counter sees.
     const res = await s.call(
@@ -135,11 +135,11 @@ describe("one Beard Buddy balance", () => {
     expect(paid.status).toBe("paid");
 
     const counter = await pos<CustomerBucks>(s, owner, "customerBucks", { customerId: customer.id });
-    expect(counter.balance).toBe(250 - 200 + 40);
+    expect(counter.balance).toBe(450 - 400 + 40);
     const note = `Website order #${orderId.slice(0, 8).toUpperCase()}`;
     expect(counter.history.filter((e) => e.note === note).map((e) => [e.kind, e.bucks])).toEqual(
       expect.arrayContaining([
-        ["redeem", -200],
+        ["redeem", -400],
         ["earn", 40],
       ]),
     );
@@ -147,7 +147,7 @@ describe("one Beard Buddy balance", () => {
     const status = (await s.call("GET", `/api/orders/${orderId}`, undefined, jar)).body as {
       bucks?: { earned: number; used: number };
     };
-    expect(status.bucks).toMatchObject({ earned: 40, used: 200 });
+    expect(status.bucks).toMatchObject({ earned: 40, used: 400 });
   });
 
   it("joins a Buddy from before to the counter customer with the same email, adding both balances once", async () => {
