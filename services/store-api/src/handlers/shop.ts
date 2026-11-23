@@ -68,7 +68,7 @@ function readRewards(raw: unknown): number {
 
 /**
  * Starts checkout. A signed-in shopper's order is tied to them so it earns Beard Bucks once paid, and
- * may use rewards on orders of $25 or more: each 100 Bucks takes $5 off, checked against their balance on the server. The
+ * may use rewards on orders of $25 or more: each 200 Bucks takes $5 off, checked against their balance on the server. The
  * Bucks are held while the order is open and only taken from the ledger once Square says it's paid.
  */
 export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiResponse> {

@@ -2,7 +2,7 @@
 // manager's add-or-take-away with a note.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { bucksLabel, can, LEDGER_LABEL, PROGRAM_NAME } from "@bearded/core";
+import { BUCKS_PER_REWARD, bucksLabel, can, LEDGER_LABEL, PROGRAM_NAME, REWARD_CENTS } from "@bearded/core";
 import { useSession } from "../../session.tsx";
 import { errorMessage } from "../../ui/errors.ts";
 import { useToast } from "../../ui/Toast.tsx";
@@ -50,8 +50,11 @@ export function BeardBucks({ customerId }: { customerId: string }) {
       <h2>{PROGRAM_NAME}</h2>
       <p style={{ margin: 0 }}>
         <b className="num">{bucksLabel(b.balance)}</b>
-        {b.balance >= 100 && (
-          <span className="muted"> · worth ${Math.floor(b.balance / 100) * 5} off at the register</span>
+        {b.balance >= BUCKS_PER_REWARD && (
+          <span className="muted">
+            {" "}
+            · worth ${Math.floor(b.balance / BUCKS_PER_REWARD) * (REWARD_CENTS / 100)} off at the register
+          </span>
         )}
       </p>
       {!b.enabled && <p className="muted">Beard Buddy is turned off in Settings.</p>}

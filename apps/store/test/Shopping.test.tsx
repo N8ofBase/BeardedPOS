@@ -226,7 +226,7 @@ describe("Beard Buddy popup", () => {
       buddy: {
         ...fakeStore().buddy,
         requestCode: async () => ({ sent: true, devCode: "123456" }),
-        signIn: async () => fakeAccount({ balance: 100, welcomeBucks: 100 }),
+        signIn: async () => fakeAccount({ balance: 200, welcomeBucks: 200 }),
       },
     });
     await advance(21_000);
@@ -237,7 +237,7 @@ describe("Beard Buddy popup", () => {
     );
     fireEvent.change(within(popup).getByLabelText("Code"), { target: { value: "123456" } });
     await act(async () => void fireEvent.click(within(popup).getByRole("button", { name: "Sign in" })));
-    expect(within(popup).getByText(/100 Beard Bucks are yours/)).toBeTruthy();
+    expect(within(popup).getByText(/200 Beard Bucks are yours/)).toBeTruthy();
     expect(JSON.parse(localStorage.getItem(MEMORY_KEY)!)).toEqual({ joined: true });
     fireEvent.keyDown(document, { key: "Escape" });
     expect(JSON.parse(localStorage.getItem(MEMORY_KEY)!)).toEqual({ joined: true });

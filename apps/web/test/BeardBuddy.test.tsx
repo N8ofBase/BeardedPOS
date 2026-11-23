@@ -39,20 +39,20 @@ describe("Beard Buddy at the register", () => {
     const use = box(buddy(240), 0, 6499);
     expect(screen.getByText(/240 Beard Bucks/)).toBeTruthy();
     expect(screen.getByText("This sale earns 64 Beard Bucks")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Use 100 Beard Bucks ($5 off)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use 200 Beard Bucks ($5 off)" }));
     expect(use).toHaveBeenCalledOnce();
   });
 
-  it("counts rewards already on the ticket, and hides the button under 100 Bucks", () => {
-    box(buddy(140), 1, 1499);
+  it("counts rewards already on the ticket, and hides the button under 200 Bucks", () => {
+    box(buddy(240), 1, 1499);
     expect(screen.getByText(/40 Beard Bucks/)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Use 100 Beard Bucks/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Use 200 Beard Bucks/ })).toBeNull();
   });
 
   it("can't use a reward on a ticket under $5", () => {
     box(buddy(240), 0, 499);
     expect(
-      (screen.getByRole("button", { name: "Use 100 Beard Bucks ($5 off)" }) as HTMLButtonElement).disabled,
+      (screen.getByRole("button", { name: "Use 200 Beard Bucks ($5 off)" }) as HTMLButtonElement).disabled,
     ).toBe(true);
   });
 

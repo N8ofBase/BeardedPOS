@@ -18,7 +18,7 @@ export {
 export const HOLD_HOURS = 24;
 
 /** Joining Beard Buddy online gives this many Bucks once, ready to use on the first order. */
-export const WELCOME_BUCKS = 100;
+export const WELCOME_BUCKS = 200;
 
 /** A web order must be at least this, before tax and rewards, to use Beard Bucks. */
 export const MIN_REWARD_ORDER_CENTS = 2500;
@@ -28,7 +28,7 @@ export type LedgerKind = RegisterKind;
 
 export const LEDGER_LABEL: Record<LedgerKind, string> = REGISTER_LABEL;
 
-/** The register's rule (one reward per 100 Bucks and per $5), but none below the web order minimum. */
+/** The register's rule (one reward per 200 Bucks and per $5), but none below the web order minimum. */
 export function rewardsAllowed(balance: number, subtotalCents: number): number {
   return subtotalCents < MIN_REWARD_ORDER_CENTS ? 0 : registerRewards(balance, subtotalCents);
 }

@@ -11,7 +11,7 @@ let owner: Ctx;
 let manager: Ctx;
 let cashier: Ctx;
 let sku: Record<string, { id: string }>;
-// Starts with 240 Beard Bucks from the demo seed.
+// Starts with 480 Beard Bucks from the demo seed.
 let buddy: string;
 
 beforeEach(async () => {
@@ -65,17 +65,17 @@ describe("earning", () => {
         ["0004", 1],
       ]),
     );
-    expect(await balance()).toBe(240 + 21);
+    expect(await balance()).toBe(480 + 21);
     const r = await invoke(db, cashier, "getSale", { id: s.saleId });
-    expect(r.bucks).toEqual({ earned: 21, birthday: 0, redeemed: 0, balance: 261 });
+    expect(r.bucks).toEqual({ earned: 21, birthday: 0, redeemed: 0, balance: 501 });
     expect(receiptText(r)).toContain("Earned 21 Beard Bucks");
-    expect(receiptText(r)).toContain("Beard Bucks balance: 261");
+    expect(receiptText(r)).toContain("Beard Bucks balance: 501");
   });
 
   it("earns nothing without a customer, or before the sale is paid", async () => {
     await pay(ticket([["0003", 1]], { customerId: null }));
     await invoke(db, cashier, "startCheckout", ticket([["0001", 1]]));
-    expect(await balance()).toBe(240);
+    expect(await balance()).toBe(480);
   });
 
   it("earns nothing when the store turns Beard Buddy off", async () => {
@@ -90,7 +90,7 @@ describe("earning", () => {
     });
     await pay(ticket([["0001", 1]]));
     expect(await balance()).toBeUndefined();
-    expect((await invoke(db, cashier, "customerBucks", { customerId: buddy })).balance).toBe(240);
+    expect((await invoke(db, cashier, "customerBucks", { customerId: buddy })).balance).toBe(480);
     await expect(invoke(db, cashier, "startCheckout", ticket([["0001", 1]], { rewards: 1 }))).rejects.toThrow(
       "Beard Buddy is turned off.",
     );
@@ -101,28 +101,28 @@ describe("birthday gift", () => {
   it("adds 100 Bucks on the first sale in the birthday month, once a year", async () => {
     await setBirthday(`1990-${todayIso().slice(5, 7)}-01`);
     expect((await invoke(db, cashier, "registerCustomer", { id: buddy })).loyalty).toEqual({
-      balance: 240,
+      balance: 480,
       birthdayGiftDue: true,
     });
     const s = await pay(ticket([["0004", 1]]));
-    expect(await balance()).toBe(240 + 8 + 100);
+    expect(await balance()).toBe(480 + 8 + 100);
     expect(receiptText(await invoke(db, cashier, "getSale", { id: s.saleId }))).toContain(
       "Happy birthday! +100 Beard Bucks",
     );
     await pay(ticket([["0004", 1]]));
-    expect(await balance()).toBe(240 + 8 + 100 + 8);
+    expect(await balance()).toBe(480 + 8 + 100 + 8);
   });
 
   it("isn't given outside the birthday month", async () => {
     const other = ((Number(todayIso().slice(5, 7)) % 12) + 1).toString().padStart(2, "0");
     await setBirthday(`1990-${other}-15`);
     await pay(ticket([["0004", 1]]));
-    expect(await balance()).toBe(248);
+    expect(await balance()).toBe(488);
   });
 });
 
 describe("rewards", () => {
-  it("takes $5 off per 100 Bucks and earns on what's left", async () => {
+  it("takes $5 off per 200 Bucks and earns on what's left", async () => {
     const s = await pay(
       ticket(
         [
@@ -134,15 +134,15 @@ describe("rewards", () => {
     );
     // $21.98 − $10.00 = $11.98, tax 84¢.
     expect(s).toMatchObject({ discountCents: 1000, taxCents: 84, totalCents: 1282 });
-    expect(await balance()).toBe(240 - 200 + 11);
+    expect(await balance()).toBe(480 - 400 + 11);
     const r = await invoke(db, cashier, "getSale", { id: s.saleId });
     expect(r.discounts).toEqual([{ name: "Beard Bucks reward ×2", amountCents: 1000, note: null }]);
-    expect(receiptText(r)).toContain("Used 200 Beard Bucks");
+    expect(receiptText(r)).toContain("Used 400 Beard Bucks");
   });
 
   it("refuses more rewards than the balance or the ticket allows", async () => {
     await expect(invoke(db, cashier, "startCheckout", ticket([["0001", 1]], { rewards: 3 }))).rejects.toThrow(
-      "They have 240 Beard Bucks, not enough for 300.",
+      "They have 480 Beard Bucks, not enough for 600.",
     );
     await expect(invoke(db, cashier, "startCheckout", ticket([["0004", 1]], { rewards: 2 }))).rejects.toThrow(
       /need at least \$10/,
@@ -150,14 +150,14 @@ describe("rewards", () => {
     await expect(
       invoke(db, cashier, "startCheckout", ticket([["0001", 1]], { rewards: 1, customerId: null })),
     ).rejects.toThrow("Add the customer to use their Beard Bucks.");
-    expect(await balance()).toBe(240);
+    expect(await balance()).toBe(480);
   });
 
   it("gives the Bucks back when the sale is canceled", async () => {
     const s = await invoke(db, cashier, "startCheckout", ticket([["0001", 1]], { rewards: 2 }));
-    expect(await balance()).toBe(40);
+    expect(await balance()).toBe(80);
     await invoke(db, cashier, "cancelSale", { saleId: s.saleId });
-    expect(await balance()).toBe(240);
+    expect(await balance()).toBe(480);
   });
 });
 
@@ -178,7 +178,7 @@ describe("refunds", () => {
         { rewards: 1 },
       ),
     );
-    expect(await balance()).toBe(240 - 100 + 72);
+    expect(await balance()).toBe(480 - 200 + 72);
     const [big, small] = await lineIds(s.saleId);
 
     const preview = await invoke(db, manager, "refundPreview", {
@@ -194,7 +194,7 @@ describe("refunds", () => {
       restock: true,
       reason: "changed_mind",
     });
-    expect(await balance()).toBe(240 - 100 + 60);
+    expect(await balance()).toBe(480 - 200 + 60);
 
     await invoke(db, owner, "refundSale", {
       saleId: s.saleId,
@@ -202,7 +202,7 @@ describe("refunds", () => {
       restock: true,
       reason: "changed_mind",
     });
-    expect(await balance()).toBe(240);
+    expect(await balance()).toBe(480);
   });
 });
 
@@ -210,7 +210,7 @@ describe("adjusting", () => {
   it("lets managers add or take away Bucks with a note, and audits it", async () => {
     expect(
       await invoke(db, manager, "adjustBucks", { customerId: buddy, bucks: 50, note: " Game night host " }),
-    ).toEqual({ balance: 290 });
+    ).toEqual({ balance: 530 });
     await expect(
       invoke(db, manager, "adjustBucks", { customerId: buddy, bucks: -5, note: " " }),
     ).rejects.toThrow("Add a note saying why.");
@@ -220,7 +220,7 @@ describe("adjusting", () => {
     const h = await invoke(db, cashier, "customerBucks", { customerId: buddy });
     expect(h.history.map((e) => [e.kind, e.bucks, e.note])).toEqual([
       ["adjust", 50, "Game night host"],
-      ["adjust", 240, "Opening balance (DEMO)"],
+      ["adjust", 480, "Opening balance (DEMO)"],
     ]);
     const log = await withBusiness(db, owner.businessId, (trx) =>
       trx
@@ -232,8 +232,8 @@ describe("adjusting", () => {
     expect(log).toEqual([
       {
         action: "loyalty.adjust",
-        before: { balance: 240 },
-        after: { balance: 290, bucks: 50, note: "Game night host" },
+        before: { balance: 480 },
+        after: { balance: 530, bucks: 50, note: "Game night host" },
       },
     ]);
   });
@@ -254,6 +254,6 @@ describe("separation between businesses", () => {
     await expect(
       invoke(db, otherCtx, "adjustBucks", { customerId: buddy, bucks: 500, note: "steal" }),
     ).rejects.toThrow(/doesn't exist/);
-    expect(await balance()).toBe(240);
+    expect(await balance()).toBe(480);
   });
 });
