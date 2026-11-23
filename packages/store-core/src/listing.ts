@@ -45,6 +45,16 @@ export const gameItems: { game: string; names?: string[]; items: StoreItem[] }[]
   { game: "fences-roll-and-write", items: [] },
 ];
 
+/**
+ * The Bearded Bundle: several of our games in one box, with its own page (/bundle). Its products
+ * carry this as their `game`, so the bundle page and the shop can find them. Any Square item whose
+ * name starts with "Bearded Bundle" lands here.
+ */
+export const BUNDLE = "bearded-bundle";
+export const bundleItems: StoreItem[] = [
+  { square: "Bearded Bundle(pre-order)", kind: "preorder", name: "Bearded Bundle (Pre-order)" },
+];
+
 /** Square items that don't belong to one of our games, placed by hand. Unlisted ones are placed by their Square category and name. */
 export const extraItems: StoreItem[] = [
   { square: "Jibe", kind: "game" },

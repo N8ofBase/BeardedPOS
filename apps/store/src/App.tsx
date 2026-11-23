@@ -6,6 +6,7 @@ import { CartProvider } from "./cart/CartProvider.tsx";
 import { CartDrawer } from "./components/CartDrawer.tsx";
 import { AccountPage } from "./pages/AccountPage.tsx";
 import { BeardPage } from "./pages/BeardPage.tsx";
+import { BundlePage } from "./pages/BundlePage.tsx";
 import { CartPage } from "./pages/CartPage.tsx";
 import { CheckoutPreviewPage } from "./pages/CheckoutPreviewPage.tsx";
 import { GamePage } from "./pages/GamePage.tsx";
@@ -54,6 +55,7 @@ export function App() {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/bundle" element={<BundlePage />} />
                     <Route path="/games/:slug" element={<GamePage />} />
                     <Route path="/beards/:id" element={<BeardPage />} />
                     <Route path="/soccerblocker" element={<SoccerBlockerRulesPage />} />

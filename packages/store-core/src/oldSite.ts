@@ -331,7 +331,8 @@ export const oldSite: OldSitePage[] = [
         id: "vip-text",
         title: "VIP page text",
         text: "EXCLUSIVE PERKS FOR VIPS. COMING SOON! Pre-Orders Get 10% Off! Join the community for an invitation to pre-order the complete bundle or individual games. These are not the final versions of the products. Gameplay, artwork, components, rules and other details are subject to change.",
-        suggestion: "The Beard Buddy band on the home page. The “subject to change” note could go under it.",
+        suggestion:
+          "Done: the Bearded Bundle page (/bundle), with the “subject to change” note under the games.",
       },
       {
         id: "vip-hero",
@@ -342,7 +343,7 @@ export const oldSite: OldSitePage[] = [
             alt: "Bearded Bundle 2026",
           },
         ],
-        suggestion: "The Beard Buddy band on the home page.",
+        suggestion: "The Bearded Bundle page (/bundle) uses the bundle picture from Square.",
       },
     ],
   },
@@ -391,7 +392,7 @@ export const oldSiteRedirects: Record<string, string> = {
   "/soccer-blocker": "/games/soccer-blocker",
   "/fences-the-roll-write": "/games/fences-roll-and-write",
   "/for-retailers": "/wholesale",
-  "/bb2026-vip": "/#buddy",
+  "/bb2026-vip": "/bundle",
   "/shop/fences": "/games/fences",
   "/shop/fences-expansions": "/games/fences",
   "/shop/fences-seasons": "/games/fences",

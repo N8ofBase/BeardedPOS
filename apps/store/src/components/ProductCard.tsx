@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router";
 import { formatCents, stockLabel, type Product } from "@bearded/store-core";
-import { canBuy } from "@bearded/store-core";
+import { BUNDLE, canBuy } from "@bearded/store-core";
 import { useCart } from "../cart/CartProvider.tsx";
 import { useSite } from "../content/SiteProvider.tsx";
 import { gamePath } from "../roll.ts";
@@ -17,8 +17,13 @@ export function ProductCard({
   linkArt?: boolean;
 }) {
   const cart = useCart();
-  const { games } = useSite();
-  const game = games.find((g) => g.slug === product.game);
+  const { games, bundle } = useSite();
+  // The Bearded Bundle links to its own page, like a game.
+  const game =
+    product.game === BUNDLE
+      ? { slug: BUNDLE, name: bundle.name, color: "#f6b820", art: bundle.art || undefined }
+      : games.find((g) => g.slug === product.game);
+  const path = product.game === BUNDLE ? "/bundle" : game ? gamePath(game.slug) : "";
   const label = stockLabel(product);
   const art = product.imageUrl ?? game?.art;
   const buyable = canBuy(product);
@@ -29,7 +34,7 @@ export function ProductCard({
       style={{ "--c": game?.color ?? "#14614F" } as CSSProperties}
     >
       {linkArt && game ? (
-        <Link className="art" to={gamePath(game.slug)} tabIndex={-1} aria-hidden="true">
+        <Link className="art" to={path} tabIndex={-1} aria-hidden="true">
           {art ? (
             <img src={art} alt="" loading="lazy" />
           ) : (
@@ -47,7 +52,7 @@ export function ProductCard({
       )}
       <div className="body">
         {showGame && game && (
-          <Link className="tag" to={gamePath(game.slug)}>
+          <Link className="tag" to={path}>
             {game.name}
           </Link>
         )}

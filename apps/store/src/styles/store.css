@@ -2054,3 +2054,108 @@ body {
     width: 100%;
   }
 }
+
+/* The Bearded Bundle page */
+.bundle-covers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.bundle-buy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 8px;
+}
+.bundle-buy .price {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 2.2rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.bundle-buy .price .buddy-price {
+  font: 800 1rem var(--text);
+  color: var(--felt);
+}
+.bundle-buy .price .when {
+  font: 700 0.95rem var(--text);
+  color: var(--muted);
+}
+.bundle-buy .btn {
+  font-size: 18px;
+  padding: 14px 26px;
+}
+.bundle-buy .in-cart {
+  flex-basis: 100%;
+  margin: 0;
+  font-weight: 700;
+}
+.bundle-games {
+  display: grid;
+  gap: 28px;
+  margin-top: 28px;
+}
+.bundle-game {
+  display: grid;
+  grid-template-columns: minmax(160px, 260px) 1fr;
+  gap: 24px;
+  align-items: start;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 6px 6px 0 var(--c, var(--felt));
+  padding: 18px;
+}
+.bundle-game .art {
+  display: block;
+  background: var(--mint);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 10px;
+}
+.bundle-game .art img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.bundle-game h3 {
+  margin-top: 10px;
+  font-size: 1.7rem;
+}
+.bundle-game .tagline {
+  font-weight: 700;
+}
+.bundle-game .by {
+  color: var(--muted);
+  font-style: italic;
+}
+.bundle-note {
+  margin-top: 28px;
+  color: var(--muted);
+  font-style: italic;
+}
+.bundle-how {
+  padding-top: 0;
+}
+.bundle-how ul {
+  max-width: 62ch;
+  padding-left: 1.2em;
+}
+.bundle-how li {
+  margin-bottom: 8px;
+}
+.bundle-how .hint {
+  color: var(--muted);
+}
+@media (max-width: 640px) {
+  .bundle-game {
+    grid-template-columns: 1fr;
+  }
+  .bundle-game .art {
+    max-width: 240px;
+  }
+}

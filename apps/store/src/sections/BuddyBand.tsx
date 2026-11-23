@@ -44,7 +44,7 @@ export function BuddyBand() {
             <strong>1 Buck</strong> for every dollar
           </li>
           <li>
-            <strong>First dibs</strong> on the Bearded Bundle
+            <strong>First dibs</strong> on the <Link to="/bundle">Bearded Bundle</Link>
           </li>
         </ul>
       </div>

@@ -10,7 +10,7 @@ import {
   type SquareCatalog,
   type SquareItem,
 } from "../src/catalog.ts";
-import { lowStockAt } from "../src/listing.ts";
+import { BUNDLE, lowStockAt } from "../src/listing.ts";
 
 const item = (over: Partial<SquareItem>): SquareItem => ({
   itemId: "I1",
@@ -224,6 +224,26 @@ describe("store products from the Square catalog", () => {
     const [p] = storeProducts(catalog(item({ tracksStock: false, stock: 3 })));
     expect(p?.stock).toBeNull();
     expect(p?.stockStatus).toBe("untracked");
+  });
+});
+
+describe("the Bearded Bundle", () => {
+  it("is a pre-order on its own shelf, right after Fences", () => {
+    const products = storeProducts(
+      catalog(
+        item({ itemId: "L", variationId: "VL", name: "Locked Out" }),
+        item({ itemId: "B", variationId: "VB", name: "Bearded Bundle(pre-order)", priceCents: 5000 }),
+        item({ itemId: "F", variationId: "VF", name: "Fences - Base Game" }),
+      ),
+    );
+    expect(products.map((p) => p.name)).toEqual(["Fences", "Bearded Bundle (Pre-order)", "Locked Out"]);
+    expect(products[1]).toMatchObject({ kind: "preorder", game: BUNDLE, priceCents: 5000 });
+    expect(stockLabel(products[1]!)).toBe("Pre-order");
+  });
+
+  it("catches other spellings of the bundle in Square", () => {
+    expect(placeItem("Bearded Bundle - Pre-Order")).toMatchObject({ kind: "preorder", game: BUNDLE });
+    expect(placeItem("Bearded Bundle 2026 Edition")).toMatchObject({ kind: "game", game: BUNDLE });
   });
 });
 

@@ -349,6 +349,40 @@ export const games: Game[] = [
   },
 ];
 
+/**
+ * The Bearded Bundle page (/bundle). The price, picture and pre-order button come from the
+ * "Bearded Bundle" item in Square; each game's own words come from its entry in `games` above.
+ */
+export interface Bundle {
+  name: string;
+  tagline: string;
+  blurb: string;
+  /** Slugs from `games`, in the order the page shows them. */
+  games: string[];
+  /** When it ships, shown by the price. */
+  when: string;
+  /** How a pre-order works, one point per line. */
+  howItWorks: string[];
+  /** Small print under the games. */
+  note: string;
+}
+
+export const bundle: Bundle = {
+  name: "The Bearded Bundle",
+  tagline: "Three new games in one bundle. Pre-order now and be first to the table.",
+  blurb:
+    "Our newest games, together for the 2026 holiday season: a soccer duel, a gem hunt for the whole family, and a head-to-head card brawl. Quick to teach, hard to put down, and perfect under a tree.",
+  games: ["soccer-blocker", "mine-and-find", "pack-lash"],
+  when: "Ships for the 2026 holidays (hopefully — we all have day jobs)",
+  howItWorks: [
+    "You pay when you pre-order, through Square’s secure checkout.",
+    "We email you when the bundle is ready, then ship it or set it aside for free pickup in St. Louis.",
+    "Beard Buddies earn Beard Bucks on a pre-order, and can use their Bucks on it too.",
+    "Changed your mind before it ships? Email us and we’ll refund you in full.",
+  ],
+  note: "These are not the final versions of the games. Gameplay, artwork, components and rules may still change before they ship.",
+};
+
 export const statusLabel: Record<GameStatus, string> = {
   available: "Out now",
   preorder: "Pre-order",

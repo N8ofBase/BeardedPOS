@@ -206,6 +206,40 @@ export const siteGroups: SiteGroup[] = [
       { key: "brand.socials.linkedin", label: "LinkedIn", kind: "url", max: 300 },
     ],
   },
+  {
+    id: "bundle",
+    title: "The Bearded Bundle",
+    page: "/bundle",
+    fields: [
+      line("bundle.name", "Name", 60),
+      line("bundle.tagline", "Tagline", 200),
+      text("bundle.blurb", "About the bundle", 1500),
+      line("bundle.when", "When it ships", 120, {
+        optional: true,
+        hint: "Shown next to the price, like “Ships in December”. Leave empty to hide it.",
+      }),
+      {
+        key: "bundle.howItWorks",
+        label: "How pre-orders work",
+        kind: "lines",
+        max: 1000,
+        optional: true,
+        hint: "One point per line. Leave empty to hide the list.",
+      },
+      text("bundle.note", "Small print", 500, {
+        optional: true,
+        hint: "Under the games, like “artwork may change”. Leave empty for none.",
+      }),
+      {
+        key: "bundle.art",
+        label: "Bundle picture",
+        kind: "image",
+        max: 64,
+        optional: true,
+        hint: "Leave empty to use the picture from Square.",
+      },
+    ],
+  },
   ...SITE_GAMES.map((g): SiteGroup => ({
     id: `game-${g.slug}`,
     title: `Game: ${g.name}`,
