@@ -33,6 +33,7 @@ import {
   staffReviews,
 } from "./handlers/staff.ts";
 import { getStats } from "./handlers/stats.ts";
+import { playGame } from "./handlers/play.ts";
 import { handleRegister } from "./register.ts";
 import { unsubscribeRoute } from "./emailQueue.ts";
 import { squareWebhook } from "./square/webhook.ts";
@@ -55,6 +56,7 @@ const ROUTES: Route[] = [
   ["POST", /^\/api\/account\/signout$/, buddySignOut],
   ["GET", /^\/api\/account$/, getAccount],
   ["POST", /^\/api\/account$/, saveAccount],
+  ["GET", /^\/api\/play\/([^/]+)$/, playGame],
   ["POST", /^\/api\/vip$/, joinVip],
   ["GET", /^\/api\/reviews$/, listReviews],
   ["POST", /^\/api\/reviews$/, submitReview],

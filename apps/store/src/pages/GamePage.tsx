@@ -165,6 +165,19 @@ export function GamePage() {
         </section>
       )}
 
+      {game.playOnline && (
+        <section className="wrap pad play-online">
+          <h2>Play it online</h2>
+          <p>
+            Beard Buddies can play {game.name} free in the browser, solo against the computer or on a phone at
+            the table.
+          </p>
+          <Link className="btn go" to={`/play/${game.slug}`}>
+            Play {game.name} online
+          </Link>
+        </section>
+      )}
+
       {game.tutorial && (
         <section className="wrap pad learn">
           <h2>Learn to play</h2>

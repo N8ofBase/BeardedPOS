@@ -1,5 +1,5 @@
-// Copies the files the store Lambda reads at run time (the store's and the register's migrations, and
-// the RDS certificate bundle)
+// Copies the files the store Lambda reads at run time (the store's and the register's migrations, the
+// Beard Buddy games and the RDS certificate bundle)
 // next to its bundle. Run by the CDK during bundling; plain Node so it works on Windows and Linux.
 import { cpSync } from "node:fs";
 import { join } from "node:path";
@@ -11,4 +11,5 @@ cpSync(join(api, "migrations"), join(outputDir, "migrations"), { recursive: true
 cpSync(join(inputDir, "packages", "db", "migrations"), join(outputDir, "pos-migrations"), {
   recursive: true,
 });
+cpSync(join(api, "games"), join(outputDir, "games"), { recursive: true });
 cpSync(join(api, "certs", "rds-global-bundle.pem"), join(outputDir, "rds-global-bundle.pem"));

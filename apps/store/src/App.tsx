@@ -12,6 +12,7 @@ import { CheckoutPreviewPage } from "./pages/CheckoutPreviewPage.tsx";
 import { GamePage } from "./pages/GamePage.tsx";
 import { Home } from "./pages/Home.tsx";
 import { NotFound } from "./pages/NotFound.tsx";
+import { PlayPage } from "./pages/PlayPage.tsx";
 import { ReviewsPage } from "./pages/ReviewsPage.tsx";
 import { SoccerBlockerRulesPage } from "./pages/RulesPage.tsx";
 import { ShopPage } from "./pages/ShopPage.tsx";
@@ -59,6 +60,7 @@ export function App() {
                     <Route path="/bundle" element={<BundlePage />} />
                     <Route path="/games/:slug" element={<GamePage />} />
                     <Route path="/beards/:id" element={<BeardPage />} />
+                    <Route path="/play/:slug" element={<PlayPage />} />
                     <Route path="/soccerblocker" element={<SoccerBlockerRulesPage />} />
                     <Route path="/reviews" element={<ReviewsPage />} />
                     <Route path="/videos" element={<VideosPage />} />

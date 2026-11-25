@@ -5,3 +5,4 @@ package-lock.json
 **/dist-hosted/
 **/cdk.out/
 infra/.site/
+services/store-api/games/

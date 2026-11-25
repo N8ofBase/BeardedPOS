@@ -131,6 +131,8 @@ export interface Game {
   downloads?: Download[];
   /** `rules` is a PDF (opens in a new tab) or a page here, like /soccerblocker. */
   links: { rules?: string; rulesLabel?: string; bgg?: string };
+  /** A web version only Beard Buddies can play, at /play/<slug> (the file is in services/store-api/games). */
+  playOnline?: boolean;
 }
 
 export const statusText = (g: Game) => g.when ?? statusLabel[g.status];
@@ -303,6 +305,7 @@ export const games: Game[] = [
       seconds: 142,
     },
     links: { bgg: "https://boardgamegeek.com/boardgame/468088/mine-and-find" },
+    playOnline: true,
   },
   {
     slug: "pack-lash",

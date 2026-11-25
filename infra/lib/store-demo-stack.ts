@@ -259,6 +259,7 @@ export class StoreDemoStack extends Stack {
         SQUARE_WEBHOOK_SECRET_ARN: webhookKey.secretArn,
         SQUARE_WEBHOOK_URL: webhookUrl,
         STORE_MIGRATIONS_DIR: "/var/task/migrations",
+        STORE_GAMES_DIR: "/var/task/games",
         RDS_CA_FILE: "/var/task/rds-global-bundle.pem",
         MAIL_FROM: `Bearded Board Games <no-reply@${primaryName}>`,
         // The register's news emails, until changed in its Settings. The shop's domain is verified in
