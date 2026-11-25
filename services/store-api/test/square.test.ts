@@ -339,6 +339,41 @@ describe("checkout through Square", () => {
     });
   });
 
+  it("asks for a shipping address on shipped orders, and marks pickups on the order", async () => {
+    const square = fakeSquare({
+      "POST /v2/online-checkout/payment-links": () => ({
+        payment_link: { id: "PL3", url: "https://x", order_id: "O3" },
+      }),
+    });
+    const store = new SquareApiStore({ mode: "sandbox", token: "t", locationId: LOC, fetch: square.fetch });
+    const base = { lines: [{ productId: "V1", qty: 1 }], redirectUrl: "https://store.test/thanks" };
+    await store.createPaymentLink({
+      ...base,
+      id: "a",
+      delivery: "ship",
+      shippingCents: 800,
+      currency: "USD",
+    });
+    await store.createPaymentLink({ ...base, id: "b", delivery: "ship", shippingCents: 0 });
+    await store.createPaymentLink({ ...base, id: "c", delivery: "pickup", shippingCents: 800 });
+    const [ship, free, pickup] = square.calls.map(
+      (c) => c.body as { order: Record<string, unknown>; checkout_options: Record<string, unknown> },
+    );
+    expect(ship).toMatchObject({
+      order: { ticket_name: "Ship it" },
+      checkout_options: {
+        ask_for_shipping_address: true,
+        shipping_fee: { name: "Shipping", charge: { amount: 800, currency: "USD" } },
+      },
+    });
+    expect(free!.checkout_options).toEqual({
+      redirect_url: "https://store.test/thanks",
+      ask_for_shipping_address: true,
+    });
+    expect(pickup!.order.ticket_name).toBe("Pickup in St. Louis");
+    expect(pickup!.checkout_options).toEqual({ redirect_url: "https://store.test/thanks" });
+  });
+
   it("counts an order as paid only when Square took the money", () => {
     expect(orderIsPaid({ id: "o", state: "COMPLETED" })).toBe(true);
     expect(orderIsPaid({ id: "o", state: "OPEN", tenders: [{}], net_amount_due_money: { amount: 0 } })).toBe(

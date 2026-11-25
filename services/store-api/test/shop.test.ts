@@ -154,3 +154,31 @@ describe("checkout", () => {
     expect(res.status).toBe(415);
   });
 });
+
+describe("ship it or pick up", () => {
+  it("passes the shopper's choice to Square, ships when an older page doesn't say, and refuses anything else", async () => {
+    const seen: Parameters<SquareStore["createPaymentLink"]>[0][] = [];
+    const square: SquareStore = Object.assign(new SnapshotStore(), {
+      createPaymentLink: async (order: Parameters<SquareStore["createPaymentLink"]>[0]) => {
+        seen.push(order);
+        return { url: "https://square.test/pay", squareOrderId: null, paymentLinkId: null };
+      },
+    });
+    const store = makeStore(db, { square });
+    const lines = [{ productId: LOCKED_OUT, qty: 1 }];
+    const pickup = await store.call("POST", "/api/checkout", { lines, delivery: "pickup" });
+    expect(pickup.status).toBe(200);
+    await store.call("POST", "/api/checkout", { lines });
+    expect(seen.map((o) => [o.delivery, o.shippingCents])).toEqual([
+      ["pickup", 0],
+      ["ship", 0],
+    ]);
+    const bad = await store.call("POST", "/api/checkout", { lines, delivery: "drone" });
+    expect(bad.status).toBe(400);
+    const { orderId } = pickup.body as CheckoutResponse;
+    const { rows } = await db.query<{ delivery: string }>("SELECT delivery FROM store_orders WHERE id = $1", [
+      orderId,
+    ]);
+    expect(rows[0]!.delivery).toBe("pickup");
+  });
+});

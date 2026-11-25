@@ -287,6 +287,8 @@ export class SquareApiStore implements SquareStore {
     discountCents?: number;
     buyerEmail?: string;
     currency?: string;
+    delivery?: "ship" | "pickup";
+    shippingCents?: number;
   }) {
     const discount = order.discountCents ?? 0;
     const r = await this.call<{ payment_link: { id: string; url: string; order_id?: string } }>(
@@ -298,6 +300,10 @@ export class SquareApiStore implements SquareStore {
         order: {
           location_id: await this.locationId(),
           reference_id: order.id,
+          // Shows on the order in Square, so staff can see at a glance which orders to mail.
+          ...(order.delivery
+            ? { ticket_name: order.delivery === "ship" ? "Ship it" : "Pickup in St. Louis" }
+            : {}),
           line_items: order.lines.map((l) => ({ catalog_object_id: l.productId, quantity: String(l.qty) })),
           pricing_options: { auto_apply_taxes: true },
           // Beard Bucks: one fixed discount on the whole order, so Square taxes what's left.
@@ -315,7 +321,19 @@ export class SquareApiStore implements SquareStore {
               }
             : {}),
         },
-        checkout_options: { redirect_url: order.redirectUrl },
+        checkout_options: {
+          redirect_url: order.redirectUrl,
+          // Square's page asks for the address and keeps it with the order; we never store it.
+          ...(order.delivery === "ship" ? { ask_for_shipping_address: true } : {}),
+          ...(order.delivery === "ship" && (order.shippingCents ?? 0) > 0
+            ? {
+                shipping_fee: {
+                  name: "Shipping",
+                  charge: { amount: order.shippingCents, currency: order.currency ?? "USD" },
+                },
+              }
+            : {}),
+        },
         ...(order.buyerEmail ? { pre_populated_data: { buyer_email: order.buyerEmail } } : {}),
       },
     );

@@ -10,6 +10,8 @@ import {
   REWARD_CENTS,
   REWARD_NAME,
   rewardsAllowed,
+  SHIPPING_CENTS,
+  type Delivery,
 } from "@bearded/store-core";
 import { errorText, useStore } from "../api/store.ts";
 import { BuddySignIn } from "../buddy/BuddySignIn.tsx";
@@ -28,6 +30,7 @@ export function CartContents({ onLeave }: { onLeave?: () => void }) {
   // Signed out, "Check out" first asks: sign in and earn Bucks, or go on as a guest.
   const [choice, setChoice] = useState<"closed" | "open" | "signing-in">("closed");
   const [wantRewards, setWantRewards] = useState(0);
+  const [delivery, setDelivery] = useState<Delivery>("ship");
   const guestNote = useId();
   const account = useSignedIn();
   const summary = cart.summary;
@@ -43,7 +46,7 @@ export function CartContents({ onLeave }: { onLeave?: () => void }) {
     setState("sending");
     try {
       const lines = summary!.lines.map((l) => ({ productId: l.product.id, qty: l.qty }));
-      const { url } = await store.checkout(lines, tracker.visitorId, account ? rewards : 0);
+      const { url } = await store.checkout(lines, tracker.visitorId, account ? rewards : 0, delivery);
       tracker.track({ type: "checkout_start", qty: lines.reduce((n, l) => n + l.qty, 0) });
       onLeave?.();
       if (url.startsWith("/")) navigate(url);
@@ -159,8 +162,33 @@ export function CartContents({ onLeave }: { onLeave?: () => void }) {
             <strong>{formatCents(summary.subtotalCents - discountCents)}</strong>
           </p>
           {account && earns > 0 && <p className="earns">This order earns {bucksLabel(earns)}.</p>}
+          <fieldset className="delivery">
+            <legend>How should we get it to you?</legend>
+            <label className={delivery === "ship" ? "on" : undefined}>
+              <input
+                type="radio"
+                name="delivery"
+                value="ship"
+                checked={delivery === "ship"}
+                onChange={() => setDelivery("ship")}
+              />
+              Ship it {SHIPPING_CENTS > 0 ? `(${formatCents(SHIPPING_CENTS)})` : "(free)"}
+            </label>
+            <label className={delivery === "pickup" ? "on" : undefined}>
+              <input
+                type="radio"
+                name="delivery"
+                value="pickup"
+                checked={delivery === "pickup"}
+                onChange={() => setDelivery("pickup")}
+              />
+              Pick up in St. Louis (free)
+            </label>
+          </fieldset>
           <p className="fine">
-            Tax and shipping are added on Square’s secure checkout page. Pickup in St. Louis is free.
+            {delivery === "ship"
+              ? "Square’s secure checkout page asks for your shipping address and adds tax."
+              : "We’ll email you when it’s ready to pick up. Tax is added on Square’s secure checkout page."}
           </p>
           {account || choice === "closed" ? (
             <button

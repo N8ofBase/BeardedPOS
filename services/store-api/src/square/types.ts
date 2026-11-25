@@ -30,6 +30,10 @@ export interface SquareStore {
     buyerEmail?: string;
     /** The catalog's currency, for the discount. */
     currency?: string;
+    /** "ship": Square asks for a shipping address (and adds shipping when it costs something). */
+    delivery?: "ship" | "pickup";
+    /** Shipping on a shipped order, in cents. */
+    shippingCents?: number;
   }): Promise<{ url: string; squareOrderId: string | null; paymentLinkId: string | null }>;
   /** Whether Square's order for a checkout has been paid. */
   orderPaid(squareOrderId: string): Promise<boolean>;
