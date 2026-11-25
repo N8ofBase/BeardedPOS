@@ -1,6 +1,6 @@
 // The Bearded Bundle page: the games inside, the price from Square and the pre-order button.
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadSnapshot } from "@bearded/store-api";
 import type { SquareCatalog } from "@bearded/store-core";
 import { CART_KEY } from "../src/cart/CartProvider.tsx";
@@ -9,8 +9,14 @@ import { renderStore } from "./render.tsx";
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
+  // Pre-orders are open (they open Saturday, Nov 28, 2026).
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-28T10:00:00-06:00"));
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const BUNDLE_ID = "QQP3FQLB2ZSUOTOHHZYTKSN3";
 
@@ -45,6 +51,16 @@ describe("Bearded Bundle page", () => {
     const drawer = screen.getByRole("dialog", { name: "Your cart" });
     expect(within(drawer).getByText("Bearded Bundle (Pre-order)", { selector: "strong" })).toBeTruthy();
     expect(JSON.parse(localStorage.getItem(CART_KEY)!)).toEqual([{ productId: BUNDLE_ID, qty: 1 }]);
+  });
+
+  it("shows the bundle but keeps the button off until pre-orders open", async () => {
+    vi.setSystemTime(new Date("2026-11-27T23:59:00-06:00"));
+    renderStore("/bundle", { catalog: async () => withBundle() });
+    const button = await screen.findByRole("button", {
+      name: "Bearded Bundle (Pre-order): Opens Saturday, Nov 28",
+    });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(button.textContent).toBe("Opens Saturday, Nov 28");
   });
 
   it("says pre-orders aren't open when Square has no bundle", async () => {

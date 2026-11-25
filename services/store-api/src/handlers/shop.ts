@@ -1,10 +1,12 @@
 // Catalog, checkout and the offline preview of Square's payment page.
 import {
   BUCKS_PER_REWARD,
+  BUNDLE_OPENS_DAY,
   DELIVERIES,
   formatCents,
   maxQty,
   MIN_REWARD_ORDER_CENTS,
+  notOpenYet,
   REWARD_CENTS,
   rewardsAllowed,
   SHIPPING_CENTS,
@@ -50,6 +52,8 @@ export function priceLines(raw: unknown, products: Product[]): OrderLine[] {
     const p = byId.get(id);
     if (!p)
       throw new HttpError(409, "An item in your cart is no longer in the shop. Remove it to check out.");
+    if (notOpenYet(p))
+      throw new HttpError(409, `${p.name} opens for orders ${BUNDLE_OPENS_DAY}. Remove it to check out.`);
     const max = maxQty(p);
     if (max === 0) throw new HttpError(409, `${p.name} just sold out. Remove it to check out.`);
     if (n > max)

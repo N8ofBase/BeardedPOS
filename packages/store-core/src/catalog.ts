@@ -2,6 +2,8 @@
 // every Square item with a fixed price shows; listing.ts places items by game and kind.
 import {
   BUNDLE,
+  BUNDLE_OPENS_AT,
+  BUNDLE_OPENS_LABEL,
   bundleItems,
   extraItems,
   gameItems,
@@ -60,7 +62,13 @@ export interface Product {
   stock: number | null;
   stockStatus: StockStatus;
   imageUrl: string | null;
+  /** Can't be bought before this time (ISO), like the Bearded Bundle before pre-orders open. */
+  opensAt?: string;
 }
+
+/** True when a product has an opening time that hasn't come yet. */
+export const notOpenYet = (p: Product, now: Date = new Date()) =>
+  !!p.opensAt && now.getTime() < Date.parse(p.opensAt);
 
 /** Square names are matched ignoring case, spacing and dash style, so "5-6" and "5–6" are the same item. */
 export const matchKey = (name: string) =>
@@ -175,6 +183,7 @@ export function storeProducts(catalog: SquareCatalog): Product[] {
         stock,
         stockStatus: stockStatus(stock),
         imageUrl: item.imageUrl,
+        ...(listing.game === BUNDLE ? { opensAt: BUNDLE_OPENS_AT } : {}),
       };
       // Our games first, in shelf order (even when Square spells an item differently), then the rest.
       // The Bearded Bundle sits right after the first game, so Fences still leads the shop.
@@ -214,7 +223,8 @@ export function formatCents(cents: number): string {
   return cents % 100 === 0 ? text.replace(/\.00$/, "") : text;
 }
 
-export function stockLabel(p: Product): string | null {
+export function stockLabel(p: Product, now: Date = new Date()): string | null {
+  if (notOpenYet(p, now)) return BUNDLE_OPENS_LABEL;
   if (p.kind === "preorder") return "Pre-order";
   if (p.kind === "digital") return "Digital download";
   switch (p.stockStatus) {

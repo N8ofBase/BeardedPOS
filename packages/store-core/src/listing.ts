@@ -51,6 +51,14 @@ export const gameItems: { game: string; names?: string[]; items: StoreItem[] }[]
  * name starts with "Bearded Bundle" lands here.
  */
 export const BUNDLE = "bearded-bundle";
+/**
+ * When Bearded Bundle pre-orders open (Saturday, November 28, 2026 at midnight in St. Louis). Before
+ * this the page shows the bundle but the button stays off, and checkout refuses it.
+ */
+export const BUNDLE_OPENS_AT = "2026-11-28T00:00:00-06:00";
+export const BUNDLE_OPENS_DAY = "Saturday, Nov 28";
+export const BUNDLE_OPENS_LABEL = `Opens ${BUNDLE_OPENS_DAY}`;
+
 export const bundleItems: StoreItem[] = [
   { square: "Bearded Bundle(pre-order)", kind: "preorder", name: "Bearded Bundle (Pre-order)" },
 ];
