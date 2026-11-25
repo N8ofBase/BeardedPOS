@@ -5,12 +5,14 @@ import { Shelf } from "../sections/Shelf.tsx";
 import { Shop } from "../sections/Shop.tsx";
 import { Songs } from "../sections/Songs.tsx";
 import { BuddyBand } from "../sections/BuddyBand.tsx";
+import { BundleBand } from "../sections/BundleBand.tsx";
 import { WhatPlayersSay } from "../sections/WhatPlayersSay.tsx";
 
 export function Home() {
   return (
     <>
       <Hero />
+      <BundleBand />
       <Shelf />
       <WhatPlayersSay />
       <Shop />

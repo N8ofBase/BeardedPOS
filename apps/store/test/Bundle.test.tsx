@@ -95,3 +95,19 @@ describe("Bearded Bundle page", () => {
     expect(screen.getByRole("link", { name: "See what’s inside" }).getAttribute("href")).toBe("/bundle");
   });
 });
+
+describe("Bearded Bundle on the home page", () => {
+  it("sits just before the shelf with the games, Square's price and a link to the bundle page", async () => {
+    vi.setSystemTime(new Date("2026-11-25T10:00:00-06:00"));
+    renderStore("/", { catalog: async () => withBundle() });
+    const band = document.getElementById("bundle")!;
+    expect(band.nextElementSibling?.id).toBe("games");
+    expect(within(band).getByRole("heading", { level: 2, name: "The Bearded Bundle" })).toBeTruthy();
+    expect(band.textContent).toContain("Soccer Blocker, Mine & Find, Pack Lash");
+    expect(await within(band).findByText(/\$45 for Beard Buddies/)).toBeTruthy();
+    expect(within(band).getByText("Opens Saturday, Nov 28")).toBeTruthy();
+    expect(within(band).getByRole("link", { name: "See what’s inside" }).getAttribute("href")).toBe(
+      "/bundle",
+    );
+  });
+});
