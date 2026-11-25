@@ -25,7 +25,7 @@ export function BundleBand() {
           {art ? (
             <img src={art} alt="" loading="lazy" />
           ) : (
-            <span className="bundle-covers">
+            <span className="band-covers">
               {inside.map((g) => (
                 <img key={g.slug} src={g.art} alt="" loading="lazy" />
               ))}

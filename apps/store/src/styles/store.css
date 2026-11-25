@@ -2088,6 +2088,23 @@ body {
   width: 100%;
   height: auto;
 }
+/* The first game big on the left, the other two stacked beside it. */
+.bundle-band .band-covers {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.bundle-band .band-covers img:first-child {
+  grid-row: 1 / span 2;
+}
+.bundle-band .band-covers img:not(:first-child) {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  min-height: 0;
+}
 .bundle-band .kicker {
   margin: 0;
   font-weight: 800;
