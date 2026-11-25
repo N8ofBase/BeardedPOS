@@ -10,6 +10,7 @@ import { openPglite } from "./db.ts";
 import { parseCookies, type ApiRequest } from "./http.ts";
 import { logMailer } from "./mailer.ts";
 import { handle, MAX_UPLOAD_BODY, UPLOAD_PATH } from "./router.ts";
+import { UNSUBSCRIBE_PATH } from "./emailQueue.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SnapshotStore } from "./square/snapshot.ts";
 import type { SquareStore } from "./square/types.ts";
@@ -81,9 +82,11 @@ export function apiMiddleware(ready: Promise<StoreCtx>) {
     };
     let body: unknown;
     let text: string;
+    const isUnsubscribe = url.pathname === UNSUBSCRIBE_PATH;
     try {
       text = await readBody(req, url.pathname === UPLOAD_PATH ? MAX_UPLOAD_BODY : MAX_BODY);
-      body = text ? JSON.parse(text) : undefined;
+      // A mail app's one-click unsubscribe posts a form body; the link's query is all that counts.
+      body = text && !isUnsubscribe ? JSON.parse(text) : undefined;
     } catch {
       return send(400, { error: "That request didn’t make sense. Refresh the page and try again." });
     }

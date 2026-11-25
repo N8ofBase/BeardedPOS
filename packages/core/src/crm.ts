@@ -179,10 +179,19 @@ ${escapeHtml(input.sender.mailingAddress)}</p>
     text,
     html,
     headers: {
-      "List-Unsubscribe": `<${input.unsubscribeUrl}>`,
+      // Mail apps' own unsubscribe button POSTs here (RFC 8058), so it goes to the server, not the page.
+      "List-Unsubscribe": `<${oneClickUnsubscribeUrl(input.unsubscribeUrl)}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
   };
+}
+
+/**
+ * The address a mail app's one-click unsubscribe posts to: the same token at the server's
+ * /api/unsubscribe, since the page itself is a static file that can't take a POST.
+ */
+export function oneClickUnsubscribeUrl(pageUrl: string): string {
+  return pageUrl.replace(/\/unsubscribe\?/, "/api/unsubscribe?");
 }
 
 /** Where the unsubscribe link points: the store's public page, with the send's token. */

@@ -1699,8 +1699,16 @@ body {
   margin: 0;
   text-align: center;
 }
+/* Name, email and balance on one line with room between them (they wrap on a phone). */
+.buddy .top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
 .buddy .balance {
   margin-left: auto;
+  white-space: nowrap;
 }
 
 /* The announcement bar and the draft preview bar, above the header. */

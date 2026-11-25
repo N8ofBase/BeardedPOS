@@ -110,7 +110,7 @@ describe("the email", () => {
     expect(e.from).toBe('"Bearded Board Games" <news@mail.example.com>');
     expect(e.subject).toBe("New game!");
     expect(e.headers).toEqual({
-      "List-Unsubscribe": `<${url}>`,
+      "List-Unsubscribe": "<https://shop.example.com/api/unsubscribe?b=biz-1&t=abc>",
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     });
     expect(e.text).toContain("Hi Pat,");

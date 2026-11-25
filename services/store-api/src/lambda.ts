@@ -7,7 +7,7 @@ import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
 import type { StoreCtx } from "./context.ts";
 import { parseCookies, type ApiRequest, type ApiResponse } from "./http.ts";
 import { sesMailer } from "./mailer.ts";
-import { setTerminal } from "@bearded/api";
+import { mailer, setMailer, setTerminal } from "@bearded/api";
 import { squareReturnUrl } from "@bearded/core";
 import { ensureStore } from "@bearded/db";
 import { withBusiness } from "./db.ts";
@@ -16,6 +16,7 @@ import { openRegister, readMigrations, storeSetup } from "./register-postgres.ts
 import { joinAllBuddies } from "./loyalty.ts";
 import { catchUpRegisterStock } from "./registerStock.ts";
 import { handle, MAX_UPLOAD_BODY, UPLOAD_PATH } from "./router.ts";
+import { DEFAULT_PER_SECOND, EMAIL_JOB, emailJob, sesBulkMailer, UNSUBSCRIBE_PATH } from "./emailQueue.ts";
 import { SquareApiStore } from "./square/live.ts";
 import { SquarePosTerminal } from "./square/pos.ts";
 import { sendStockToSquare } from "./square/registerSync.ts";
@@ -79,6 +80,7 @@ export async function serve(ctx: StoreCtx, event: HttpEvent): Promise<HttpResult
       : event.body
     : "";
   let body: unknown;
+  const isUnsubscribe = event.rawPath === UNSUBSCRIBE_PATH;
   try {
     const max = event.rawPath.startsWith("/api/pos/")
       ? MAX_REGISTER_BODY
@@ -86,7 +88,8 @@ export async function serve(ctx: StoreCtx, event: HttpEvent): Promise<HttpResult
         ? MAX_UPLOAD_BODY
         : MAX_BODY;
     if (text.length > max) throw new Error("too big");
-    body = text ? JSON.parse(text) : undefined;
+    // A mail app's one-click unsubscribe posts a form body; the link's query is all that counts.
+    body = text && !isUnsubscribe ? JSON.parse(text) : undefined;
   } catch {
     return result({
       status: 400,
@@ -186,6 +189,16 @@ export async function hostedContext(env = process.env): Promise<StoreCtx> {
     await withBusiness(storeDb, businessId, joinAllBuddies).catch((e: unknown) =>
       console.error("beard buddy join failed", e),
     );
+  // On the live store the register's Email page really sends: through SES, from the address in its
+  // Settings. The Sandbox demo keeps previews.
+  if (pos && env.BULK_EMAIL === "on")
+    setMailer(
+      sesBulkMailer({
+        siteUrl: need("BBG_SITE_URL"),
+        send: (input) => ses.send(new SendEmailCommand(input)),
+        perSecond: Number(env.SES_PER_SECOND) || DEFAULT_PER_SECOND,
+      }),
+    );
   const ctx: StoreCtx = {
     db: storeDb,
     ...(pos ? { pos } : {}),
@@ -246,11 +259,22 @@ function registerOff(e: unknown): undefined {
 
 let ready: Promise<StoreCtx> | undefined;
 
-export async function handler(event: HttpEvent): Promise<HttpResult> {
+/** The every-minute schedule's event (infra: EventBridge rule with a fixed input). */
+export interface JobEvent {
+  job: typeof EMAIL_JOB;
+}
+
+const isJob = (e: HttpEvent | JobEvent): e is JobEvent => (e as JobEvent).job === EMAIL_JOB;
+
+export async function handler(event: HttpEvent | JobEvent): Promise<HttpResult | null> {
   ready ??= hostedContext().catch((e: unknown) => {
     ready = undefined; // try again on the next request
     throw e;
   });
+  if (isJob(event)) {
+    const ctx = await ready;
+    return emailJob(ctx, mailer).then(() => null);
+  }
   try {
     return await serve(await ready, event);
   } catch (e) {

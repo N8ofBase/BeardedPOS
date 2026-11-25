@@ -19,6 +19,8 @@ export interface StoreSetup {
   demo: DemoPartsOptions | false;
   /** The store's look, set once while the business has none: hex color and a data:image URL. */
   look?: { brandColor: string; logo: string | null };
+  /** Where the register's news emails come from, set once while the business has none. */
+  emailFrom?: string;
   /**
    * What the store sells, added once with this many of each on hand. The (DEMO) sample products are
    * archived then, so the shelf shows the store's own items.
@@ -78,6 +80,16 @@ export async function ensureStore(db: Kysely<DB>, s: StoreSetup): Promise<void> 
           .where("id", "=", s.businessId)
           .where("brand_color", "is", null)
           .where("logo_data", "is", null)
+          .execute(),
+      );
+    const emailFrom = s.emailFrom;
+    if (emailFrom)
+      await once(trx, s.businessId, "store-email-from", () =>
+        trx
+          .updateTable("businesses")
+          .set({ email_from_address: emailFrom })
+          .where("id", "=", s.businessId)
+          .where("email_from_address", "is", null)
           .execute(),
       );
     const items = s.items;

@@ -34,6 +34,8 @@ export interface EmailSetup {
   mailingAddress: string;
   /** What's missing before anything can be sent; empty when ready. */
   missing: string[];
+  /** True when emails really go out (the hosted register); false in the demo, which keeps previews. */
+  realSend: boolean;
 }
 
 export const getEmailSetup = defineHandler<void, EmailSetup>({
@@ -49,7 +51,7 @@ export const getEmailSetup = defineHandler<void, EmailSetup>({
       fromAddress: b.email_from_address ?? "",
       mailingAddress: b.mailing_address ?? "",
     };
-    return { ...setup, missing: missingSetup(setup) };
+    return { ...setup, missing: missingSetup(setup), realSend: !defaultMailer.preview };
   },
 });
 
@@ -576,6 +578,39 @@ export async function deliverBatch(
       .where("id", "=", campaignId)
       .where("status", "=", "sending")
       .execute();
+  return { sent, failed, left };
+}
+
+/**
+ * The hosted worker's turn: sends up to `max` queued emails, oldest email first, across every
+ * email that's going out. Returns how many were tried and how many are still waiting.
+ */
+export async function sendQueued(
+  trx: Trx,
+  mailer: Mailer,
+  businessId: string,
+  max: number,
+): Promise<{ sent: number; failed: number; left: number }> {
+  const going = await trx
+    .selectFrom("email_campaigns")
+    .select("id")
+    .where("status", "=", "sending")
+    .orderBy("created_at")
+    .execute();
+  let sent = 0;
+  let failed = 0;
+  let left = 0;
+  for (const c of going) {
+    const room = max - sent - failed;
+    if (room <= 0) {
+      left += await queuedCount(trx, c.id);
+      continue;
+    }
+    const r = await deliverBatch(trx, mailer, businessId, c.id, room);
+    sent += r.sent;
+    failed += r.failed;
+    left += r.left;
+  }
   return { sent, failed, left };
 }
 

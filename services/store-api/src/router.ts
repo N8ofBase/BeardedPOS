@@ -34,6 +34,7 @@ import {
 } from "./handlers/staff.ts";
 import { getStats } from "./handlers/stats.ts";
 import { handleRegister } from "./register.ts";
+import { unsubscribeRoute } from "./emailQueue.ts";
 import { squareWebhook } from "./square/webhook.ts";
 
 type Route = [
@@ -58,6 +59,8 @@ const ROUTES: Route[] = [
   ["GET", /^\/api\/reviews$/, listReviews],
   ["POST", /^\/api\/reviews$/, submitReview],
   ["POST", /^\/api\/events$/, logEvents],
+  ["GET", /^\/api\/unsubscribe$/, unsubscribeRoute],
+  ["POST", /^\/api\/unsubscribe$/, unsubscribeRoute],
   ["POST", /^\/api\/staff\/code$/, requestCode],
   ["POST", /^\/api\/staff\/session$/, signIn],
   ["GET", /^\/api\/staff\/me$/, me],

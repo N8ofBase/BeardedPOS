@@ -55,7 +55,9 @@ export {
 } from "./handlers/crm.ts";
 export {
   deliverBatch,
+  sendQueued,
   queueCampaign,
+  releaseDueCampaigns,
   recordSesEvent,
   type AudienceCount,
   type CampaignDetail,
@@ -67,7 +69,7 @@ export {
   type SesEvent,
   type UnsubscribeInfo,
 } from "./handlers/email.ts";
-export { mailer, PreviewMailer, sesSendEmailInput, type Mailer } from "./email/mailer.ts";
+export { mailer, PreviewMailer, sesSendEmailInput, setMailer, type Mailer } from "./email/mailer.ts";
 export type { DiscountInput, DiscountRow } from "./handlers/discounts.ts";
 export type { CustomerBucks, LedgerRow, LoyaltyCard } from "./handlers/loyalty.ts";
 export {
