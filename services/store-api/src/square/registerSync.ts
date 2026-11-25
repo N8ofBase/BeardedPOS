@@ -175,6 +175,9 @@ export interface SyncPreview {
   linkedCustomers: number;
   customersToSquare: number;
   duplicateCustomers: number;
+  /** Square customers who become OK to email, and register customers taken off for unsubscribing in Square. */
+  customersOkToEmail: number;
+  customersUnsubscribed: number;
 }
 
 function preview(
@@ -207,6 +210,8 @@ function preview(
     linkedCustomers: c.link.length,
     customersToSquare: c.push.length,
     duplicateCustomers: c.duplicates.length,
+    customersOkToEmail: c.emailChanges.ok,
+    customersUnsubscribed: c.emailChanges.off,
   };
 }
 

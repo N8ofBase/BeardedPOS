@@ -28,6 +28,8 @@ export interface SyncPreview {
   linkedCustomers: number;
   customersToSquare: number;
   duplicateCustomers: number;
+  customersOkToEmail?: number;
+  customersUnsubscribed?: number;
 }
 export interface SyncResult {
   preview: SyncPreview;
@@ -36,6 +38,8 @@ export interface SyncResult {
     pricesChanged: number;
     stockChanged: number;
     customersAdded: number;
+    customersOkToEmail?: number;
+    customersUnsubscribed?: number;
     productsLeftOut?: number;
     customersLeftOut?: number;
   };
@@ -55,7 +59,12 @@ function leftOut(a: { productsLeftOut?: number; customersLeftOut?: number }): st
 export function nothingToDo(p: SyncPreview): boolean {
   return (
     p.newProducts.length + p.priceChanges.length + p.stockChanges.length + p.linkedProducts === 0 &&
-    p.newCustomers + p.linkedCustomers + p.customersToSquare === 0
+    p.newCustomers +
+      p.linkedCustomers +
+      p.customersToSquare +
+      (p.customersOkToEmail ?? 0) +
+      (p.customersUnsubscribed ?? 0) ===
+      0
   );
 }
 
@@ -77,7 +86,7 @@ export function SquareSection() {
       const a = r.applied;
       toast(
         a
-          ? `From Square: ${plural(a.productsAdded, "new product")}, ${plural(a.pricesChanged, "price")} and ${plural(a.stockChanged, "count")} changed, ${plural(a.customersAdded, "new customer")}${leftOut(a)}`
+          ? `From Square: ${plural(a.productsAdded, "new product")}, ${plural(a.pricesChanged, "price")} and ${plural(a.stockChanged, "count")} changed, ${plural(a.customersAdded, "new customer")}${a.customersOkToEmail ? `, ${plural(a.customersOkToEmail, "customer")} OK to email` : ""}${leftOut(a)}`
           : "Square sync done",
       );
       for (const key of ["square-status", "products", "product", "customers", "customer"])
@@ -174,6 +183,12 @@ function PreviewList({ p }: { p: SyncPreview }) {
           </li>
         )}
         {p.newCustomers > 0 && <li>{plural(p.newCustomers, "customer")} from Square</li>}
+        {!!p.customersOkToEmail && (
+          <li>{plural(p.customersOkToEmail, "customer")} OK to email (not unsubscribed in Square)</li>
+        )}
+        {!!p.customersUnsubscribed && (
+          <li>{plural(p.customersUnsubscribed, "customer")} taken off email (unsubscribed in Square)</li>
+        )}
         {p.linkedCustomers > 0 && (
           <li>{plural(p.linkedCustomers, "register customer")} matched by phone or email</li>
         )}

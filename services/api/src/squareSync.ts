@@ -49,7 +49,16 @@ export async function loadSyncState(trx: Trx): Promise<SyncState> {
     .execute();
   const customers = await trx
     .selectFrom("customers")
-    .select(["id", "name", "phone", "email", "square_customer_id", "is_demo"])
+    .select([
+      "id",
+      "name",
+      "phone",
+      "email",
+      "square_customer_id",
+      "is_demo",
+      "email_opt_in",
+      "square_email_ok",
+    ])
     .orderBy("created_at")
     .execute();
   const waiting = await trx
@@ -79,6 +88,8 @@ export async function loadSyncState(trx: Trx): Promise<SyncState> {
         phone: c.phone,
         email: c.email,
         squareCustomerId: c.square_customer_id,
+        emailOptIn: c.email_opt_in,
+        squareEmailOk: c.square_email_ok,
       })),
     waiting: new Set(waiting.map((w) => w.product_id)),
   };
@@ -94,6 +105,10 @@ export interface SyncSummary {
   stockChanged: number;
   customersAdded: number;
   customersLinked: number;
+  /** Square customers newly marked OK to email (not unsubscribed in Square). */
+  customersOkToEmail?: number;
+  /** Customers taken off email because they unsubscribed in Square. */
+  customersUnsubscribed?: number;
 }
 
 /** Writes a product plan and a customer plan (Square customers in; links). Owners and managers. */
@@ -215,6 +230,10 @@ export async function applySquareSync(
     else summary.customersLeftOut++;
   }
 
+  const prefs = await applyEmailPrefs(trx, customers.emailPrefs);
+  summary.customersOkToEmail = prefs.ok;
+  summary.customersUnsubscribed = prefs.unsubscribed;
+
   await trx
     .insertInto("square_sync_runs")
     .values({
@@ -224,6 +243,67 @@ export async function applySquareSync(
     })
     .execute();
   return summary;
+}
+
+/**
+ * Square's marketing email setting, onto register customers linked to Square. Unsubscribed in
+ * Square always means not OK to email here. Not unsubscribed means OK to email the first time we
+ * check (unless they unsubscribed from our own emails); after that, a choice made in the register
+ * stays. Returns how many changed each way.
+ */
+export async function applyEmailPrefs(
+  trx: Trx,
+  prefs: { squareId: string; unsubscribed: boolean }[],
+): Promise<{ ok: number; unsubscribed: number }> {
+  const off = prefs.filter((p) => p.unsubscribed).map((p) => p.squareId);
+  const on = prefs.filter((p) => !p.unsubscribed).map((p) => p.squareId);
+  let unsubscribed = 0;
+  let ok = 0;
+  if (off.length > 0) {
+    const r = await trx
+      .updateTable("customers")
+      .set({ email_opt_in: false, square_email_ok: false })
+      .where("square_customer_id", "in", off)
+      .where("email_opt_in", "=", true)
+      .returning("id")
+      .execute();
+    unsubscribed = r.length;
+    await trx
+      .updateTable("customers")
+      .set({ square_email_ok: false })
+      .where("square_customer_id", "in", off)
+      .where((eb) => eb.or([eb("square_email_ok", "is", null), eb("square_email_ok", "=", true)]))
+      .execute();
+  }
+  if (on.length > 0) {
+    const r = await trx
+      .updateTable("customers")
+      .set({ email_opt_in: true, square_email_ok: true })
+      .where("square_customer_id", "in", on)
+      .where("square_email_ok", "is", null)
+      .where("email", "is not", null)
+      .where("email_opt_in", "=", false)
+      .where(({ not, exists, selectFrom }) =>
+        not(
+          exists(
+            selectFrom("email_suppressions as s")
+              .select("s.email")
+              .whereRef("s.email", "=", sql<string>`lower(customers.email)`),
+          ),
+        ),
+      )
+      .returning("id")
+      .execute();
+    ok = r.length;
+    // The rest were checked too (already OK, no email, or unsubscribed from our own emails).
+    await trx
+      .updateTable("customers")
+      .set({ square_email_ok: true })
+      .where("square_customer_id", "in", on)
+      .where("square_email_ok", "is", null)
+      .execute();
+  }
+  return { ok, unsubscribed };
 }
 
 /**

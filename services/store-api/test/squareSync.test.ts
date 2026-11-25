@@ -359,6 +359,50 @@ describe("the Square sync", () => {
     ]);
   });
 
+  it("marks Square customers OK to email unless they unsubscribed in Square, and keeps the register's later choices", async () => {
+    square.customers.push(
+      {
+        id: "C6",
+        given_name: "Una",
+        email_address: "una@example.com",
+        preferences: { email_unsubscribed: true },
+      },
+      { id: "C7", given_name: "Opal", email_address: "opal@example.com" },
+    );
+    // Opal unsubscribed from one of our own emails before, so she stays off.
+    await pg.query(
+      "INSERT INTO email_suppressions (business_id, email, reason) VALUES ($1, 'opal@example.com', 'unsubscribed')",
+      [BIZ_A],
+    );
+    const check = (await sync(false)).body as { preview: Record<string, unknown> };
+    expect(check.preview).toMatchObject({ customersOkToEmail: 2, customersUnsubscribed: 0 });
+    const r = await sync(true);
+    expect((r.body as { applied: object }).applied).toMatchObject({ customersOkToEmail: 1 });
+    const optIn = () =>
+      rows<{ square_customer_id: string; email_opt_in: boolean }>(
+        "SELECT square_customer_id, email_opt_in FROM customers WHERE square_customer_id IN ('C2', 'C6', 'C7') ORDER BY 1",
+      );
+    expect(await optIn()).toEqual([
+      { square_customer_id: "C2", email_opt_in: true },
+      { square_customer_id: "C6", email_opt_in: false },
+      { square_customer_id: "C7", email_opt_in: false },
+    ]);
+
+    // Turned off by hand in the register: the next sync leaves it off.
+    await pg.query("UPDATE customers SET email_opt_in = false WHERE square_customer_id = 'C2'");
+    await sync(true);
+    expect((await optIn())[0]!.email_opt_in).toBe(false);
+
+    // Unsubscribing in Square later takes them off.
+    await pg.query("UPDATE customers SET email_opt_in = true WHERE square_customer_id = 'C2'");
+    (square.customers[1] as { preferences?: object }).preferences = { email_unsubscribed: true };
+    expect(((await sync(false)).body as { preview: object }).preview).toMatchObject({
+      customersUnsubscribed: 1,
+    });
+    await sync(true);
+    expect((await optIn())[0]!.email_opt_in).toBe(false);
+  });
+
   it("says plainly when Square can't be reached", async () => {
     square.fail.add("GET /v2/catalog/list");
     const r = await sync(false);
