@@ -3,8 +3,17 @@ import type { LedgerKind } from "./bucks.ts";
 import type { CartLine } from "./cart.ts";
 import type { Review } from "./reviews.ts";
 
+/** How a web order reaches the shopper. Shipped orders have Square ask for the address. */
+export type Delivery = "ship" | "pickup";
+export const DELIVERIES: readonly Delivery[] = ["ship", "pickup"];
+
+/** Shipping on a shipped order, in cents, added on Square's payment page. 0 = free shipping. */
+export const SHIPPING_CENTS = 0;
+
 export interface CheckoutRequest {
   lines: CartLine[];
+  /** Ship it, or pick up free in St. Louis. */
+  delivery?: Delivery;
   visitorId?: string;
   /** Beard Bucks rewards to use: 200 Bucks = $5 off each. Signed-in shoppers only. */
   rewards?: number;

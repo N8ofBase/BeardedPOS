@@ -49,7 +49,12 @@ describe("cart", () => {
     const checkout = vi.fn(async () => ({ url: "/thanks?preview=1", orderId: "" }));
     localStorage.setItem(CART_KEY, JSON.stringify([{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }]));
     renderStore("/cart", { checkout });
-    fireEvent.click(await screen.findByRole("button", { name: "Check out" }));
+    const ship = await screen.findByRole("radio", { name: "Ship it (free)" });
+    expect((ship as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText(/asks for your shipping address/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "Pick up in St. Louis (free)" }));
+    expect(screen.getByText(/email you when it’s ready to pick up/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Check out" }));
     const guest = screen.getByRole("button", { name: "Check out as a guest" });
     expect(guest.getAttribute("aria-describedby")).toBeTruthy();
     expect(screen.getByText("Guest orders don’t earn Beard Bucks.")).toBeTruthy();
@@ -60,6 +65,7 @@ describe("cart", () => {
       [{ productId: "NJ65T37BVFHTAAFBCEXI7KNX", qty: 2 }],
       expect.any(String),
       0,
+      "pickup",
     );
     expect(screen.getByText(/no payment was taken/)).toBeTruthy();
     await waitFor(() => expect(localStorage.getItem(CART_KEY)).toBeNull());

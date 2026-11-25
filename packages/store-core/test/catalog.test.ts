@@ -11,6 +11,7 @@ import {
   type SquareItem,
 } from "../src/catalog.ts";
 import { BUNDLE, lowStockAt } from "../src/listing.ts";
+import { canBuy } from "../src/cart.ts";
 
 const item = (over: Partial<SquareItem>): SquareItem => ({
   itemId: "I1",
@@ -238,7 +239,10 @@ describe("the Bearded Bundle", () => {
     );
     expect(products.map((p) => p.name)).toEqual(["Fences", "Bearded Bundle (Pre-order)", "Locked Out"]);
     expect(products[1]).toMatchObject({ kind: "preorder", game: BUNDLE, priceCents: 5000 });
-    expect(stockLabel(products[1]!)).toBe("Pre-order");
+    expect(stockLabel(products[1]!, new Date("2026-11-28T00:00:00-06:00"))).toBe("Pre-order");
+    expect(stockLabel(products[1]!, new Date("2026-11-27T23:59:00-06:00"))).toBe("Opens Saturday, Nov 28");
+    expect(canBuy(products[1]!, new Date("2026-11-27T23:59:00-06:00"))).toBe(false);
+    expect(canBuy(products[1]!, new Date("2026-11-28T00:00:00-06:00"))).toBe(true);
   });
 
   it("catches other spellings of the bundle in Square", () => {

@@ -1,13 +1,18 @@
 // Catalog, checkout and the offline preview of Square's payment page.
 import {
   BUCKS_PER_REWARD,
+  BUNDLE_OPENS_DAY,
+  DELIVERIES,
   formatCents,
   maxQty,
   MIN_REWARD_ORDER_CENTS,
+  notOpenYet,
   REWARD_CENTS,
   rewardsAllowed,
+  SHIPPING_CENTS,
   storeProducts,
   type CheckoutResponse,
+  type Delivery,
   type OrderLine,
   type OrderStatus,
   type OrderView,
@@ -47,6 +52,8 @@ export function priceLines(raw: unknown, products: Product[]): OrderLine[] {
     const p = byId.get(id);
     if (!p)
       throw new HttpError(409, "An item in your cart is no longer in the shop. Remove it to check out.");
+    if (notOpenYet(p))
+      throw new HttpError(409, `${p.name} opens for orders ${BUNDLE_OPENS_DAY}. Remove it to check out.`);
     const max = maxQty(p);
     if (max === 0) throw new HttpError(409, `${p.name} just sold out. Remove it to check out.`);
     if (n > max)
@@ -58,6 +65,14 @@ export function priceLines(raw: unknown, products: Product[]): OrderLine[] {
 export const subtotal = (lines: OrderLine[]) => lines.reduce((n, l) => n + l.priceCents * l.qty, 0);
 
 const MAX_REWARDS = 100;
+
+/** Ship it or pick up. Older pages don't send it; those orders ship, so Square still asks for an address. */
+function readDelivery(raw: unknown): Delivery {
+  if (raw === undefined) return "ship";
+  if (!DELIVERIES.includes(raw as Delivery))
+    throw new HttpError(400, "Choose Ship it or Pick up in St. Louis, then check out again.");
+  return raw as Delivery;
+}
 
 function readRewards(raw: unknown): number {
   if (raw === undefined) return 0;
@@ -76,6 +91,7 @@ export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespo
   const catalog = await ctx.square.catalog();
   const lines = priceLines(body.lines, storeProducts(catalog));
   const rewards = readRewards(body.rewards);
+  const delivery = readDelivery(body.delivery);
   const visitorId =
     typeof body.visitorId === "string" && /^[A-Za-z0-9-]{1,64}$/.test(body.visitorId) ? body.visitorId : null;
   const { businessId } = ctx.config;
@@ -109,8 +125,9 @@ export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespo
     const discountCents = rewards * REWARD_CENTS;
     const { rows } = await sql.query<{ id: string }>(
       `INSERT INTO store_orders
-         (business_id, visitor_id, lines, subtotal_cents, customer_id, reward_count, reward_bucks, discount_cents)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+         (business_id, visitor_id, lines, subtotal_cents, customer_id, reward_count, reward_bucks, discount_cents,
+          delivery)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
       [
         businessId,
         visitorId,
@@ -120,6 +137,7 @@ export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespo
         rewards,
         rewards * BUCKS_PER_REWARD,
         discountCents,
+        delivery,
       ],
     );
     return { id: rows[0]!.id, email, discountCents };
@@ -133,6 +151,8 @@ export async function checkout(ctx: StoreCtx, req: ApiRequest): Promise<ApiRespo
       discountCents: order.discountCents,
       buyerEmail: order.email,
       currency: catalog.currency,
+      delivery,
+      shippingCents: delivery === "ship" ? SHIPPING_CENTS : 0,
     });
   } catch (e) {
     // No payment page means no order: let go of any Bucks it was holding.

@@ -1,6 +1,6 @@
 // Cart math. The cart holds only Square variation ids and quantities; names and prices always come
 // from the current catalog, and Square prices the order again at checkout, so the browser never sets a price.
-import type { Product } from "./catalog.ts";
+import { notOpenYet, type Product } from "./catalog.ts";
 
 export interface CartLine {
   productId: string;
@@ -15,7 +15,8 @@ export function maxQty(p: Product): number {
   return p.stock === null ? MAX_PER_LINE : Math.max(0, Math.min(p.stock, MAX_PER_LINE));
 }
 
-export const canBuy = (p: Product) => maxQty(p) > 0;
+/** In stock and open for sale (the Bearded Bundle waits for its opening day). */
+export const canBuy = (p: Product, now: Date = new Date()) => maxQty(p) > 0 && !notOpenYet(p, now);
 
 const clamp = (qty: number, p: Product) => Math.max(0, Math.min(Math.floor(qty), maxQty(p)));
 

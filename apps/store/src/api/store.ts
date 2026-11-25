@@ -25,6 +25,7 @@ import type {
   StaffSquare,
   StaffReview,
   StoreStats,
+  Delivery,
 } from "@bearded/store-core";
 
 export { looksLikeEmail } from "@bearded/store-core";
@@ -73,7 +74,12 @@ export interface StoreApi {
   /** The site wording staff published (only what they changed). */
   site(): Promise<PublishedSite>;
   /** Starts checkout for these lines; resolves to the page to send the shopper to (Square's, once live). */
-  checkout(lines: CartLine[], visitorId?: string, rewards?: number): Promise<CheckoutResponse>;
+  checkout(
+    lines: CartLine[],
+    visitorId?: string,
+    rewards?: number,
+    delivery?: Delivery,
+  ): Promise<CheckoutResponse>;
   /** Approved reviews, newest first. */
   reviews(): Promise<Review[]>;
   /** Sends a review for the team to approve. */
@@ -127,8 +133,13 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
   return {
     catalog: () => call("GET", "/catalog"),
     site: () => call("GET", "/site"),
-    checkout: (lines, visitorId, rewards) =>
-      call("POST", "/checkout", { lines, visitorId, ...(rewards ? { rewards } : {}) }),
+    checkout: (lines, visitorId, rewards, delivery) =>
+      call("POST", "/checkout", {
+        lines,
+        visitorId,
+        ...(rewards ? { rewards } : {}),
+        ...(delivery ? { delivery } : {}),
+      }),
     reviews: () => call("GET", "/reviews"),
     submitReview: async (input) => void (await call("POST", "/reviews", input)),
     track: async (batch) => void (await call("POST", "/events", batch, true)),

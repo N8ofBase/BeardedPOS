@@ -1,6 +1,6 @@
 // The Bearded Bundle pre-order goes through the shop's usual Square checkout: Beard Bucks come off
 // it and are earned on it like any other order.
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Account, CheckoutResponse, SquareCatalog } from "@bearded/store-core";
 import type { Database } from "../src/db.ts";
 import { loadSnapshot, SnapshotStore } from "../src/square/snapshot.ts";
@@ -36,8 +36,30 @@ async function signIn(store: TestStore, email: string) {
   return { bbg_buddy: /bbg_buddy=([^;]+)/.exec(res.headers!["Set-Cookie"]!)![1]! };
 }
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+const at = (iso: string) => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(iso));
+};
+
 describe("Bearded Bundle pre-order", () => {
+  it("is refused at checkout before pre-orders open on Saturday", async () => {
+    at("2026-11-27T23:59:00-06:00");
+    const store = makeStore(db, { square: new SnapshotStore(withBundle()) });
+    const res = await store.call("POST", "/api/checkout", { lines: [{ productId: BUNDLE_ID, qty: 1 }] });
+    expect(res).toMatchObject({
+      status: 409,
+      body: {
+        error: "Bearded Bundle (Pre-order) opens for orders Saturday, Nov 28. Remove it to check out.",
+      },
+    });
+  });
+
   it("takes Beard Bucks off at checkout and earns Bucks once paid", async () => {
+    at("2026-11-28T00:00:00-06:00");
     const store = makeStore(db, { square: new SnapshotStore(withBundle()) });
     const jar = await signIn(store, "bundle-fan@example.com"); // 200 welcome Bucks
     const res = await store.call(

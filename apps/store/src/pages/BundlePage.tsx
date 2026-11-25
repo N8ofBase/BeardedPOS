@@ -6,9 +6,11 @@ import { Link } from "react-router";
 import {
   BUCKS_PER_REWARD,
   BUNDLE,
+  BUNDLE_OPENS_LABEL,
   canBuy,
   formatCents,
   MIN_REWARD_ORDER_CENTS,
+  notOpenYet,
   REWARD_CENTS,
   type Product,
 } from "@bearded/store-core";
@@ -31,6 +33,7 @@ export function BundlePage() {
   const product = products.state === "ready" ? bundleProduct(products.value) : undefined;
   const art = bundle.art || product?.imageUrl || "";
   const buyable = product ? canBuy(product) : false;
+  const waiting = product ? notOpenYet(product) : false;
   const preorder = product?.kind === "preorder";
   const inCart = product ? (cart.lines.find((l) => l.productId === product.id)?.qty ?? 0) : 0;
 
@@ -84,10 +87,18 @@ export function BundlePage() {
                     aria-label={
                       buyable
                         ? `${preorder ? "Pre-order" : "Add"} ${product.name}${preorder ? "" : " to cart"}`
-                        : `${product.name} is sold out`
+                        : waiting
+                          ? `${product.name}: ${BUNDLE_OPENS_LABEL}`
+                          : `${product.name} is sold out`
                     }
                   >
-                    {!buyable ? "Sold out" : preorder ? "Pre-order now" : "Add to cart"}
+                    {waiting
+                      ? BUNDLE_OPENS_LABEL
+                      : !buyable
+                        ? "Sold out"
+                        : preorder
+                          ? "Pre-order now"
+                          : "Add to cart"}
                   </button>
                   {inCart > 0 && (
                     <p className="in-cart">
