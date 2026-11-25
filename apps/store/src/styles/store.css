@@ -2063,6 +2063,87 @@ body {
   }
 }
 
+/* The Bearded Bundle on the home page, before the shelf */
+.bundle-band {
+  background: var(--butter);
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+.bundle-band .wrap {
+  display: grid;
+  grid-template-columns: minmax(200px, 420px) 1fr;
+  gap: 32px;
+  align-items: center;
+}
+.bundle-band .art {
+  display: block;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 6px 6px 0 var(--felt);
+  padding: 10px;
+}
+.bundle-band .art img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* The first game big on the left, the other two stacked beside it. */
+.bundle-band .band-covers {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.bundle-band .band-covers img:first-child {
+  grid-row: 1 / span 2;
+}
+.bundle-band .band-covers img:not(:first-child) {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  min-height: 0;
+}
+.bundle-band .kicker {
+  margin: 0;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--felt);
+}
+.bundle-band h2 {
+  margin: 4px 0 8px;
+}
+.bundle-band .price {
+  margin: 12px 0;
+  font-family: var(--display);
+  font-size: 2rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.bundle-band .price .buddy-price {
+  font: 800 1rem var(--text);
+  color: var(--felt);
+}
+.bundle-band .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+.bundle-band .opens {
+  font-weight: 700;
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  .bundle-band .wrap {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
 /* The Bearded Bundle page */
 .bundle-covers {
   display: grid;
