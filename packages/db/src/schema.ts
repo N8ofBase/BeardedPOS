@@ -143,6 +143,7 @@ export interface CustomersTable {
   follow_up_note: string | null;
   /** The matching customer in Square, once a sync linked them. */
   square_customer_id: Generated<string | null>;
+  square_email_ok: Generated<boolean | null>;
   is_demo: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;

@@ -142,6 +142,8 @@ export interface SquareCustomer {
   phone: string | null;
   /** Lower case, or null. */
   email: string | null;
+  /** Unsubscribed from marketing email in Square. */
+  emailUnsubscribed?: boolean;
 }
 
 export interface ShelfCustomer {
@@ -150,6 +152,9 @@ export interface ShelfCustomer {
   phone: string | null;
   email: string | null;
   squareCustomerId: string | null;
+  emailOptIn?: boolean;
+  /** What Square last said about their marketing email (null: not checked yet). */
+  squareEmailOk?: boolean | null;
 }
 
 export interface CustomerPlan {
@@ -162,6 +167,10 @@ export interface CustomerPlan {
   unchanged: number;
   /** Square customers whose phone or email another register customer already has (left out). */
   duplicates: SquareCustomer[];
+  /** Every Square customer's email setting, by Square id, for OK to email in the register. */
+  emailPrefs: { squareId: string; unsubscribed: boolean }[];
+  /** Customers whose OK to email would change: newly OK, or off because they unsubscribed in Square. */
+  emailChanges: { ok: number; off: number };
 }
 
 /** The register's own rule for an email it can save (the customers table checks the same). */
@@ -179,6 +188,7 @@ export function squareCustomer(c: {
   company_name?: string;
   email_address?: string;
   phone_number?: string;
+  preferences?: { email_unsubscribed?: boolean };
 }): SquareCustomer | null {
   const typed = c.email_address?.trim().toLowerCase();
   const email = typed && EMAIL.test(typed) ? typed : null;
@@ -191,11 +201,37 @@ export function squareCustomer(c: {
     c.company_name?.trim() ||
     email ||
     (phone ? `Customer ${phone.slice(-4)}` : "");
-  return name && (phone || email) ? { id: c.id, name, phone, email } : null;
+  return name && (phone || email)
+    ? {
+        id: c.id,
+        name,
+        phone,
+        email,
+        ...(c.preferences?.email_unsubscribed === true ? { emailUnsubscribed: true } : {}),
+      }
+    : null;
 }
 
 export function planCustomers(square: SquareCustomer[], shelf: ShelfCustomer[]): CustomerPlan {
-  const plan: CustomerPlan = { link: [], create: [], push: [], unchanged: 0, duplicates: [] };
+  const plan: CustomerPlan = {
+    link: [],
+    create: [],
+    push: [],
+    unchanged: 0,
+    duplicates: [],
+    emailPrefs: square.map((s) => ({ squareId: s.id, unsubscribed: s.emailUnsubscribed === true })),
+    emailChanges: { ok: 0, off: 0 },
+  };
+  /** Counts what Square's email setting would change for this register customer (or a new one). */
+  const countEmail = (s: SquareCustomer, c: ShelfCustomer | null) => {
+    if (s.emailUnsubscribed) {
+      if (c?.emailOptIn) plan.emailChanges.off++;
+    } else if (!c) {
+      if (s.email) plan.emailChanges.ok++;
+    } else if (c.squareEmailOk == null && !c.emailOptIn && (c.email || s.email)) {
+      plan.emailChanges.ok++;
+    }
+  };
   // The register allows one customer per phone and per email.
   const phones = new Set(shelf.map((c) => c.phone).filter(Boolean));
   const emails = new Set(shelf.map((c) => key(c.email)).filter(Boolean));
@@ -205,6 +241,7 @@ export function planCustomers(square: SquareCustomer[], shelf: ShelfCustomer[]):
   for (const s of square) {
     const known = linked.get(s.id);
     if (known) {
+      countEmail(s, known);
       claimed.add(known.id);
       plan.unchanged++;
       continue;
@@ -220,10 +257,12 @@ export function planCustomers(square: SquareCustomer[], shelf: ShelfCustomer[]):
       }
       if (s.phone) phones.add(s.phone);
       if (s.email) emails.add(s.email);
+      countEmail(s, null);
       plan.create.push(s);
       continue;
     }
     claimed.add(match.id);
+    countEmail(s, match);
     const fill: { phone?: string; email?: string } = {};
     if (!match.phone && s.phone && !phones.has(s.phone)) {
       fill.phone = s.phone;
