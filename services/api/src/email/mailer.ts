@@ -1,8 +1,8 @@
 // Bulk email goes out through one small interface, like card payments. Demo mode uses
-// PreviewMailer: nothing leaves the browser, and each email is kept as a preview. Hosted
-// mode (Phase 1f) uses an Amazon SES adapter in the queue worker; sesSendEmailInput()
-// builds its request so the worker only adds the AWS client. No AWS credentials or SDK
-// ever reach the browser bundle.
+// PreviewMailer: nothing leaves the browser, and each email is kept as a preview. The hosted
+// store server swaps in its Amazon SES mailer with setMailer() when it starts
+// (services/store-api/src/emailQueue.ts); sesSendEmailInput() builds its request. No AWS
+// credentials or SDK ever reach the browser bundle.
 import type { RenderedEmail } from "@bearded/core";
 
 export interface SendMeta {
@@ -41,8 +41,12 @@ export class PreviewMailer implements Mailer {
   }
 }
 
-/** The mailer in use. Demo mode only has the preview one. */
-export const mailer: Mailer = new PreviewMailer();
+/** The mailer in use: the preview one, until the hosted server sets the real one. */
+export let mailer: Mailer = new PreviewMailer();
+
+export function setMailer(m: Mailer): void {
+  mailer = m;
+}
 
 /** A random token for an unsubscribe link (128 bits). */
 export function newUnsubscribeToken(): string {
@@ -53,7 +57,7 @@ export function newUnsubscribeToken(): string {
  * The SES v2 SendEmail request for one email. The tags let the bounce and complaint
  * handler find the business and the send without reading the message.
  */
-export function sesSendEmailInput(email: RenderedEmail, meta: SendMeta, configurationSet: string) {
+export function sesSendEmailInput(email: RenderedEmail, meta: SendMeta, configurationSet?: string) {
   return {
     FromEmailAddress: email.from,
     Destination: { ToAddresses: [email.to] },
@@ -67,7 +71,7 @@ export function sesSendEmailInput(email: RenderedEmail, meta: SendMeta, configur
         Headers: Object.entries(email.headers).map(([Name, Value]) => ({ Name, Value })),
       },
     },
-    ConfigurationSetName: configurationSet,
+    ...(configurationSet ? { ConfigurationSetName: configurationSet } : {}),
     EmailTags: [
       { Name: "business_id", Value: meta.businessId },
       { Name: "send_id", Value: meta.sendId },

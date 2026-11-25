@@ -59,6 +59,8 @@ import { BlockPublicAccess, Bucket, BucketEncryption } from "aws-cdk-lib/aws-s3"
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { EmailIdentity, Identity } from "aws-cdk-lib/aws-ses";
+import { Rule, RuleTargetInput, Schedule } from "aws-cdk-lib/aws-events";
+import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import type { Construct } from "constructs";
 import { oldSiteRedirects } from "../../packages/store-core/src/oldSite.ts";
 import { NAT_COMMANDS, NAT_IMAGE_PARAMETER } from "./nat.ts";
@@ -259,6 +261,11 @@ export class StoreDemoStack extends Stack {
         STORE_MIGRATIONS_DIR: "/var/task/migrations",
         RDS_CA_FILE: "/var/task/rds-global-bundle.pem",
         MAIL_FROM: `Bearded Board Games <no-reply@${primaryName}>`,
+        // The register's news emails, until changed in its Settings. The shop's domain is verified in
+        // SES by BeardedDomain; the demo's subdomain by MailDomain below.
+        NEWS_FROM: `news@${shop ? shop.name : siteName}`,
+        // Only the live store really sends bulk email; the Sandbox demo keeps previews.
+        ...(live ? { BULK_EMAIL: "on" } : {}),
         BBG_BUSINESS_ID: props.businessId,
         BBG_STAFF: props.staffEmails.join(","),
         BBG_SITE_URL: `https://${primaryName}`,
@@ -295,6 +302,20 @@ export class StoreDemoStack extends Stack {
         resources: [`arn:aws:ses:${this.region}:${this.account}:identity/*`],
       }),
     );
+
+    // Every minute (live store only): scheduled emails that are due start, and queued emails go out
+    // through SES.
+    if (live)
+      new Rule(this, "EmailQueue", {
+        description: "Sends the register's queued bulk email",
+        schedule: Schedule.rate(Duration.minutes(1)),
+        targets: [
+          new LambdaFunction(api, {
+            event: RuleTargetInput.fromObject({ job: "email-queue" }),
+            retryAttempts: 0,
+          }),
+        ],
+      });
 
     const httpApi = new HttpApi(this, "HttpApi", { description: "Bearded Board Games store /api" });
     httpApi.addRoutes({

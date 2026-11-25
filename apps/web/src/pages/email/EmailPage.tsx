@@ -64,7 +64,10 @@ function EmailList() {
       )}
       <p className="muted">
         Send news to customers by type and tag. Only people who agreed to email get it, and every email has an
-        unsubscribe link. In this demo nothing is really sent: each email is kept as a preview.
+        unsubscribe link.{" "}
+        {setup.data?.realSend
+          ? "Emails go out a batch at a time, a few hundred a minute."
+          : "In this demo nothing is really sent: each email is kept as a preview."}
       </p>
       {list.isError && <p className="error-box">{errorMessage(list.error)}</p>}
       {list.data?.length === 0 && <p className="muted">No emails yet.</p>}
@@ -226,6 +229,8 @@ function Composer({ campaign }: { campaign: CampaignDetail | null }) {
   const [errors, setErrors] = useState<{ subject?: string; body?: string }>({});
 
   const tags = useQuery({ queryKey: ["tags"], queryFn: () => api.call("listTags") });
+  const setup = useQuery({ queryKey: ["email-setup"], queryFn: () => api.call("getEmailSetup") });
+  const realSend = !!setup.data?.realSend;
   const count = useQuery({
     queryKey: ["audience", audience],
     queryFn: () => api.call("previewAudience", { audience }),
@@ -256,7 +261,14 @@ function Composer({ campaign }: { campaign: CampaignDetail | null }) {
     mutationFn: () =>
       api.call("sendCampaign", { ...input, sendAt: later && sendAt ? new Date(sendAt).toISOString() : null }),
     onSuccess: (r) => {
-      toast(r.scheduled ? "Email scheduled" : `Sent to ${r.sent} ${r.sent === 1 ? "customer" : "customers"}`);
+      const people = (n: number) => `${n} ${n === 1 ? "customer" : "customers"}`;
+      toast(
+        r.scheduled
+          ? "Email scheduled"
+          : r.left > 0
+            ? `Sending to ${people(r.queued)}. It goes out over the next few minutes.`
+            : `Sent to ${people(r.sent)}`,
+      );
       refresh();
       void qc.invalidateQueries({ queryKey: ["timeline"] });
       navigate(campaign ? "." : `../${r.id}`, { replace: true });
@@ -276,7 +288,11 @@ function Composer({ campaign }: { campaign: CampaignDetail | null }) {
     mutationFn: () => api.call("sendTestEmail", { subject, body, to: testTo }),
     onSuccess: (e) => {
       setPreview(e);
-      toast(`Test made for ${e.to}. In the demo it shows below instead of being sent.`);
+      toast(
+        realSend
+          ? `Test sent to ${e.to}. It should arrive in a minute or two.`
+          : `Test made for ${e.to}. In the demo it shows below instead of being sent.`,
+      );
     },
     onError: (err) => toast(errorMessage(err)),
   });

@@ -91,8 +91,19 @@ export interface StoreApi {
   orderStatus(id: string): Promise<OrderStatus>;
   previewOrder(id: string): Promise<OrderView>;
   payPreviewOrder(id: string): Promise<OrderView>;
+  /** The unsubscribe link in a news email: whose address it is, and turning news email off. */
+  unsubscribeStatus(businessId: string, token: string): Promise<UnsubscribeInfo>;
+  unsubscribe(businessId: string, token: string): Promise<UnsubscribeInfo>;
   staff: StaffApi;
   buddy: BuddyApi;
+}
+
+/** What the unsubscribe link shows: the shop, a masked address, and whether it's already off. */
+export interface UnsubscribeInfo {
+  storeName: string;
+  /** "p•••@example.com" */
+  email: string;
+  alreadyOff: boolean;
 }
 
 /** An answer from the server that isn't a success. `message` is a sentence the screen can show as is. */
@@ -146,6 +157,8 @@ export function httpStore(fetchFn: Fetch = (url, init) => fetch(url, init)): Sto
     orderStatus: (orderId) => call("GET", `/orders/${id(orderId)}`),
     previewOrder: (orderId) => call("GET", `/checkout-preview/${id(orderId)}`),
     payPreviewOrder: (orderId) => call("POST", `/checkout-preview/${id(orderId)}/pay`, {}),
+    unsubscribeStatus: (b, t) => call("GET", `/unsubscribe?b=${id(b)}&t=${id(t)}`),
+    unsubscribe: (b, t) => call("POST", `/unsubscribe?b=${id(b)}&t=${id(t)}`),
     staff: {
       requestCode: (email) => call("POST", "/staff/code", { email }),
       signIn: (email, code) => call("POST", "/staff/session", { email, code }),

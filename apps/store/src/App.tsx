@@ -16,6 +16,7 @@ import { ReviewsPage } from "./pages/ReviewsPage.tsx";
 import { SoccerBlockerRulesPage } from "./pages/RulesPage.tsx";
 import { ShopPage } from "./pages/ShopPage.tsx";
 import { ThanksPage } from "./pages/ThanksPage.tsx";
+import { UnsubscribePage } from "./pages/UnsubscribePage.tsx";
 import { VideosPage } from "./pages/VideosPage.tsx";
 import { WholesalePage } from "./pages/WholesalePage.tsx";
 import { Footer } from "./sections/Footer.tsx";
@@ -65,6 +66,7 @@ export function App() {
                     <Route path="/account" element={<AccountPage />} />
                     <Route path="/checkout-preview/:id" element={<CheckoutPreviewPage />} />
                     <Route path="/thanks" element={<ThanksPage />} />
+                    <Route path="/unsubscribe" element={<UnsubscribePage />} />
                     <Route path="/wholesale" element={<WholesalePage />} />
                     <Route path="/behind-the-beard" element={<BehindTheBeard />} />
                     <Route path="*" element={<NotFound />} />

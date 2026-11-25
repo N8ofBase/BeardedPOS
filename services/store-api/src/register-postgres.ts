@@ -88,6 +88,7 @@ export function storeSetup(
     owners,
     demo: demo ? { openingStock: stock } : false,
     look: { brandColor: "#14614f", logo: STORE_LOGO },
+    ...(env.NEWS_FROM ? { emailFrom: env.NEWS_FROM } : {}),
     ...(demo && catalog ? { items: { products: storeItems(catalog), openingStock: stock } } : {}),
   };
 }
