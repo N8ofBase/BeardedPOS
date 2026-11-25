@@ -46,6 +46,9 @@ export function BuddyBand() {
           <li>
             <strong>First dibs</strong> on the <Link to="/bundle">Bearded Bundle</Link>
           </li>
+          <li>
+            <strong>Play free</strong> <Link to="/play/mine-and-find">Mine &amp; Find online</Link>
+          </li>
         </ul>
       </div>
     </section>
