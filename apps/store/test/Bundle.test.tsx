@@ -46,7 +46,7 @@ describe("Bearded Bundle page", () => {
     const button = await screen.findByRole("button", { name: "Pre-order Bearded Bundle (Pre-order)" });
     const price = document.querySelector(".bundle-buy .price")!.textContent;
     expect(price).toContain("$50");
-    expect(price).toContain("$45 for Beard Buddies with 200 Bucks");
+    expect(price).toContain("$45 for new Beard Buddies");
     fireEvent.click(button);
     const drawer = screen.getByRole("dialog", { name: "Your cart" });
     expect(within(drawer).getByText("Bearded Bundle (Pre-order)", { selector: "strong" })).toBeTruthy();
@@ -76,6 +76,7 @@ describe("Bearded Bundle page", () => {
           "bundle.tagline": "Three games, one bow on top.",
           "bundle.howItWorks": "Pay now.\nShips in December.",
           "bundle.when": "",
+          "bundle.buddyPrice": "for Buddies who join this week",
         },
         publishedAt: null,
       }),
@@ -84,6 +85,9 @@ describe("Bearded Bundle page", () => {
     expect(screen.getByText("Ships in December.")).toBeTruthy();
     await screen.findByRole("button", { name: /^Pre-order/ });
     expect(document.querySelector(".bundle-buy .when")).toBeNull();
+    expect(document.querySelector(".bundle-buy .buddy-price")!.textContent).toBe(
+      "$45 for Buddies who join this week",
+    );
   });
 
   it("sits right after Fences in the shop and links to its page", async () => {
@@ -104,7 +108,7 @@ describe("Bearded Bundle on the home page", () => {
     expect(band.nextElementSibling?.id).toBe("games");
     expect(within(band).getByRole("heading", { level: 2, name: "The Bearded Bundle" })).toBeTruthy();
     expect(band.textContent).toContain("Soccer Blocker, Mine & Find, Pack Lash");
-    expect(await within(band).findByText(/\$45 for Beard Buddies/)).toBeTruthy();
+    expect(await within(band).findByText("$45 for new Beard Buddies")).toBeTruthy();
     expect(within(band).getByText("Opens Saturday, Nov 28")).toBeTruthy();
     expect(within(band).getByRole("link", { name: "See what’s inside" }).getAttribute("href")).toBe(
       "/bundle",

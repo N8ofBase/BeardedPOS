@@ -71,10 +71,9 @@ export function BundlePage() {
                 <div className="bundle-buy">
                   <p className="price">
                     {formatCents(product.priceCents)}
-                    {product.priceCents > REWARD_CENTS && (
+                    {product.priceCents > REWARD_CENTS && bundle.buddyPrice && (
                       <span className="buddy-price">
-                        {formatCents(product.priceCents - REWARD_CENTS)} for Beard Buddies with{" "}
-                        {BUCKS_PER_REWARD} Bucks
+                        {formatCents(product.priceCents - REWARD_CENTS)} {bundle.buddyPrice}
                       </span>
                     )}
                     {bundle.when && <span className="when">{bundle.when}</span>}

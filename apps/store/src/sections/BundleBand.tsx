@@ -1,13 +1,7 @@
 // The Bearded Bundle on the home page, just before the shelf: the three games, the price from Square
 // and a link to the bundle page. Its words come from the "The Bearded Bundle" group in Site content.
 import { Link } from "react-router";
-import {
-  BUCKS_PER_REWARD,
-  formatCents,
-  notOpenYet,
-  REWARD_CENTS,
-  BUNDLE_OPENS_LABEL,
-} from "@bearded/store-core";
+import { formatCents, notOpenYet, REWARD_CENTS, BUNDLE_OPENS_LABEL } from "@bearded/store-core";
 import { useProducts } from "../api/data.tsx";
 import { useSite } from "../content/SiteProvider.tsx";
 import { bundleProduct } from "../pages/BundlePage.tsx";
@@ -43,10 +37,9 @@ export function BundleBand() {
           {product && (
             <p className="price">
               {formatCents(product.priceCents)}
-              {product.priceCents > REWARD_CENTS && (
+              {product.priceCents > REWARD_CENTS && bundle.buddyPrice && (
                 <span className="buddy-price">
-                  {formatCents(product.priceCents - REWARD_CENTS)} for Beard Buddies with {BUCKS_PER_REWARD}{" "}
-                  Bucks
+                  {formatCents(product.priceCents - REWARD_CENTS)} {bundle.buddyPrice}
                 </span>
               )}
             </p>

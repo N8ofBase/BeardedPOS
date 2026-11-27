@@ -362,6 +362,8 @@ export interface Bundle {
   blurb: string;
   /** Slugs from `games`, in the order the page shows them. */
   games: string[];
+  /** After the Beard Buddy price (Square's price less one reward), e.g. "for new Beard Buddies". */
+  buddyPrice: string;
   /** When it ships, shown by the price. */
   when: string;
   /** How a pre-order works, one point per line. */
@@ -376,6 +378,7 @@ export const bundle: Bundle = {
   blurb:
     "Our newest games, together for the 2026 holiday season: a soccer duel, a gem hunt for the whole family, and a head-to-head card brawl. Quick to teach, hard to put down, and perfect under a tree.",
   games: ["soccer-blocker", "mine-and-find", "pack-lash"],
+  buddyPrice: "for new Beard Buddies",
   when: "Ships for the 2026 holidays (hopefully — we all have day jobs)",
   howItWorks: [
     "You pay when you pre-order, through Square’s secure checkout.",
