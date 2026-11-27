@@ -214,6 +214,10 @@ export const siteGroups: SiteGroup[] = [
       line("bundle.name", "Name", 60),
       line("bundle.tagline", "Tagline", 200),
       text("bundle.blurb", "About the bundle", 1500),
+      line("bundle.buddyPrice", "Beard Buddy price words", 80, {
+        optional: true,
+        hint: "Shown after the Buddy price (Square's price less $5), like “$45 for new Beard Buddies”. Leave empty to hide it.",
+      }),
       line("bundle.when", "When it ships", 120, {
         optional: true,
         hint: "Shown next to the price, like “Ships in December”. Leave empty to hide it.",

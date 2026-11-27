@@ -62,6 +62,7 @@ export function originals(): SiteContent {
     "bundle.name": bundle.name,
     "bundle.tagline": bundle.tagline,
     "bundle.blurb": bundle.blurb,
+    "bundle.buddyPrice": bundle.buddyPrice,
     "bundle.when": bundle.when,
     "bundle.howItWorks": bundle.howItWorks.join("\n"),
     "bundle.note": bundle.note,
@@ -132,6 +133,7 @@ export function buildSite(content: SiteContent): Site {
       name: get("bundle.name", bundle.name),
       tagline: get("bundle.tagline", bundle.tagline),
       blurb: get("bundle.blurb", bundle.blurb),
+      buddyPrice: get("bundle.buddyPrice", bundle.buddyPrice),
       when: get("bundle.when", bundle.when),
       howItWorks:
         content["bundle.howItWorks"] !== undefined ? lines(content["bundle.howItWorks"]) : bundle.howItWorks,
